@@ -1,0 +1,18 @@
+# Vendor dependencies
+backend/vendor/
+
+# Cache and temporary files
+backend/tmp/
+
+# Logs
+backend/logs/
+
+# OS files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/

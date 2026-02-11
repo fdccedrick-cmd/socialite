@@ -1,0 +1,21 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+// Define ROOT before loading anything
+if (!defined('ROOT')) {
+    define('ROOT', dirname(__DIR__));
+}
+
+// Load bootstrap which defines all constants
+require ROOT . '/config/bootstrap.php';
+
+// Load vendor autoload
+require ROOT . '/vendor/autoload.php';
+
+use App\Application;
+use Cake\Console\CommandRunner;
+
+// Pass the config directory to Application
+$runner = new CommandRunner(new Application(CONFIG), 'cake');
+exit($runner->run($argv));
