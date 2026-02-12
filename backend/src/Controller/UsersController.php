@@ -218,4 +218,45 @@ class UsersController extends AppController
 
         $this->set(compact('user'));
     }
+
+    public function profile()
+    {
+        // Use authenticated identity for profile data
+        $result = $this->Authentication->getResult();
+        if (!($result && $result->isValid())) {
+            return $this->redirect('/login');
+        }
+
+        $identity = $this->Authentication->getIdentity();
+
+        // Normalize identity into an array suitable for JSON encoding in the view
+        $user = [];
+        if (is_object($identity)) {
+            if (method_exists($identity, 'getOriginalData')) {
+                $orig = $identity->getOriginalData();
+                if (is_object($orig) && method_exists($orig, 'toArray')) {
+                    $user = $orig->toArray();
+                } elseif (is_array($orig)) {
+                    $user = $orig;
+                } else {
+                    $user = (array)$orig;
+                }
+            } elseif (method_exists($identity, 'toArray')) {
+                $user = $identity->toArray();
+            } else {
+                $user = (array)$identity;
+            }
+        } elseif (is_array($identity)) {
+            $user = $identity;
+        }
+
+        // Convert DateTime objects to ISO strings for client-side parsing
+        foreach (['created', 'modified'] as $dtField) {
+            if (!empty($user[$dtField]) && $user[$dtField] instanceof \DateTimeInterface) {
+                $user[$dtField] = $user[$dtField]->format(DATE_ATOM);
+            }
+        }
+
+        $this->set(compact('user'));
+    }
 }

@@ -10,6 +10,7 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/register', ['controller' => 'Users', 'action' => 'register']);
         $builder->connect('/logout', ['controller' => 'Users', 'action' => 'logout']);
         $builder->connect('/dashboard', ['controller' => 'Users', 'action' => 'dashboard']);
+        $builder->connect('/profile', ['controller' => 'Users', 'action' => 'profile']);
         
         $builder->fallbacks();
     });
