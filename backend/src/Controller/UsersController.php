@@ -15,18 +15,15 @@ class UsersController extends AppController
         
         $result = $this->Authentication->getResult();
         
-        // If user is logged in, redirect to dashboard
         if ($result && $result->isValid()) {
             $target = $this->Authentication->getLoginRedirect() ?? '/dashboard';
             return $this->redirect($target);
         }
         
-        // If it was a POST request but login failed
         if ($this->request->is('post')) {
             $this->Flash->error('Invalid username or password');
         }
 
-        // Show logout success when redirected from logout (new session)
         if ($this->request->getQuery('logged_out')) {
             $this->Flash->success('You have been logged out.');
         }
@@ -42,7 +39,6 @@ class UsersController extends AppController
         if ($this->request->is('post')) {
             $data = $this->request->getData();
             
-            // Check if passwords match (before hashing)
             if (!empty($data['password']) && !empty($data['confirm_password'])) {
                 if ($data['password'] !== $data['confirm_password']) {
                     $this->Flash->error('Passwords do not match');
@@ -51,12 +47,10 @@ class UsersController extends AppController
                 }
             }
             
-            // Map submitted plaintext password into the DB field expected by the table
             if (!empty($data['password'])) {
                 $data['password_hash'] = $data['password'];
             }
 
-            // Remove confirm_password and plaintext password from data before saving
             unset($data['confirm_password'], $data['password']);
 
             $user = $this->Users->patchEntity($user, $data);
@@ -66,11 +60,10 @@ class UsersController extends AppController
                 return $this->redirect(['action' => 'login']);
             }
 
-            // Log incoming POST data when save fails to help debug client-side issues
             try {
                 Log::warning('Register save failed, request data: ' . json_encode($this->request->getData()));
             } catch (\Throwable $e) {
-                // ignore logging errors
+    
             }
 
             // Expose raw POST data to the view for temporary debugging
@@ -187,27 +180,27 @@ class UsersController extends AppController
         }
 
         $identity = $this->Authentication->getIdentity();
-
-        // Normalize identity into an array suitable for JSON encoding in the view
-        $user = [];
+        
+        // Get user ID from identity
+        $userId = null;
         if (is_object($identity)) {
             if (method_exists($identity, 'getOriginalData')) {
                 $orig = $identity->getOriginalData();
-                if (is_object($orig) && method_exists($orig, 'toArray')) {
-                    $user = $orig->toArray();
-                } elseif (is_array($orig)) {
-                    $user = $orig;
-                } else {
-                    $user = (array)$orig;
+                if (is_object($orig) && isset($orig->id)) {
+                    $userId = $orig->id;
+                } elseif (is_array($orig) && isset($orig['id'])) {
+                    $userId = $orig['id'];
                 }
-            } elseif (method_exists($identity, 'toArray')) {
-                $user = $identity->toArray();
-            } else {
-                $user = (array)$identity;
+            } elseif (isset($identity->id)) {
+                $userId = $identity->id;
             }
-        } elseif (is_array($identity)) {
-            $user = $identity;
+        } elseif (is_array($identity) && isset($identity['id'])) {
+            $userId = $identity['id'];
         }
+        
+        // Fetch fresh user data from database
+        $userEntity = $this->Users->get($userId);
+        $user = $userEntity->toArray();
 
         // Convert DateTime objects to ISO strings for client-side parsing
         foreach (['created', 'modified'] as $dtField) {
@@ -228,27 +221,27 @@ class UsersController extends AppController
         }
 
         $identity = $this->Authentication->getIdentity();
-
-        // Normalize identity into an array suitable for JSON encoding in the view
-        $user = [];
+        
+        // Get user ID from identity
+        $userId = null;
         if (is_object($identity)) {
             if (method_exists($identity, 'getOriginalData')) {
                 $orig = $identity->getOriginalData();
-                if (is_object($orig) && method_exists($orig, 'toArray')) {
-                    $user = $orig->toArray();
-                } elseif (is_array($orig)) {
-                    $user = $orig;
-                } else {
-                    $user = (array)$orig;
+                if (is_object($orig) && isset($orig->id)) {
+                    $userId = $orig->id;
+                } elseif (is_array($orig) && isset($orig['id'])) {
+                    $userId = $orig['id'];
                 }
-            } elseif (method_exists($identity, 'toArray')) {
-                $user = $identity->toArray();
-            } else {
-                $user = (array)$identity;
+            } elseif (isset($identity->id)) {
+                $userId = $identity->id;
             }
-        } elseif (is_array($identity)) {
-            $user = $identity;
+        } elseif (is_array($identity) && isset($identity['id'])) {
+            $userId = $identity['id'];
         }
+        
+        // Fetch fresh user data from database
+        $userEntity = $this->Users->get($userId);
+        $user = $userEntity->toArray();
 
         // Convert DateTime objects to ISO strings for client-side parsing
         foreach (['created', 'modified'] as $dtField) {
@@ -258,5 +251,168 @@ class UsersController extends AppController
         }
 
         $this->set(compact('user'));
+    }
+
+    public function updateProfile()
+    {
+        $this->request->allowMethod(['post']);
+        $this->viewBuilder()->disableAutoLayout();
+        
+        // Verify authentication
+        $result = $this->Authentication->getResult();
+        if (!($result && $result->isValid())) {
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ]));
+        }
+
+        $identity = $this->Authentication->getIdentity();
+        $userId = null;
+        
+        // Extract user ID from identity
+        if (is_object($identity)) {
+            if (method_exists($identity, 'getOriginalData')) {
+                $orig = $identity->getOriginalData();
+                if (is_object($orig) && isset($orig->id)) {
+                    $userId = $orig->id;
+                } elseif (is_array($orig) && isset($orig['id'])) {
+                    $userId = $orig['id'];
+                }
+            } elseif (isset($identity->id)) {
+                $userId = $identity->id;
+            }
+        } elseif (is_array($identity) && isset($identity['id'])) {
+            $userId = $identity['id'];
+        }
+
+        if (!$userId) {
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'User not found'
+                ]));
+        }
+
+        // Get user from database
+        $user = $this->Users->get($userId);
+        $data = [];
+        $errors = [];
+
+        // Handle full name update
+        $fullName = $this->request->getData('full_name');
+        if (!empty($fullName)) {
+            $data['full_name'] = trim($fullName);
+        } else {
+            $errors['full_name'] = 'Full name is required';
+        }
+
+        // Handle profile picture upload
+        $uploadedFile = $this->request->getData('profile_picture');
+        if ($uploadedFile && is_object($uploadedFile) && method_exists($uploadedFile, 'getError') && $uploadedFile->getError() === UPLOAD_ERR_OK) {
+            // Validate file type
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+            $fileType = $uploadedFile->getClientMediaType();
+            
+            if (!in_array($fileType, $allowedTypes)) {
+                $errors['profile_picture'] = 'Invalid file type. Only JPG, PNG, and GIF are allowed.';
+            } else {
+                // Validate file size (5MB max)
+                $maxSize = 5 * 1024 * 1024;
+                if ($uploadedFile->getSize() > $maxSize) {
+                    $errors['profile_picture'] = 'File size must be less than 5MB.';
+                } else {
+                    // Generate unique filename
+                    $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
+                    $filename = 'profile_' . $userId . '_' . time() . '.' . $extension;
+                    $uploadPath = WWW_ROOT . 'img' . DS . 'profile_uploads' . DS . $filename;
+                    
+                    // Move uploaded file
+                    try {
+                        $uploadedFile->moveTo($uploadPath);
+                        $data['profile_photo_path'] = '/img/profile_uploads/' . $filename;
+                        
+                        // Delete old profile picture if exists
+                        if (!empty($user->profile_photo_path) && $user->profile_photo_path !== '/img/profile_uploads/' . $filename) {
+                            $oldPath = WWW_ROOT . ltrim($user->profile_photo_path, '/');
+                            if (file_exists($oldPath) && is_file($oldPath)) {
+                                @unlink($oldPath);
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        $errors['profile_picture'] = 'Failed to upload file.';
+                    }
+                }
+            }
+        }
+
+        // Handle password update
+        $currentPassword = $this->request->getData('current_password');
+        $newPassword = $this->request->getData('new_password');
+        
+        if (!empty($currentPassword) || !empty($newPassword)) {
+            if (empty($currentPassword)) {
+                $errors['current_password'] = 'Current password is required to change password.';
+            } elseif (empty($newPassword)) {
+                $errors['new_password'] = 'New password is required.';
+            } elseif (strlen($newPassword) < 6) {
+                $errors['new_password'] = 'Password must be at least 6 characters.';
+            } else {
+                // Verify current password
+                $hasher = new \Authentication\PasswordHasher\DefaultPasswordHasher();
+                if (!$hasher->check($currentPassword, $user->password_hash)) {
+                    $errors['current_password'] = 'Current password is incorrect.';
+                } else {
+                    // Update password
+                    $data['password_hash'] = $newPassword;
+                }
+            }
+        }
+
+        // Return errors if any
+        if (!empty($errors)) {
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $errors
+                ]));
+        }
+
+        // Update user
+        $user = $this->Users->patchEntity($user, $data);
+        
+        if ($this->Users->save($user)) {
+            // Refresh the authentication session with updated user data
+            $this->Authentication->setIdentity($user);
+            
+            // Prepare response data
+            $responseData = [
+                'full_name' => $user->full_name,
+                'username' => $user->username,
+                'profile_photo_path' => $user->profile_photo_path
+            ];
+            
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode([
+                    'success' => true,
+                    'message' => 'Profile updated successfully',
+                    'user' => $responseData
+                ]));
+        } else {
+            $validationErrors = $user->getErrors();
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'Failed to update profile',
+                    'errors' => $validationErrors
+                ]));
+        }
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /** @var \App\View\AppView $this */
-$user = $user ?? ($this->Identity->get() ?? null);
+$user = $currentUser ?? $user ?? null;
 $username = $user->full_name ?? $user->username ?? 'Guest';
 $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
 $currentPath = $this->request->getPath();

@@ -1,8 +1,8 @@
 <?php
 /** @var \App\View\AppView $this */
-$user = $user ?? ($this->Identity->get() ?? null);
+$user = $currentUser ?? $user ?? null;
 $username = $user->full_name ?? $user->username ?? 'Guest';
-$avatar = $user->avatar ?? '/img/default-avatar.png';
+$avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
 ?>
 <div id="headerApp" class="fixed top-0 left-0 w-full bg-white border-b z-50 shadow-sm" v-cloak>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

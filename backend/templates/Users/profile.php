@@ -42,7 +42,7 @@
       
       <!-- Edit Profile Button -->
       <div class="shrink-0 md:self-start">
-        <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+        <button @click="openEditModal" class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
           <i data-lucide="settings" class="w-4 h-4 text-gray-700"></i>
           <span class="text-sm font-medium text-gray-700">Edit Profile</span>
         </button>
@@ -123,6 +123,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Edit Profile Modal -->
+  <?= $this->element('edit_profile_modal') ?>
 </div>
 
 <script>
@@ -145,8 +148,171 @@
               friends: '482',
               likes: '1.2K'
             }
-          }
+          },
+          showEditModal: false,
+          isSubmitting: false,
+          showCurrentPassword: false,
+          showNewPassword: false,
+          showConfirmPassword: false,
+          uploadError: '',
+          editForm: {
+            full_name: '',
+            username: '',
+            avatar: '',
+            profile_picture_file: null,
+            current_password: '',
+            new_password: '',
+            confirm_password: ''
+          },
+          errors: {}
         };
+      },
+      methods: {
+        openEditModal() {
+          this.editForm = {
+            full_name: this.user.full_name,
+            username: this.user.username,
+            avatar: this.user.avatar,
+            profile_picture_file: null,
+            current_password: '',
+            new_password: '',
+            confirm_password: ''
+          };
+          this.errors = {};
+          this.uploadError = '';
+          this.showEditModal = true;
+          this.$nextTick(() => {
+            if (window.lucide) lucide.createIcons();
+          });
+        },
+        closeEditModal() {
+          this.showEditModal = false;
+          this.editForm = {
+            full_name: '',
+            username: '',
+            avatar: '',
+            profile_picture_file: null,
+            current_password: '',
+            new_password: '',
+            confirm_password: ''
+          };
+          this.errors = {};
+          this.uploadError = '';
+        },
+        handleFileChange(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+
+          // Validate file type
+          const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+          if (!validTypes.includes(file.type)) {
+            this.uploadError = 'Please upload a valid image file (JPG, PNG, or GIF)';
+            event.target.value = '';
+            return;
+          }
+
+          // Validate file size (5MB max)
+          const maxSize = 5 * 1024 * 1024;
+          if (file.size > maxSize) {
+            this.uploadError = 'File size must be less than 5MB';
+            event.target.value = '';
+            return;
+          }
+
+          this.uploadError = '';
+          this.editForm.profile_picture_file = file;
+
+          // Preview the image
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            this.editForm.avatar = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        },
+        async handleSubmit() {
+          this.errors = {};
+          this.isSubmitting = true;
+
+          // Validate form
+          if (!this.editForm.full_name || this.editForm.full_name.trim() === '') {
+            this.errors.full_name = 'Full name is required';
+            this.isSubmitting = false;
+            return;
+          }
+
+          // Validate password fields if any password field is filled
+          if (this.editForm.current_password || this.editForm.new_password || this.editForm.confirm_password) {
+            if (!this.editForm.current_password) {
+              this.errors.current_password = 'Current password is required to change password';
+              this.isSubmitting = false;
+              return;
+            }
+            if (!this.editForm.new_password) {
+              this.errors.new_password = 'New password is required';
+              this.isSubmitting = false;
+              return;
+            }
+            if (this.editForm.new_password.length < 6) {
+              this.errors.new_password = 'Password must be at least 6 characters';
+              this.isSubmitting = false;
+              return;
+            }
+            if (this.editForm.new_password !== this.editForm.confirm_password) {
+              this.errors.confirm_password = 'Passwords do not match';
+              this.isSubmitting = false;
+              return;
+            }
+          }
+
+          // Create FormData for file upload
+          const formData = new FormData();
+          formData.append('full_name', this.editForm.full_name);
+          
+          if (this.editForm.profile_picture_file) {
+            formData.append('profile_picture', this.editForm.profile_picture_file);
+          }
+          
+          if (this.editForm.current_password) {
+            formData.append('current_password', this.editForm.current_password);
+            formData.append('new_password', this.editForm.new_password);
+          }
+
+          try {
+            const response = await fetch('/users/update-profile', {
+              method: 'POST',
+              body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+              // Update user data with response
+              this.user.full_name = data.user.full_name;
+              this.user.username = data.user.username;
+              if (data.user.profile_photo_path) {
+                this.user.avatar = data.user.profile_photo_path;
+              }
+              
+              // Close modal first
+              this.closeEditModal();
+              
+              // Show success message and reload to get fresh data
+              alert(data.message || 'Profile updated successfully!');
+              window.location.reload();
+            } else {
+              // Handle validation errors
+              if (data.errors) {
+                this.errors = data.errors;
+              }
+              alert(data.message || 'Failed to update profile. Please check the form.');
+            }
+          } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('Failed to update profile. Please try again.');
+          } finally {
+            this.isSubmitting = false;
+          }
+        }
       },
       mounted() {
         // Initialize Lucide icons
