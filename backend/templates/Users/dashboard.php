@@ -137,31 +137,4 @@ createApp({
     }
 }).mount('#dashboardApp');
 </script>
-}
 
-.card-title.welcome {
-    color: #667eea;
-}
-
-.card-title.account {
-    color: #764ba2;
-}
-
-.card-text {
-    color: #666;
-}
-
-.card-text.small {
-    font-size: 14px;
-}
-
-.footer-section {
-    margin-top: 40px;
-    text-align: center;
-}
-
-.coming-soon {
-    color: #999;
-    font-style: italic;
-}
-</style>

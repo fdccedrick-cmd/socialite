@@ -12,8 +12,7 @@
     <style>
         body {
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.15)),
-            url('/img/backgrounds/bg1.png') center -40px no-repeat fixed;
+            background: linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.15));
             background-size: auto;
         }
         /* Flash animation styles */
@@ -24,18 +23,9 @@
     </style>
 </head>
 <body class="min-h-screen flex justify-center items-center">
-    <div class="w-full max-w-7xl p-5">
-        <?php if ($currentUser ?? null): ?>
-        <div class="bg-white p-4 px-8 rounded-lg mb-5 flex justify-between items-center shadow-sm">
-            <h1 class="text-indigo-500 text-2xl font-semibold">🌟 Socialite</h1>
-            <div class="flex items-center gap-4">
-                <span class="text-gray-700">Welcome, <?= h($currentUser->username) ?>!</span>
-                <form method="post" action="/logout" style="display:inline;margin:0">
-                    <button type="submit" class="text-indigo-500 px-4 py-2 rounded-md hover:bg-gray-100 transition-colors bg-transparent border-0 cursor-pointer">Logout</button>
-                </form>
-            </div>
-        </div>
-        <?php endif; ?>
+    <div class="w-full max-w-7xl p-5 pt-16">
+        <?php $currentUser = $currentUser ?? ($this->Identity->get() ?? null); ?>
+        <?= $this->element('header', ['user' => $currentUser]) ?>
         
         <div id="flashContainer" class="flash-container">
             <?= $this->Flash->render() ?>

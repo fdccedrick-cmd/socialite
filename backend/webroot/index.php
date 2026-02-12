@@ -44,4 +44,20 @@ $server = new Server($app);
  * Run the request/response through the application
  * and emit the response.
  */
-$server->emit($server->run());
+$showDebug = (isset($_GET['show_debug']) && $_GET['show_debug'] === '1');
+try {
+    $response = $server->run();
+    $server->emit($response);
+} catch (Throwable $e) {
+    // If debugging explicitly requested or environment debug enabled, show full exception
+    if ($showDebug) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo "Application error (debug):\n\n";
+        echo $e->getMessage() . "\n\n";
+        echo $e->getTraceAsString();
+        exit(1);
+    }
+    // Re-throw so upstream handlers can manage it otherwise
+    throw $e;
+}

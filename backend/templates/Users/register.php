@@ -1,4 +1,4 @@
-<div id="registerApp" class="max-w-md mx-auto mt-32 my-24 p-8 bg-white rounded-lg border border-black/5 shadow-sm transition-all duration-300">
+<div id="registerApp" class="max-w-md mx-auto mt-28 my-24 p-8 ">
     <!-- Error Messages -->
     <div v-if="showError" class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-start gap-3 animate-fade-in">
         <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -8,14 +8,14 @@
     </div>
     
     <div class="flex items-center justify-center gap-3 mb-5">
-        <h2 class="text-gray-900 text-2xl font-semibold">Sign Up</h2>
+        <h2 class="text-gray-900 text-2xl font-base">Sign Up</h2>
     </div>
-    <p class="text-gray-700 text-sm text-right pb-6">Connect with friends and the world around you.</p>
+    <p class="text-gray-700 text-sm text-center pb-6">Create your account and start sharing.</p>
     
     <form method="post" action="/register" @submit="handleSubmit">
-        <div class="mt-8 flex flex-col gap-4">
+        <div class="mt-4 flex flex-col gap-4">
             <div>
-                <label for="full_name" class="block mb-2 font-medium text-gray-700">Full Name</label>
+                <label for="full_name" class="block mb-2 font-small text-sm text-gray-500">Full Name</label>
                 <input 
                     id="full_name"
                     type="text" 
@@ -32,7 +32,7 @@
             </div>
             
             <div>
-                <label for="username" class="block mb-2 font-medium text-gray-700">Username</label>
+                <label for="username" class="block mb-2 font-small text-sm text-gray-500">Username</label>
                 <input 
                     id="username"
                     type="text" 
@@ -49,7 +49,7 @@
             </div>
             
             <div>
-                <label for="password" class="block mb-2 font-medium text-gray-700">Password</label>
+                <label for="password" class="block mb-2 font-small text-sm text-gray-500">Password</label>
                 <input 
                     id="password"
                     type="password" 
@@ -66,7 +66,7 @@
             </div>
             
             <div class="mb-2">
-                <label for="confirm_password" class="block mb-2 font-medium text-gray-700">Confirm Password</label>
+                <label for="confirm_password" class="block mb-2 font-small text-sm text-gray-500">Confirm Password</label>
                 <input 
                     id="confirm_password"
                     type="password" 
@@ -85,7 +85,7 @@
             <button 
                 type="submit"
                 :disabled="isSubmitting"
-                class="w-full mt-2 px-3.5 py-3.5 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none rounded-md text-base font-semibold cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                class="w-full mt-2 px-3.5 py-3.5 bg-blue-500 text-white border-none rounded-md text-base font-semibold cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
                 <span v-if="!isSubmitting">Create Account</span>
                 <span v-else class="flex items-center justify-center gap-2">
@@ -107,7 +107,7 @@
     
     <p class="text-center mt-5 text-gray-600">
         Already have an account? 
-        <a href="/login" class="text-indigo-500 no-underline font-semibold hover:underline transition-all">Login here</a>
+        <a href="/login" class="text-blue-500 no-underline font-medium hover:underline transition-all">Login here</a>
     </p>
 </div>
 
