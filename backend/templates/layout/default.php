@@ -16,6 +16,11 @@
             url('/img/backgrounds/bg1.png') center -40px no-repeat fixed;
             background-size: auto;
         }
+        /* Flash animation styles */
+        .flash-container { position: relative; z-index: 60; }
+        .flash-message { display: inline-block; margin: 0.5rem 0; padding: .75rem 1rem; border-radius: .5rem; transition: transform .36s ease, opacity .36s ease; opacity: 0; transform: translateY(-6px); }
+        .flash-in { opacity: 1; transform: translateY(0); }
+        .flash-out { opacity: 0; transform: translateY(-8px); }
     </style>
 </head>
 <body class="min-h-screen flex justify-center items-center">
@@ -25,19 +30,61 @@
             <h1 class="text-indigo-500 text-2xl font-semibold">🌟 Socialite</h1>
             <div class="flex items-center gap-4">
                 <span class="text-gray-700">Welcome, <?= h($currentUser->username) ?>!</span>
-                <a href="/logout" class="text-indigo-500 px-4 py-2 rounded-md hover:bg-gray-100 transition-colors no-underline">Logout</a>
+                <form method="post" action="/logout" style="display:inline;margin:0">
+                    <button type="submit" class="text-indigo-500 px-4 py-2 rounded-md hover:bg-gray-100 transition-colors bg-transparent border-0 cursor-pointer">Logout</button>
+                </form>
             </div>
         </div>
         <?php endif; ?>
         
-        <?= $this->Flash->render() ?>
+        <div id="flashContainer" class="flash-container">
+            <?= $this->Flash->render() ?>
+        </div>
         
         <div>
             <?= $this->fetch('content') ?>
         </div>
     </div>
+
 </body>
 </html>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.getElementById('flashContainer');
+    if (!container) return;
+
+    // Duration the message stays visible (ms)
+    const VISIBLE_FOR = 4000;
+    const messages = Array.from(container.children).filter(n => n.nodeType === 1);
+
+    messages.forEach((el, idx) => {
+        // normalize class name so styling applies
+        if (!el.classList.contains('flash-message')) el.classList.add('flash-message');
+
+        // enter animation
+        requestAnimationFrame(() => {
+            el.classList.add('flash-in');
+        });
+
+        // auto-hide after VISIBLE_FOR + small stagger
+        const delay = VISIBLE_FOR + idx * 150;
+        setTimeout(() => {
+            el.classList.remove('flash-in');
+            el.classList.add('flash-out');
+            // remove after transition
+            setTimeout(() => { try { el.remove(); } catch(e){} }, 400);
+        }, delay);
+
+        // allow click to dismiss immediately
+        el.addEventListener('click', function () {
+            el.classList.remove('flash-in');
+            el.classList.add('flash-out');
+            setTimeout(() => { try { el.remove(); } catch(e){} }, 200);
+        });
+    });
+});
+</script>
 
 
 
