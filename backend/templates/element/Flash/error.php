@@ -4,19 +4,3 @@
     </svg>
     <span class="font-medium flex-1"><?= h($message) ?></span>
 </div>
-
-<style>
-@keyframes slide-down {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-.animate-slide-down {
-    animation: slide-down 0.3s ease-out;
-}
-</style>

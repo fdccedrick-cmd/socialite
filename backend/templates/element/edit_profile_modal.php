@@ -1,6 +1,7 @@
 <!-- Edit Profile Modal -->
-<div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" @click.self="closeEditModal" style="z-index: 9999; top: 0; left: 0; right: 0; bottom: 0; position: fixed;">
-  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+<Teleport to="body">
+  <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" @click.self="closeEditModal" style="z-index: 9999;">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
     <!-- Modal Header -->
     <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
       <h2 class="text-xl font-bold text-gray-900">Edit Profile</h2>
@@ -188,3 +189,4 @@
     </form>
   </div>
 </div>
+</Teleport>

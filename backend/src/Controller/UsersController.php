@@ -239,6 +239,11 @@ class UsersController extends AppController
             $userId = $identity['id'];
         }
         
+        // Check for error query parameter
+        if ($this->request->getQuery('error') === 'network') {
+            $this->Flash->error('Failed to update profile. Please try again.');
+        }
+        
         // Fetch fresh user data from database
         $userEntity = $this->Users->get($userId);
         $user = $userEntity->toArray();
@@ -374,11 +379,11 @@ class UsersController extends AppController
 
         // Return errors if any
         if (!empty($errors)) {
+            $this->Flash->error('Validation failed. Please check your input.');
             return $this->response
                 ->withType('application/json')
                 ->withStringBody(json_encode([
                     'success' => false,
-                    'message' => 'Validation failed',
                     'errors' => $errors
                 ]));
         }
@@ -389,6 +394,9 @@ class UsersController extends AppController
         if ($this->Users->save($user)) {
             // Refresh the authentication session with updated user data
             $this->Authentication->setIdentity($user);
+            
+            // Set Flash success message
+            $this->Flash->success('Profile updated successfully!');
             
             // Prepare response data
             $responseData = [
@@ -401,16 +409,15 @@ class UsersController extends AppController
                 ->withType('application/json')
                 ->withStringBody(json_encode([
                     'success' => true,
-                    'message' => 'Profile updated successfully',
                     'user' => $responseData
                 ]));
         } else {
             $validationErrors = $user->getErrors();
+            $this->Flash->error('Failed to update profile. Please check your input.');
             return $this->response
                 ->withType('application/json')
                 ->withStringBody(json_encode([
                     'success' => false,
-                    'message' => 'Failed to update profile',
                     'errors' => $validationErrors
                 ]));
         }

@@ -296,19 +296,19 @@
               // Close modal first
               this.closeEditModal();
               
-              // Show success message and reload to get fresh data
-              alert(data.message || 'Profile updated successfully!');
+              // Reload to show Flash success message
               window.location.reload();
             } else {
-              // Handle validation errors
+              // Handle validation errors - reload to show Flash error message
               if (data.errors) {
                 this.errors = data.errors;
               }
-              alert(data.message || 'Failed to update profile. Please check the form.');
+              window.location.reload();
             }
           } catch (error) {
             console.error('Error updating profile:', error);
-            alert('Failed to update profile. Please try again.');
+            // Redirect with error flag
+            window.location.href = window.location.pathname + '?error=network';
           } finally {
             this.isSubmitting = false;
           }

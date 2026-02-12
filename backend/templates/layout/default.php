@@ -23,6 +23,21 @@
         .flash-out { opacity: 0; transform: translateY(-8px); }
         [v-cloak] { display: none; }
         
+        /* Slide-down animation for flash messages */
+        @keyframes slide-down {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-slide-down {
+            animation: slide-down 0.3s ease-out;
+        }
+        
         .main-scroll-container {
             height: calc(100vh - 5rem);
             overflow-y: auto;
