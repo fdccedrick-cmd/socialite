@@ -1,4 +1,4 @@
-<div id="registerApp" class="max-w-md mx-auto my-20 p-8 bg-white rounded-lg border border-black/5 shadow-sm transition-all duration-300">
+<div id="registerApp" class="max-w-md mx-auto mt-32 my-24 p-8 bg-white rounded-lg border border-black/5 shadow-sm transition-all duration-300">
     <!-- Error Messages -->
     <div v-if="showError" class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-start gap-3 animate-fade-in">
         <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">

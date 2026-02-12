@@ -1,4 +1,4 @@
-<div id="loginApp" class="max-w-md mx-auto my-32 p-8 bg-white rounded-lg border border-black/5 shadow-sm transition-all duration-300">
+<div id="loginApp" class="max-w-md mx-auto my-32 p-8 ">
     <!-- Success Message -->
     <div v-if="showSuccess" class="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-center gap-3 animate-fade-in">
         <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -16,19 +16,20 @@
     </div>
     
     <div class="flex items-center justify-center gap-3 mb-5">
-        <h2 class="text-gray-900 text-2xl font-semibold">Login</h2>
+        <h2 class="text-gray-600 text-3xl font-medium">Login</h2>
     </div>
     <p class="text-gray-700 text-sm text-right pb-8">Connect with friends and the world around you.</p>
     
     <form method="post" action="/login" @submit="handleSubmit">
         <div class="mt-8 space-y-6">
             <div>
-                <label for="login_username" class="block mb-2 text-gray-600 font-medium">Username</label>
+                <label for="login_username" class="block mb-2 text-gray-600 font-small">Username</label>
                 <input 
                     id="login_username"
                     type="text" 
                     name="username" 
                     autocomplete="username"
+                    placeholder="johndoe"
                     v-model="formData.username"
                     required
                     :disabled="isSubmitting"
@@ -39,7 +40,7 @@
             </div>
             
             <div>
-                <label for="login_password" class="block mb-2 text-gray-600 font-medium">Password</label>
+                <label for="login_password" class="block mb-2 text-gray-600 font-small">Password</label>
                 <input 
                     id="login_password"
                     type="password" 
@@ -57,9 +58,9 @@
             <button 
                 type="submit"
                 :disabled="isSubmitting"
-                class="w-full px-3 py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none rounded-md text-base font-semibold cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                class="w-full px-3 py-3 bg-blue-500 text-white border-none rounded-md text-base font-semibold cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
-                <span v-if="!isSubmitting">Login</span>
+                <span v-if="!isSubmitting">Log In</span>
                 <span v-else class="flex items-center justify-center gap-2">
                     <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -73,7 +74,7 @@
     
     <p class="text-center mt-6 text-gray-600">
         Don't have an account? 
-        <a href="/register" class="text-indigo-500 no-underline font-semibold hover:underline transition-all">Register here</a>
+        <a href="/register" class="text-blue-500 no-underline font-semibold hover:underline transition-all">Register here</a>
     </p>
 </div>
 

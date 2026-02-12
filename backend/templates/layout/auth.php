@@ -10,7 +10,7 @@
     <style>
         body {
             font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.15)),
+            background: 
                         url('/img/backgrounds/bg1.png') center -40px no-repeat fixed;
             background-size: auto;
         }
