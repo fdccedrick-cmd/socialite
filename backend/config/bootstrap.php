@@ -15,6 +15,8 @@ define('CORE_PATH', ROOT . DS . 'vendor' . DS . 'cakephp' . DS . 'cakephp' . DS)
 define('CAKE', CORE_PATH . 'src' . DS);
 
 use Cake\Core\Configure;
+use Cake\Datasource\ConnectionManager;
+use Cake\Cache\Cache;
 
 // Helper function for environment variables
 if (!function_exists('env')) {
@@ -28,6 +30,22 @@ if (!function_exists('env')) {
 if (!function_exists('h')) {
     function h($text, $double = true, $charset = null) {
         return htmlspecialchars($text, ($double ? ENT_QUOTES : ENT_COMPAT) | ENT_SUBSTITUTE, $charset ?? 'UTF-8');
+    }
+}
+
+// Load configuration from app.php
+Configure::config('default', new \Cake\Core\Configure\Engine\PhpConfig());
+Configure::load('app', 'default', false);
+
+// Load datasource configuration
+if (Configure::check('Datasources')) {
+    ConnectionManager::setConfig(Configure::consume('Datasources'));
+}
+
+// Load cache configuration
+if (Configure::check('Cache')) {
+    foreach (Configure::consume('Cache') as $key => $config) {
+        Cache::setConfig($key, $config);
     }
 }
 

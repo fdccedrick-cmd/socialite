@@ -28,20 +28,22 @@ class UsersTable extends Table
             ->scalar('full_name')
             ->maxLength('full_name', 150)
             ->requirePresence('full_name', 'create')
-            ->notEmptyString('full_name');
+            ->notEmptyString('full_name', 'Full name is required');
 
         $validator
             ->scalar('username')
             ->maxLength('username', 50)
             ->requirePresence('username', 'create')
-            ->notEmptyString('username')
-            ->add('username', 'unique', ['rule' => 'validateUnique', 'provider' => 'table']);
+            ->notEmptyString('username', 'Username is required')
+            ->minLength('username', 3, 'Username must be at least 3 characters')
+            ->alphaNumeric('username', 'Username can only contain letters and numbers');
 
         $validator
             ->scalar('password_hash')
             ->maxLength('password_hash', 255)
             ->requirePresence('password_hash', 'create')
-            ->notEmptyString('password_hash');
+            ->notEmptyString('password_hash', 'Password is required')
+            ->minLength('password_hash', 6, 'Password must be at least 6 characters');
 
         $validator
             ->scalar('profile_photo_path')
@@ -53,7 +55,7 @@ class UsersTable extends Table
 
     public function buildRules(RulesChecker $rules): RulesChecker
     {
-        $rules->add($rules->isUnique(['username']), ['errorField' => 'username']);
+        $rules->add($rules->isUnique(['username'], 'This username is already taken'), ['errorField' => 'username']);
         return $rules;
     }
 }

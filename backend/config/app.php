@@ -1,6 +1,6 @@
 <?php
 return [
-    'debug' => filter_var(env('DEBUG', true), FILTER_VALIDATE_BOOLEAN),
+    'debug' => true,  // Force debug mode ON
     
     'App' => [
         'namespace' => 'App',
@@ -25,10 +25,14 @@ return [
     ],
 
     'Error' => [
-        'errorLevel' => E_ALL,
+        'errorLevel' => E_ALL & ~E_USER_DEPRECATED,
         'skipLog' => [],
         'log' => true,
         'trace' => true,
+        'ignoredDeprecationPaths' => [
+            'src/Application.php',
+            'vendor/cakephp/*',
+        ],
     ],
 
     'Cache' => [

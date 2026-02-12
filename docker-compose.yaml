@@ -30,7 +30,7 @@ services:
             - DB_USER=user
             - DB_PASSWORD=admin123
             - DEBUG=1
-        command: sh -c "composer install --no-dev || true && touch /var/www/html/logs/error.log && php-fpm -D && tail -f /var/www/html/logs/error.log"
+        command: sh -c "touch /var/www/html/logs/error.log && php-fpm -D && tail -f /var/www/html/logs/error.log"
         depends_on:
             - db
         networks:
