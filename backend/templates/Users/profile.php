@@ -42,7 +42,7 @@
       
       <!-- Edit Profile Button -->
       <div class="shrink-0 md:self-start">
-        <button @click="openEditModal" class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+        <button @click="openEditModal" class="flex items-center gap-2 px-4 py-2 pr-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
           <i data-lucide="settings" class="w-4 h-4 text-gray-700"></i>
           <span class="text-sm font-medium text-gray-700">Edit Profile</span>
         </button>
