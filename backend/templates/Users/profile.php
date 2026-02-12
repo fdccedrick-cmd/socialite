@@ -76,41 +76,35 @@
   <div class="bg-white rounded-b-2xl shadow-sm border border-gray-100">
     <!-- Posts Tab -->
     <div v-if="activeTab === 'posts'" class="p-6">
-      <!-- Sample Post -->
-      <div class="bg-white rounded-xl border border-gray-100 p-6 mb-4">
-        <!-- Post Header -->
-        <div class="flex items-center gap-3 mb-4">
-          <img 
-            src="https://i.pravatar.cc/150?img=5" 
-            alt="Sarah Chen" 
-            class="w-12 h-12 rounded-full object-cover border border-gray-200"
-          />
-          <div class="flex-1">
-            <h3 class="font-semibold text-gray-900">Sarah Chen</h3>
-            <p class="text-sm text-gray-500">2h ago</p>
-          </div>
-        </div>
-        
-        <!-- Post Content -->
-        <p class="text-gray-800 mb-4">
-          Just finished a morning hike ⛰️ The view from the top was absolutely breathtaking!
-        </p>
-        
-        <!-- Post Image -->
-        <div class="rounded-lg overflow-hidden mb-4">
-          <img 
-            src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=500&fit=crop" 
-            alt="Mountain view" 
-            class="w-full h-auto object-cover"
-          />
-        </div>
-      </div>
-      
-      <!-- Empty State (when no posts) -->
-      <div v-if="false" class="text-center py-16">
+      <!-- Empty State -->
+      <div v-if="posts.length === 0" class="text-center py-16">
         <i data-lucide="image" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
         <p class="text-gray-500 text-lg">No posts yet</p>
         <p class="text-gray-400 text-sm mt-2">Share your first post to get started</p>
+      </div>
+      
+      <!-- User Posts Grid -->
+      <div v-else class="grid grid-cols-3 gap-4">
+        <div v-for="post in posts" :key="post.id" class="bg-white rounded-lg border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
+          <!-- Post with images -->
+          <div v-if="post.post_images && post.post_images.length > 0" class="aspect-square">
+            <img 
+              :src="post.post_images[0].image_path" 
+              :alt="'Post image'" 
+              class="w-full h-full object-cover"
+            />
+          </div>
+          <!-- Post with text only -->
+          <div v-else class="aspect-square bg-gradient-to-br from-blue-50 to-purple-50 p-4 flex items-center justify-center">
+            <p class="text-gray-700 text-sm line-clamp-6 text-center">{{ post.content_text }}</p>
+          </div>
+          
+          <!-- Post info overlay -->
+          <div class="p-3 bg-white border-t border-gray-100">
+            <p class="text-xs text-gray-500 truncate">{{ formatDate(post.created) }}</p>
+            <p v-if="post.content_text && post.post_images && post.post_images.length > 0" class="text-xs text-gray-700 truncate mt-1">{{ post.content_text }}</p>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -137,6 +131,7 @@
       data() {
         return {
           activeTab: 'posts',
+          posts: <?= json_encode($postsArray ?? []) ?>,
           user: {
             full_name: <?= json_encode($user['full_name'] ?? $user['username'] ?? 'User') ?>,
             username: <?= json_encode($user['username'] ?? 'user') ?>,
@@ -144,9 +139,9 @@
             joinedDate: <?= json_encode(isset($user['created']) ? 'Joined ' . date('M Y', strtotime($user['created'])) : 'Joined recently') ?>,
             bio: '🌍 Explorer · 📷 Photography enthusiast · ☕ Coffee lover',
             stats: {
-              posts: '12',
-              friends: '482',
-              likes: '1.2K'
+              posts: <?= json_encode($postCount ?? 0) ?>,
+              friends: '0',
+              likes: '0'
             }
           },
           showEditModal: false,
@@ -168,6 +163,22 @@
         };
       },
       methods: {
+        formatDate(dateString) {
+          if (!dateString) return '';
+          const date = new Date(dateString);
+          const now = new Date();
+          const diffMs = now - date;
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMs / 3600000);
+          const diffDays = Math.floor(diffMs / 86400000);
+          
+          if (diffMins < 1) return 'Just now';
+          if (diffMins < 60) return `${diffMins}m ago`;
+          if (diffHours < 24) return `${diffHours}h ago`;
+          if (diffDays < 7) return `${diffDays}d ago`;
+          
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        },
         openEditModal() {
           this.editForm = {
             full_name: this.user.full_name,

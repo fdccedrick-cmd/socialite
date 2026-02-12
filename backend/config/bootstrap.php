@@ -1,4 +1,7 @@
 <?php
+// Suppress deprecation warnings
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+
 if (!defined('DS')) {
     define('DS', DIRECTORY_SEPARATOR);
 }

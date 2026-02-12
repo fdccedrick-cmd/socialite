@@ -39,7 +39,7 @@ class AppController extends Controller
             // Fetch fresh user data from database
             if ($userId) {
                 try {
-                    $usersTable = $this->fetchTable('Users');
+                    $usersTable = $this->getTableLocator()->get('Users');
                     $currentUser = $usersTable->get($userId);
                 } catch (\Exception $e) {
                     // If user not found, use identity

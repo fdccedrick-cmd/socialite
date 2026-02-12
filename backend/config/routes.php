@@ -13,6 +13,9 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/profile', ['controller' => 'Users', 'action' => 'profile']);
         $builder->connect('/users/update-profile', ['controller' => 'Users', 'action' => 'updateProfile']);
         
+        // Posts routes
+        $builder->connect('/posts/create', ['controller' => 'Posts', 'action' => 'create']);
+        
         $builder->fallbacks();
     });
 };

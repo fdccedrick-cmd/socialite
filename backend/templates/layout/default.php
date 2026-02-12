@@ -62,8 +62,8 @@
         <?= $this->Flash->render() ?>
     </div>
     
-    <div class="max-w-7xl mx-auto px-4 pt-20">
-        <div class="flex gap-6">
+    <div class="max-w-[1400px] mx-auto px-6 pt-20">
+        <div class="flex gap-4">
             <!-- Left Navigation -->
             <aside class="hidden lg:block flex-shrink-0">
                 <?= $this->element('leftnav', ['user' => $currentUser]) ?>

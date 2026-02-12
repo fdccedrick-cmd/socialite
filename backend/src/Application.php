@@ -27,6 +27,9 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 {
     public function bootstrap(): void
     {
+        // Suppress deprecation warnings
+        error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+        
         // Call parent to load config/bootstrap.php which defines constants and loads configuration
         parent::bootstrap();
         

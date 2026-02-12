@@ -25,13 +25,13 @@ return [
     ],
 
     'Error' => [
-        'errorLevel' => E_ALL & ~E_USER_DEPRECATED,
+        'errorLevel' => E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED,
         'skipLog' => [],
         'log' => true,
         'trace' => true,
         'ignoredDeprecationPaths' => [
-            'src/Application.php',
-            'vendor/cakephp/*',
+            'src/',
+            'vendor/',
         ],
     ],
 

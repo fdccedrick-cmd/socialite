@@ -5,6 +5,7 @@ namespace App\Controller;
 
 use Cake\Log\Log;
 use Cake\Http\Cookie\Cookie;
+use Cake\ORM\Locator\LocatorAwareTrait;
 
 class UsersController extends AppController
 {
@@ -208,8 +209,29 @@ class UsersController extends AppController
                 $user[$dtField] = $user[$dtField]->format(DATE_ATOM);
             }
         }
+        
+        // Fetch all posts with user and images, ordered by most recent
+        $postsTable = $this->getTableLocator()->get('Posts');
+        $posts = $postsTable->find()
+            ->where(['Posts.deleted IS' => null])
+            ->contain(['Users', 'PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]])
+            ->order(['Posts.created' => 'DESC'])
+            ->toArray();
+        
+        // Convert posts to array with formatted dates
+        $postsArray = [];
+        foreach ($posts as $post) {
+            $postData = $post->toArray();
+            if (!empty($postData['created']) && $postData['created'] instanceof \DateTimeInterface) {
+                $postData['created'] = $postData['created']->format(DATE_ATOM);
+            }
+            if (!empty($postData['modified']) && $postData['modified'] instanceof \DateTimeInterface) {
+                $postData['modified'] = $postData['modified']->format(DATE_ATOM);
+            }
+            $postsArray[] = $postData;
+        }
 
-        $this->set(compact('user'));
+        $this->set(compact('user', 'postsArray'));
     }
 
     public function profile()
@@ -254,8 +276,35 @@ class UsersController extends AppController
                 $user[$dtField] = $user[$dtField]->format(DATE_ATOM);
             }
         }
+        
+        // Fetch user's posts with images, ordered by most recent
+        $postsTable = $this->getTableLocator()->get('Posts');
+        $posts = $postsTable->find()
+            ->where([
+                'Posts.user_id' => $userId,
+                'Posts.deleted IS' => null
+            ])
+            ->contain(['PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]])
+            ->order(['Posts.created' => 'DESC'])
+            ->toArray();
+        
+        // Convert posts to array with formatted dates
+        $postsArray = [];
+        foreach ($posts as $post) {
+            $postData = $post->toArray();
+            if (!empty($postData['created']) && $postData['created'] instanceof \DateTimeInterface) {
+                $postData['created'] = $postData['created']->format(DATE_ATOM);
+            }
+            if (!empty($postData['modified']) && $postData['modified'] instanceof \DateTimeInterface) {
+                $postData['modified'] = $postData['modified']->format(DATE_ATOM);
+            }
+            $postsArray[] = $postData;
+        }
+        
+        // Count posts for stats
+        $postCount = count($postsArray);
 
-        $this->set(compact('user'));
+        $this->set(compact('user', 'postsArray', 'postCount'));
     }
 
     public function updateProfile()
