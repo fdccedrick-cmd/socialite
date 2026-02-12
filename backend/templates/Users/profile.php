@@ -1,6 +1,4 @@
-<?= $this->element('header', ['user' => $user ?? null]) ?>
-
-<div id="profileApp" class="max-w-4xl mx-auto pt-20 pb-10 px-4" v-cloak>
+<div id="profileApp" class="space-y-6" v-cloak>
   <!-- Profile Header Card -->
   <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6">
     <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
@@ -167,9 +165,3 @@
     app.mount(el);
   })();
 </script>
-
-<style>
-  [v-cloak] {
-    display: none;
-  }
-</style>

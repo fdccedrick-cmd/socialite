@@ -1,116 +1,143 @@
-<div id="dashboardApp" class="max-w-5xl mx-auto my-10 animate-fade-in">
-    <!-- Welcome Hero Section -->
-    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-10 rounded-2xl shadow-lg mb-8">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-4xl font-bold mb-3">Welcome back! 👋</h2>
-                <p class="text-xl opacity-90">{{ user.full_name || user.username }}</p>
-                <p class="text-sm opacity-75 mt-1">@{{ user.username }}</p>
-            </div>
-            <div class="hidden md:block">
-                <div class="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                    <span class="text-5xl">🎉</span>
-                </div>
-            </div>
-        </div>
+<div id="dashboardApp" class="space-y-6" v-cloak>
+  <!-- Create Post Card -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div class="flex items-center gap-3">
+      <img 
+        :src="user.avatar" 
+        :alt="user.username" 
+        class="w-12 h-12 rounded-full object-cover border border-gray-200"
+      />
+      <input 
+        type="text" 
+        placeholder="Write a comment..." 
+        class="flex-1 px-4 py-3 bg-gray-50 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <button class="p-3 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+        <i data-lucide="send" class="w-5 h-5"></i>
+      </button>
     </div>
-    
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">📊</span>
-                </div>
-                <div>
-                    <p class="text-gray-500 text-sm">Account Status</p>
-                    <p class="text-xl font-semibold text-gray-800">Active</p>
-                </div>
-            </div>
+  </div>
+  
+  <!-- Feed Posts -->
+  <div class="space-y-6">
+    <!-- Post 1 - Sarah Chen -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <!-- Post Header -->
+      <div class="p-6 pb-4">
+        <div class="flex items-center gap-3 mb-4">
+          <img 
+            src="https://i.pravatar.cc/150?img=5" 
+            alt="Sarah Chen" 
+            class="w-12 h-12 rounded-full object-cover border border-gray-200"
+          />
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">Sarah Chen</h3>
+            <p class="text-sm text-gray-500">2h ago</p>
+          </div>
         </div>
         
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">🎯</span>
-                </div>
-                <div>
-                    <p class="text-gray-500 text-sm">Posts</p>
-                    <p class="text-xl font-semibold text-gray-800">0</p>
-                </div>
-            </div>
+        <!-- Post Content -->
+        <p class="text-gray-800 mb-4">
+          Just finished a morning hike ⛰️ The view from the top was absolutely breathtaking!
+        </p>
+      </div>
+      
+      <!-- Post Image -->
+      <div class="w-full">
+        <img 
+          src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=500&fit=crop" 
+          alt="Mountain view" 
+          class="w-full h-auto object-cover"
+        />
+      </div>
+      
+      <!-- Post Actions -->
+      <div class="p-6 pt-4">
+        <div class="flex items-center gap-6 mb-4">
+          <button class="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors">
+            <i data-lucide="heart" class="w-5 h-5"></i>
+            <span class="text-sm font-medium">24</span>
+          </button>
+          <button class="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition-colors">
+            <i data-lucide="message-circle" class="w-5 h-5"></i>
+            <span class="text-sm font-medium">1</span>
+          </button>
         </div>
         
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">👥</span>
-                </div>
-                <div>
-                    <p class="text-gray-500 text-sm">Friends</p>
-                    <p class="text-xl font-semibold text-gray-800">0</p>
-                </div>
-            </div>
+        <!-- Comment Input -->
+        <div class="flex items-center gap-3 pt-4 border-t border-gray-100">
+          <img 
+            :src="user.avatar" 
+            :alt="user.username" 
+            class="w-10 h-10 rounded-full object-cover border border-gray-200"
+          />
+          <input 
+            type="text" 
+            placeholder="Write a comment..." 
+            class="flex-1 px-4 py-2 bg-gray-50 rounded-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button class="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
         </div>
+      </div>
     </div>
     
-    <!-- Account Information -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 border-b border-gray-200">
-            <h3 class="text-xl font-semibold text-gray-800">Account Information</h3>
+    <!-- Post 2 - James Liu -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <!-- Post Header -->
+      <div class="p-6 pb-4">
+        <div class="flex items-center gap-3 mb-4">
+          <img 
+            src="https://i.pravatar.cc/150?img=12" 
+            alt="James Liu" 
+            class="w-12 h-12 rounded-full object-cover border border-gray-200"
+          />
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">James Liu</h3>
+            <p class="text-sm text-gray-500">5h ago</p>
+          </div>
         </div>
-        <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <p class="text-sm text-gray-500 mb-1">Full Name</p>
-                    <p class="text-base font-medium text-gray-800">{{ user.full_name || 'Not set' }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500 mb-1">Username</p>
-                    <p class="text-base font-medium text-gray-800">@{{ user.username }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500 mb-1">Member Since</p>
-                    <p class="text-base font-medium text-gray-800">{{ formatDate(user.created) }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500 mb-1">Last Updated</p>
-                    <p class="text-base font-medium text-gray-800">{{ formatDate(user.modified) }}</p>
-                </div>
-            </div>
+        
+        <!-- Post Content -->
+        <p class="text-gray-800">
+          Great coffee and productivity today! ☕️💻 Working on some exciting new projects.
+        </p>
+      </div>
+      
+      <!-- Post Actions -->
+      <div class="p-6 pt-4">
+        <div class="flex items-center gap-6 mb-4">
+          <button class="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors">
+            <i data-lucide="heart" class="w-5 h-5"></i>
+            <span class="text-sm font-medium">42</span>
+          </button>
+          <button class="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition-colors">
+            <i data-lucide="message-circle" class="w-5 h-5"></i>
+            <span class="text-sm font-medium">3</span>
+          </button>
         </div>
+        
+        <!-- Comment Input -->
+        <div class="flex items-center gap-3 pt-4 border-t border-gray-100">
+          <img 
+            :src="user.avatar" 
+            :alt="user.username" 
+            class="w-10 h-10 rounded-full object-cover border border-gray-200"
+          />
+          <input 
+            type="text" 
+            placeholder="Write a comment..." 
+            class="flex-1 px-4 py-2 bg-gray-50 rounded-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button class="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
     </div>
-    
-    <!-- Quick Actions -->
-    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-8 text-center">
-        <h3 class="text-2xl font-semibold text-gray-800 mb-3">🚀 Getting Started</h3>
-        <p class="text-gray-600 mb-6">Your account is ready! More exciting features are coming soon.</p>
-        <div class="flex flex-wrap justify-center gap-4">
-            <button class="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors shadow-sm hover:shadow-md">
-                Explore Features
-            </button>
-            <button class="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-sm">
-                View Tutorial
-            </button>
-        </div>
-    </div>
+  </div>
 </div>
-
-<style>
-@keyframes fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-.animate-fade-in {
-    animation: fade-in 0.5s ease-out;
-}
-</style>
 
 <script>
 const { createApp } = Vue;
@@ -118,23 +145,23 @@ const { createApp } = Vue;
 createApp({
     data() {
         return {
-            user: <?= json_encode($user) ?>
-        }
-    },
-    methods: {
-        formatDate(dateString) {
-            if (!dateString) return 'N/A';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
+            user: {
+                username: <?= json_encode($user['username'] ?? 'user') ?>,
+                avatar: <?= json_encode($user['profile_photo_path'] ?? 'https://i.pravatar.cc/150?img=1') ?>
+            }
         }
     },
     mounted() {
-        console.log('Dashboard loaded for user:', this.user);
+        // Initialize Lucide icons
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    },
+    updated() {
+        // Re-initialize Lucide icons after DOM updates
+        if (window.lucide) {
+            lucide.createIcons();
+        }
     }
 }).mount('#dashboardApp');
 </script>
-

@@ -12,27 +12,63 @@
     <style>
         body {
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.15));
-            background-size: auto;
+            background: #f3f4f6;
+            overflow: hidden;
+            height: 100vh;
         }
         /* Flash animation styles */
         .flash-container { position: relative; z-index: 60; }
         .flash-message { display: inline-block; margin: 0.5rem 0; padding: .75rem 1rem; border-radius: .5rem; transition: transform .36s ease, opacity .36s ease; opacity: 0; transform: translateY(-6px); }
         .flash-in { opacity: 1; transform: translateY(0); }
         .flash-out { opacity: 0; transform: translateY(-8px); }
+        [v-cloak] { display: none; }
+        
+        .main-scroll-container {
+            height: calc(100vh - 5rem);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        /* Custom scrollbar for main content */
+        .main-scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .main-scroll-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .main-scroll-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .main-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
-<body class="min-h-screen flex justify-center items-center">
-    <div class="w-full max-w-7xl p-5 pt-16">
-        <?php $currentUser = $currentUser ?? ($this->Identity->get() ?? null); ?>
-        <?= $this->element('header', ['user' => $currentUser]) ?>
-        
-        <div id="flashContainer" class="flash-container">
-            <?= $this->Flash->render() ?>
-        </div>
-        
-        <div>
-            <?= $this->fetch('content') ?>
+<body class="bg-gray-50">
+    <?php $currentUser = $currentUser ?? ($this->Identity->get() ?? null); ?>
+    <?= $this->element('header', ['user' => $currentUser]) ?>
+    
+    <div id="flashContainer" class="flash-container fixed top-20 left-1/2 -translate-x-1/2 z-50">
+        <?= $this->Flash->render() ?>
+    </div>
+    
+    <div class="max-w-7xl mx-auto px-4 pt-20">
+        <div class="flex gap-6">
+            <!-- Left Navigation -->
+            <aside class="hidden lg:block flex-shrink-0">
+                <?= $this->element('leftnav', ['user' => $currentUser]) ?>
+            </aside>
+            
+            <!-- Main Content - Scrollable -->
+            <main class="flex-1 min-w-0 main-scroll-container pb-10">
+                <?= $this->fetch('content') ?>
+            </main>
+            
+            <!-- Right Sidebar -->
+            <aside class="hidden xl:block flex-shrink-0">
+                <?= $this->element('rightnav') ?>
+            </aside>
         </div>
     </div>
 
