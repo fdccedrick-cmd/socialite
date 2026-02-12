@@ -33,13 +33,17 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         // Initialize Router with RouteCollection - REQUIRED for CakePHP 5
         Router::setRouteCollection(new RouteCollection());
         
-        // Load plugins only if they exist (dev environment)
+        // Load plugins (dev environment)
         // In production, migrations/bake are not needed since we use init-db.sql
-        if (class_exists('\\Migrations\\Plugin')) {
+        try {
             $this->addPlugin('Migrations');
+        } catch (MissingPluginException $e) {
+            // Migrations plugin not installed
         }
-        if (class_exists('\\Bake\\Plugin')) {
+        try {
             $this->addPlugin('Bake');
+        } catch (MissingPluginException $e) {
+            // Bake plugin not installed
         }
     }
 

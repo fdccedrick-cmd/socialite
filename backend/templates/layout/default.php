@@ -29,19 +29,13 @@
             overflow-x: hidden;
         }
         
-        /* Custom scrollbar for main content */
+        /* Hide scrollbar for main content (cross-browser) */
+        .main-scroll-container {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
         .main-scroll-container::-webkit-scrollbar {
-            width: 8px;
-        }
-        .main-scroll-container::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .main-scroll-container::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        .main-scroll-container::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            display: none; /* Chrome, Safari, Opera */
         }
     </style>
 </head>

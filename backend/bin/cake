@@ -7,11 +7,11 @@ if (!defined('ROOT')) {
     define('ROOT', dirname(__DIR__));
 }
 
+// Load vendor autoload first (needed for Cake classes)
+require ROOT . '/vendor/autoload.php';
+
 // Load bootstrap which defines all constants
 require ROOT . '/config/bootstrap.php';
-
-// Load vendor autoload
-require ROOT . '/vendor/autoload.php';
 
 use App\Application;
 use Cake\Console\CommandRunner;
