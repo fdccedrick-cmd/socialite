@@ -13,9 +13,15 @@
         body {
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #f3f4f6;
-            overflow: hidden;
-            height: 100vh;
         }
+        
+        @media (min-width: 1024px) {
+            body {
+                overflow: hidden;
+                height: 100vh;
+            }
+        }
+        
         /* Flash animation styles */
         .flash-container { position: relative; z-index: 60; }
         .flash-message { display: inline-block; margin: 0.5rem 0; padding: .75rem 1rem; border-radius: .5rem; transition: transform .36s ease, opacity .36s ease; opacity: 0; transform: translateY(-6px); }
@@ -39,9 +45,14 @@
         }
         
         .main-scroll-container {
-            height: calc(100vh - 5rem);
             overflow-y: auto;
             overflow-x: hidden;
+        }
+        
+        @media (min-width: 1024px) {
+            .main-scroll-container {
+                height: calc(100vh - 5rem);
+            }
         }
         
         /* Hide scrollbar for main content (cross-browser) */
@@ -58,23 +69,23 @@
     <?php $currentUser = $currentUser ?? ($this->Identity->get() ?? null); ?>
     <?= $this->element('header', ['user' => $currentUser]) ?>
     
-    <div id="flashContainer" class="flash-container fixed top-20 left-1/2 -translate-x-1/2 z-50">
+    <div id="flashContainer" class="flash-container fixed top-16 sm:top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
         <?= $this->Flash->render() ?>
     </div>
     
-    <div class="max-w-[1400px] mx-auto px-6 pt-20">
-        <div class="flex gap-4">
-            <!-- Left Navigation -->
+    <div class="w-full mx-auto px-2 sm:px-4 lg:px-6 pt-16 sm:pt-20">
+        <div class="flex flex-col lg:flex-row gap-2 sm:gap-4 max-w-[1400px] mx-auto">
+            <!-- Left Navigation - Hidden on mobile, show in sidebar -->
             <aside class="hidden lg:block flex-shrink-0">
                 <?= $this->element('leftnav', ['user' => $currentUser]) ?>
             </aside>
             
             <!-- Main Content - Scrollable -->
-            <main class="flex-1 min-w-0 main-scroll-container pb-10">
+            <main class="flex-1 min-w-0 main-scroll-container pb-6 sm:pb-10">
                 <?= $this->fetch('content') ?>
             </main>
             
-            <!-- Right Sidebar -->
+            <!-- Right Sidebar - Hidden on mobile and tablet -->
             <aside class="hidden xl:block flex-shrink-0">
                 <?= $this->element('rightnav') ?>
             </aside>

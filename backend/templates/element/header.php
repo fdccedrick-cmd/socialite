@@ -5,16 +5,16 @@ $username = $user->full_name ?? $user->username ?? 'Guest';
 $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
 ?>
 <div id="headerApp" class="fixed top-0 left-0 w-full bg-white border-b z-50 shadow-sm" v-cloak>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between h-16">
+  <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+    <div class="flex items-center justify-between h-14 sm:h-16">
       <!-- Left: Logo + Search -->
-       <div class="flex items-center flex-1 gap-4">
+       <div class="flex items-center flex-1 gap-2 sm:gap-4">
   <!-- Logo -->
-  <a href="/" class="flex items-center gap-3 shrink-0">
-    <svg class="h-9 w-9 text-indigo-600" viewBox="0 0 24 24" fill="none">
+  <a href="/" class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+    <svg class="h-7 w-7 sm:h-9 sm:w-9 text-indigo-600" viewBox="0 0 24 24" fill="none">
       <path d="M21 12c0 4.97-4.03 9-9 9-1.5 0-2.92-.36-4.18-1L3 21l1.03-4.82C3.36 14.92 3 13.5 3 12 3 7.03 7.03 3 12 3s9 4.03 9 9z" stroke="currentColor" stroke-width="1.5"/>
     </svg>
-    <span class="font-bold text-2xl text-gray-800">Socialite</span>
+    <span class="font-bold text-lg sm:text-2xl text-gray-800">Socialite</span>
   </a>
 
   <!-- Search -->
@@ -32,8 +32,8 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
       </div>
     </form>
   </div>
-        <button @click="focusSearch" class="md:hidden p-2 rounded hover:bg-gray-100" title="Search">
-          <i data-lucide="search" class="h-5 w-5 text-gray-700"></i>
+        <button @click="focusSearch" class="md:hidden p-1.5 sm:p-2 rounded hover:bg-gray-100" title="Search">
+          <i data-lucide="search" class="h-4 w-4 sm:h-5 sm:w-5 text-gray-700"></i>
         </button>
       </div>
 
@@ -41,7 +41,7 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
       
 
       <!-- Right: actions -->
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-1 sm:gap-2 lg:gap-4">
         <div class="hidden lg:flex items-center gap-2">
         <a href="/dashboard" class="px-3 py-2 rounded-md hover:bg-gray-100 text-gray-700" title="Home">
           <i data-lucide="home" class="h-6 w-6"></i>
@@ -54,9 +54,9 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
         </a>
       </div>
         <!-- Notifications -->
-        <a href="/notifications" class="relative p-2 rounded hover:bg-gray-100" title="Notifications">
-          <i data-lucide="bell" class="h-6 w-6 text-gray-700"></i>
-          <span v-if="notificationCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5">{{ notificationCount }}</span>
+        <a href="/notifications" class="relative p-1.5 sm:p-2 rounded hover:bg-gray-100" title="Notifications">
+          <i data-lucide="bell" class="h-5 w-5 sm:h-6 sm:w-6 text-gray-700"></i>
+          <span v-if="notificationCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] sm:text-xs rounded-full px-1 sm:px-1.5 min-w-[16px] sm:min-w-[20px] text-center">{{ notificationCount }}</span>
         </a>
 
         <!-- Messages -->
@@ -67,8 +67,8 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
 
         <!-- Avatar / username / dropdown -->
         <div class="relative">
-            <button @click="toggle" class="flex items-center gap-3 p-1 rounded hover:bg-gray-100 focus:outline-none" aria-label="User menu">
-            <img :src="avatar" :alt="username" class="h-9 w-9 rounded-full object-cover border"/>
+            <button @click="toggle" class="flex items-center gap-1.5 sm:gap-3 p-0.5 sm:p-1 rounded hover:bg-gray-100 focus:outline-none" aria-label="User menu">
+            <img :src="avatar" :alt="username" class="h-7 w-7 sm:h-9 sm:w-9 rounded-full object-cover border"/>
             <div class="hidden md:flex flex-col leading-tight">
               <span class="text-sm font-medium text-gray-800"><?= h($user ? ($user->full_name ?? $user->username) : 'Guest') ?></span>
               <span class="text-xs text-gray-500">@<?= h($user->username ?? '') ?></span>

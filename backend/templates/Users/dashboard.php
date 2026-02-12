@@ -1,26 +1,26 @@
-<div id="dashboardApp" class="space-y-4" v-cloak>
+<div id="dashboardApp" class="space-y-3 sm:space-y-4" v-cloak>
   <!-- Create Post Card -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-    <div class="flex items-start gap-3 mb-3">
+  <div class="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+    <div class="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
       <img 
         :src="user.avatar" 
         :alt="user.username" 
-        class="w-10 h-10 rounded-full object-cover border border-gray-200"
+        class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
       />
-      <div class="flex-1">
+      <div class="flex-1 min-w-0">
         <textarea 
           v-model="newPost.content"
           @input="autoResize"
           ref="postTextarea"
           placeholder="What's on your mind?"
           rows="1"
-          class="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          class="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 rounded-lg text-xs sm:text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         ></textarea>
         
         <!-- Image Preview -->
-        <div v-if="newPost.imagePreview.length > 0" class="mt-3 grid grid-cols-2 gap-2">
+        <div v-if="newPost.imagePreview.length > 0" class="mt-2 sm:mt-3 grid grid-cols-2 gap-1.5 sm:gap-2">
           <div v-for="(preview, index) in newPost.imagePreview" :key="index" class="relative group">
-            <img :src="preview" class="w-full h-32 object-cover rounded-lg border border-gray-200" />
+            <img :src="preview" class="w-full h-24 sm:h-32 object-cover rounded-lg border border-gray-200" />
             <button 
               @click="removeImage(index)"
               class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -35,9 +35,9 @@
       </div>
     </div>
     
-    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <div class="flex items-center gap-2">
-        <label class="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
+    <div class="flex items-center justify-between pt-2 sm:pt-3 border-t border-gray-100 gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <label class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
           <input 
             type="file" 
             @change="handleImageSelect" 
@@ -46,13 +46,13 @@
             class="hidden"
             ref="imageInput"
           />
-          <i data-lucide="image" class="w-4 h-4"></i>
-          <span class="text-xs font-medium">Photos</span>
+          <i data-lucide="image" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+          <span class="text-[10px] sm:text-xs font-medium hidden xs:inline">Photos</span>
         </label>
         
         <select 
           v-model="newPost.privacy" 
-          class="px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="px-1.5 sm:px-2 py-1 sm:py-1.5 text-[10px] sm:text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="public">Public</option>
           <option value="friends">Friends</option>
@@ -63,7 +63,7 @@
       <button 
         @click="createPost"
         :disabled="newPost.isSubmitting || (!newPost.content.trim() && newPost.images.length === 0)"
-        class="px-4 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        class="px-3 sm:px-4 py-1 sm:py-1.5 bg-blue-600 text-white text-[10px] sm:text-xs font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex-shrink-0"
       >
         {{ newPost.isSubmitting ? 'Posting...' : 'Post' }}
       </button>
@@ -71,31 +71,31 @@
   </div>
   
   <!-- Feed Posts -->
-  <div class="space-y-4">
+  <div class="space-y-3 sm:space-y-4">
     <!-- Empty state -->
-    <div v-if="posts.length === 0" class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-      <i data-lucide="inbox" class="w-12 h-12 mx-auto text-gray-300 mb-3"></i>
-      <p class="text-gray-500 text-sm">No posts yet. Be the first to share something!</p>
+    <div v-if="posts.length === 0" class="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-6 sm:p-8 text-center">
+      <i data-lucide="inbox" class="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-gray-300 mb-2 sm:mb-3"></i>
+      <p class="text-gray-500 text-xs sm:text-sm">No posts yet. Be the first to share something!</p>
     </div>
     
     <!-- Dynamic Posts -->
-    <div v-for="post in posts" :key="post.id" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div v-for="post in posts" :key="post.id" class="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <!-- Post Header -->
-      <div class="p-4 pb-3">
-        <div class="flex items-center gap-2.5 mb-3">
+      <div class="p-3 sm:p-4 pb-2 sm:pb-3">
+        <div class="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
           <img 
             :src="post.user.profile_photo_path || 'https://i.pravatar.cc/150?img=1'" 
             :alt="post.user.full_name" 
-            class="w-10 h-10 rounded-full object-cover border border-gray-200"
+            class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
           />
-          <div class="flex-1">
-            <h3 class="font-semibold text-gray-900 text-sm">{{ post.user.full_name }}</h3>
-            <p class="text-xs text-gray-500">{{ formatDate(post.created) }}</p>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-gray-900 text-xs sm:text-sm truncate">{{ post.user.full_name }}</h3>
+            <p class="text-[10px] sm:text-xs text-gray-500">{{ formatDate(post.created) }}</p>
           </div>
         </div>
         
         <!-- Post Content -->
-        <p v-if="post.content_text" class="text-gray-800 text-sm whitespace-pre-wrap" :class="{'mb-3': post.post_images && post.post_images.length > 0}">{{ post.content_text }}</p>
+        <p v-if="post.content_text" class="text-gray-800 text-xs sm:text-sm whitespace-pre-wrap" :class="{'mb-2 sm:mb-3': post.post_images && post.post_images.length > 0}">{{ post.content_text }}</p>
       </div>
       
       <!-- Post Images -->
@@ -105,21 +105,21 @@
           v-if="post.post_images.length === 1"
           :src="post.post_images[0].image_path" 
           :alt="'Post image'" 
-          class="w-full h-auto object-cover"
+          class="w-full h-auto max-h-96 sm:max-h-none object-cover"
         />
         
         <!-- Multiple Images Grid -->
-        <div v-else-if="post.post_images.length === 2" class="grid grid-cols-2 gap-1">
+        <div v-else-if="post.post_images.length === 2" class="grid grid-cols-2 gap-0.5 sm:gap-1">
           <img 
             v-for="(image, index) in post.post_images" 
             :key="index"
             :src="image.image_path" 
             :alt="'Post image ' + (index + 1)" 
-            class="w-full h-64 object-cover"
+            class="w-full h-40 sm:h-64 object-cover"
           />
         </div>
         
-        <div v-else-if="post.post_images.length === 3" class="grid grid-cols-2 gap-1">
+        <div v-else-if="post.post_images.length === 3" class="grid grid-cols-2 gap-0.5 sm:gap-1">
           <img 
             :src="post.post_images[0].image_path" 
             alt="Post image 1" 
@@ -128,53 +128,53 @@
           <img 
             :src="post.post_images[1].image_path" 
             alt="Post image 2" 
-            class="w-full h-32 object-cover"
+            class="w-full h-20 sm:h-32 object-cover"
           />
           <img 
             :src="post.post_images[2].image_path" 
             alt="Post image 3" 
-            class="w-full h-32 object-cover"
+            class="w-full h-20 sm:h-32 object-cover"
           />
         </div>
         
-        <div v-else class="grid grid-cols-2 gap-1">
+        <div v-else class="grid grid-cols-2 gap-0.5 sm:gap-1">
           <img 
             v-for="(image, index) in post.post_images.slice(0, 4)" 
             :key="index"
             :src="image.image_path" 
             :alt="'Post image ' + (index + 1)" 
-            class="w-full h-48 object-cover"
+            class="w-full h-32 sm:h-48 object-cover"
           />
         </div>
       </div>
       
       <!-- Post Actions -->
-      <div class="p-4 pt-3">
-        <div class="flex items-center gap-5 mb-3">
-          <button class="flex items-center gap-1.5 text-gray-600 hover:text-red-500 transition-colors">
-            <i data-lucide="heart" class="w-4 h-4"></i>
-            <span class="text-xs font-medium">0</span>
+      <div class="p-3 sm:p-4 pt-2 sm:pt-3">
+        <div class="flex items-center gap-4 sm:gap-5 mb-2 sm:mb-3">
+          <button class="flex items-center gap-1 sm:gap-1.5 text-gray-600 hover:text-red-500 transition-colors">
+            <i data-lucide="heart" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+            <span class="text-[10px] sm:text-xs font-medium">0</span>
           </button>
-          <button class="flex items-center gap-1.5 text-gray-600 hover:text-blue-500 transition-colors">
-            <i data-lucide="message-circle" class="w-4 h-4"></i>
-            <span class="text-xs font-medium">0</span>
+          <button class="flex items-center gap-1 sm:gap-1.5 text-gray-600 hover:text-blue-500 transition-colors">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+            <span class="text-[10px] sm:text-xs font-medium">0</span>
           </button>
         </div>
         
         <!-- Comment Input -->
-        <div class="flex items-center gap-2 pt-3 border-t border-gray-100">
+        <div class="flex items-center gap-1.5 sm:gap-2 pt-2 sm:pt-3 border-t border-gray-100">
           <img 
             :src="user.avatar" 
             :alt="user.username" 
-            class="w-8 h-8 rounded-full object-cover border border-gray-200"
+            class="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover border border-gray-200 flex-shrink-0"
           />
           <input 
             type="text" 
             placeholder="Write a comment..." 
-            class="flex-1 px-3 py-1.5 bg-gray-50 rounded-full text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="flex-1 min-w-0 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-50 rounded-full text-[10px] sm:text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <button class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
-            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          <button class="p-1 sm:p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0">
+            <i data-lucide="send" class="w-3 h-3 sm:w-3.5 sm:h-3.5"></i>
           </button>
         </div>
       </div>
