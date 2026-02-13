@@ -51,16 +51,16 @@ class CommentsController extends AppController
                 $image = $data['content_image'];
                 if (is_object($image) && method_exists($image, 'getError') && $image->getError() === UPLOAD_ERR_OK) {
                     $filename = uniqid() . '_' . $image->getClientFilename();
-                    $targetPath = WWW_ROOT . 'img' . DS . 'comments' . DS . $filename;
+                    $targetPath = WWW_ROOT . 'img' . DS . 'comment_uploads' . DS . $filename;
                     
                     // Create directory if it doesn't exist
-                    $dir = WWW_ROOT . 'img' . DS . 'comments';
+                    $dir = WWW_ROOT . 'img' . DS . 'comment_uploads';
                     if (!file_exists($dir)) {
                         mkdir($dir, 0755, true);
                     }
                     
                     $image->moveTo($targetPath);
-                    $data['content_image_path'] = 'img/comments/' . $filename;
+                    $data['content_image_path'] = 'img/comment_uploads/' . $filename;
                 }
                 unset($data['content_image']);
             }

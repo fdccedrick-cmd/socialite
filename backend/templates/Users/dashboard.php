@@ -525,6 +525,10 @@ const app = createApp({
                 if (input) input.value = '';
             }
         },
+        triggerCommentImageInput(postId) {
+            const input = document.getElementById('comment-image-' + postId);
+            if (input) input.click();
+        },
         showCommentOptions(postId) {
             const post = this.posts.find(p => p.id === postId);
             if (post && !post.showComments && post.comment_count > 0) {

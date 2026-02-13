@@ -26,7 +26,7 @@
       />
     </div>
     <button 
-      @click="document.getElementById('comment-image-' + post.id).click()"
+      @click="triggerCommentImageInput(post.id)"
       class="p-1 sm:p-1.5 text-gray-600 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
       title="Add image"
     >
