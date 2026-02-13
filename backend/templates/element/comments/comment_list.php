@@ -28,7 +28,14 @@
     />
     <div class="flex-1 min-w-0">
       <div class="bg-gray-100 rounded-2xl px-3 py-2 inline-block max-w-full">
-        <p class="font-semibold text-[10px] sm:text-xs">{{ comment.user?.full_name }}</p>
+        <!-- <p class="font-semibold text-[10px] sm:text-xs">{{ comment.user?.full_name }}</p> -->
+         <a v-if="comment.user" 
+            :href="`/users/profile/${comment.user.id}`"
+            class="font-semibold text-[10px] sm:text-xs text-gray-900 hover:underline cursor-pointer inline-block"
+         >
+            {{ comment.user.full_name }}
+         </a>
+         <p v-else class="font-semibold text-[10px] sm:text-xs text-gray-900">{{ comment.user?.full_name || 'Unknown User' }}</p>
         <p v-if="comment.content_text" class="text-gray-800 text-[10px] sm:text-xs whitespace-pre-wrap break-words">{{ comment.content_text }}</p>
         <img v-if="comment.content_image_path" 
              :src="'/' + comment.content_image_path" 

@@ -19,7 +19,11 @@ $currentUser = $currentUser ?? [];
         class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
       />
       <div class="flex-1 min-w-0">
-        <h3 class="font-semibold text-gray-900 text-xs sm:text-sm truncate">{{ post.user.full_name }}</h3>
+        <a :href="`/users/profile/${post.user.id}`"
+           class="block font-semibold text-xs sm:text-sm text-gray-900 truncate hover:underline cursor-pointer inline-block">
+            {{ post.user.full_name }}
+        </a>
+        <!-- <h3 class="font-semibold text-gray-900 text-xs sm:text-sm truncate">{{ post.user.full_name }}</h3> -->
         <p class="text-[10px] sm:text-xs text-gray-500">{{ formatDate(post.created) }}</p>
       </div>
     </div>

@@ -260,7 +260,7 @@ class UsersController extends AppController
         $this->set(compact('user', 'postsArray'));
     }
 
-    public function profile()
+    public function profile($id = null)
     {
         // Use authenticated identity for profile data
         $result = $this->Authentication->getResult();
@@ -270,22 +270,26 @@ class UsersController extends AppController
 
         $identity = $this->Authentication->getIdentity();
         
-        // Get user ID from identity
-        $userId = null;
+        // Get current logged-in user ID
+        $currentUserId = null;
         if (is_object($identity)) {
             if (method_exists($identity, 'getOriginalData')) {
                 $orig = $identity->getOriginalData();
                 if (is_object($orig) && isset($orig->id)) {
-                    $userId = $orig->id;
+                    $currentUserId = $orig->id;
                 } elseif (is_array($orig) && isset($orig['id'])) {
-                    $userId = $orig['id'];
+                    $currentUserId = $orig['id'];
                 }
             } elseif (isset($identity->id)) {
-                $userId = $identity->id;
+                $currentUserId = $identity->id;
             }
         } elseif (is_array($identity) && isset($identity['id'])) {
-            $userId = $identity['id'];
+            $currentUserId = $identity['id'];
         }
+        
+        // Determine which user profile to show
+        // If $id is provided, show that user's profile; otherwise show logged-in user's profile
+        $userId = $id ? (int)$id : $currentUserId;
         
         // Check for error query parameter
         if ($this->request->getQuery('error') === 'network') {
@@ -341,12 +345,12 @@ class UsersController extends AppController
                 ->where(['target_type' => 'Post', 'target_id' => $post->id])
                 ->count();
             
-            // Check if current user has liked this post
+            // Check if current user has liked this post (use logged-in user, not profile user)
             $postData['is_liked'] = $likesTable->find()
                 ->where([
                     'target_type' => 'Post',
                     'target_id' => $post->id,
-                    'user_id' => $userId
+                    'user_id' => $currentUserId
                 ])
                 ->count() > 0;
             

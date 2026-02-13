@@ -9,6 +9,7 @@ use Cake\ORM\Entity;
 class User extends Entity
 {
     protected array $_accessible = [
+        'id' => true,
         'full_name' => true,
         'username' => true,
         'password_hash' => true,

@@ -11,6 +11,7 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/logout', ['controller' => 'Users', 'action' => 'logout']);
         $builder->connect('/dashboard', ['controller' => 'Users', 'action' => 'dashboard']);
         $builder->connect('/profile', ['controller' => 'Users', 'action' => 'profile']);
+        $builder->connect('/users/profile/{id}', ['controller' => 'Users', 'action' => 'profile'], ['pass' => ['id']]);
         $builder->connect('/users/update-profile', ['controller' => 'Users', 'action' => 'updateProfile']);
         
         // Posts routes
