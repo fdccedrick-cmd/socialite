@@ -27,16 +27,23 @@
           <div class="px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors <?= $notification->is_read ? 'opacity-60' : 'bg-blue-50' ?>">
             <div class="flex items-start gap-3">
               <!-- Actor Avatar -->
+              <?php 
+                $actorAvatar = 'https://i.pravatar.cc/150?img=' . ($notification->actor_id % 70 + 1);
+                if (isset($notification->actor) && !empty($notification->actor->profile_photo_path)) {
+                    $actorAvatar = $notification->actor->profile_photo_path;
+                }
+              ?>
               <img 
-                src="<?= h($notification->actor->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1') ?>" 
-                alt="<?= h($notification->actor->full_name) ?>"
+                src="<?= h($actorAvatar) ?>" 
+                alt="<?= h($notification->actor->full_name ?? $notification->actor->username ?? 'User') ?>"
                 class="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-gray-100 flex-shrink-0"
+                onerror="this.src='https://i.pravatar.cc/150?img=1'"
               />
               
               <!-- Notification Content -->
               <div class="flex-1 min-w-0">
                 <p class="text-sm sm:text-base text-gray-900 mb-1">
-                  <?= h($notification->message) ?>
+                  <?= $notification->message ?>
                 </p>
                 <p class="text-xs text-gray-500">
                   <?= $notification->created->timeAgoInWords() ?>

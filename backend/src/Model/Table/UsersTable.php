@@ -35,6 +35,12 @@ class UsersTable extends Table
             'foreignKey' => 'user_id',
             'dependent' => true,
         ]);
+
+        // User has many likes
+        $this->hasMany('Likes', [
+            'foreignKey' => 'user_id',
+            'dependent' => true,
+        ]);
     }
 
     public function validationDefault(Validator $validator): Validator

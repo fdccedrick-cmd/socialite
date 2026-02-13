@@ -43,18 +43,6 @@ $fullName = $currentUser['full_name'] ?? $username;
       </div>
     </div>
     
-    <!-- Emoji Picker Popup -->
-    <div 
-      v-if="newPost.showEmojiPicker" 
-      class="fixed z-50 mt-2"
-      style="left: 50%; transform: translateX(-50%);"
-      @click.stop
-    >
-      <div class="shadow-2xl rounded-lg overflow-hidden border border-gray-200 bg-white">
-        <emoji-picker class="light"></emoji-picker>
-      </div>
-    </div>
-    
     <!-- Image Preview Thumbnails -->
     <transition name="fade">
       <div v-if="newPost.imagePreview.length > 0" class="mb-3">

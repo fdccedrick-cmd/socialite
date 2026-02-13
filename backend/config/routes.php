@@ -16,6 +16,20 @@ return static function (RouteBuilder $routes): void {
         // Posts routes
         $builder->connect('/posts/create', ['controller' => 'Posts', 'action' => 'create']);
         
+        // Likes routes
+        $builder->connect('/likes/toggle-post/{id}', ['controller' => 'Likes', 'action' => 'togglePost'], ['pass' => ['id']]);
+        $builder->connect('/likes/toggle-comment/{id}', ['controller' => 'Likes', 'action' => 'toggleComment'], ['pass' => ['id']]);
+        $builder->connect('/likes/post/{id}', ['controller' => 'Likes', 'action' => 'getPostLikes'], ['pass' => ['id']]);
+        
+        // Notifications routes
+        $builder->connect('/notifications', ['controller' => 'Notifications', 'action' => 'index']);
+        
+        // Notifications API routes
+        $builder->connect('/api/notifications/recent', ['controller' => 'Notifications', 'action' => 'recent']);
+        $builder->connect('/api/notifications/count', ['controller' => 'Notifications', 'action' => 'count']);
+        $builder->connect('/api/notifications/mark-read/{id}', ['controller' => 'Notifications', 'action' => 'markAsRead'], ['pass' => ['id']]);
+        $builder->connect('/api/notifications/mark-all-read', ['controller' => 'Notifications', 'action' => 'markAllAsRead']);
+        
         $builder->fallbacks();
     });
 };

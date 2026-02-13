@@ -65,10 +65,21 @@
   </transition>
 </div>
 
+<!-- Emoji Picker (Outside Vue App) -->
+<div 
+  id="emojiPickerContainer"
+  class="fixed z-50 mt-2"
+  style="left: 50%; transform: translateX(-50%); visibility: hidden; opacity: 0; pointer-events: none;"
+>
+  <div class="shadow-2xl rounded-lg overflow-hidden border border-gray-200 bg-white">
+    <emoji-picker class="light"></emoji-picker>
+  </div>
+</div>
+
 <script>
 const { createApp } = Vue;
 
-createApp({
+const app = createApp({
     data() {
         return {
             user: {
@@ -109,6 +120,40 @@ createApp({
             
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         },
+        async toggleLike(postId) {
+            try {
+                const response = await fetch(`/likes/toggle-post/${postId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Find the index of the post
+                    const postIndex = this.posts.findIndex(p => p.id === postId);
+                    if (postIndex !== -1) {
+                        // Use Vue's splice to ensure reactivity
+                        const updatedPost = {
+                            ...this.posts[postIndex],
+                            is_liked: data.liked,
+                            like_count: data.likeCount
+                        };
+                        this.posts.splice(postIndex, 1, updatedPost);
+                    }
+                }
+            } catch (error) {
+                console.error('Error toggling like:', error);
+            }
+        },
         openImageViewer(images, index = 0) {
             this.imageViewer.images = images;
             this.imageViewer.currentIndex = index;
@@ -140,7 +185,14 @@ createApp({
             textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
         },
         toggleEmojiPicker() {
-            this.newPost.showEmojiPicker = !this.newPost.showEmojiPicker;
+            const picker = document.getElementById('emojiPickerContainer');
+            if (picker) {
+                const isVisible = picker.style.visibility === 'visible';
+                picker.style.visibility = isVisible ? 'hidden' : 'visible';
+                picker.style.opacity = isVisible ? '0' : '1';
+                picker.style.pointerEvents = isVisible ? 'none' : 'auto';
+                this.newPost.showEmojiPicker = !this.newPost.showEmojiPicker;
+            }
         },
         insertEmoji(emoji) {
             const textarea = this.$refs.postTextarea;
@@ -149,6 +201,14 @@ createApp({
                 const end = textarea.selectionEnd;
                 const text = this.newPost.content;
                 this.newPost.content = text.substring(0, start) + emoji + text.substring(end);
+                
+                // Hide emoji picker
+                const picker = document.getElementById('emojiPickerContainer');
+                if (picker) {
+                    picker.style.visibility = 'hidden';
+                    picker.style.opacity = '0';
+                    picker.style.pointerEvents = 'none';
+                }
                 this.newPost.showEmojiPicker = false;
                 
                 this.$nextTick(() => {
@@ -271,12 +331,31 @@ createApp({
             lucide.createIcons();
         }
         
+        // Setup emoji picker event listener
+        this.$nextTick(() => {
+            const picker = document.querySelector('emoji-picker');
+            if (picker && !picker.hasAttribute('data-listener')) {
+                picker.setAttribute('data-listener', 'true');
+                picker.addEventListener('emoji-click', (event) => {
+                    this.insertEmoji(event.detail.unicode);
+                });
+            }
+        });
+        
         // Close emoji picker when clicking outside
         document.addEventListener('click', (e) => {
             const emojiButton = e.target.closest('[title="Add emoji"]');
             const emojiPicker = e.target.closest('emoji-picker');
-            if (!emojiButton && !emojiPicker && this.newPost.showEmojiPicker) {
+            const emojiContainer = e.target.closest('#emojiPickerContainer');
+            
+            if (!emojiButton && !emojiPicker && !emojiContainer && this.newPost.showEmojiPicker) {
                 this.newPost.showEmojiPicker = false;
+                const picker = document.getElementById('emojiPickerContainer');
+                if (picker) {
+                    picker.style.visibility = 'hidden';
+                    picker.style.opacity = '0';
+                    picker.style.pointerEvents = 'none';
+                }
             }
         });
         
@@ -310,5 +389,7 @@ createApp({
             }
         });
     }
-}).mount('#dashboardApp');
+});
+
+app.mount('#dashboardApp');
 </script>

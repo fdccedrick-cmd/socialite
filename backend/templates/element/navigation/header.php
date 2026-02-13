@@ -62,10 +62,14 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
         </a>
       </div>
         <!-- Notifications -->
-        <a href="/notifications" class="relative p-1.5 sm:p-2 rounded hover:bg-gray-100" title="Notifications">
-          <i data-lucide="bell" class="h-5 w-5 sm:h-6 sm:w-6 text-gray-700"></i>
-          <span v-if="notificationCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] sm:text-xs rounded-full px-1 sm:px-1.5 min-w-[16px] sm:min-w-[20px] text-center">{{ notificationCount }}</span>
-        </a>
+        <div class="relative">
+          <button type="button" @click.stop="toggleNotifications" class="relative p-1.5 sm:p-2 rounded hover:bg-gray-100" title="Notifications">
+            <i data-lucide="bell" class="h-5 w-5 sm:h-6 sm:w-6 text-gray-700"></i>
+            <span v-if="notificationCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] sm:text-xs rounded-full px-1 sm:px-1.5 min-w-[16px] sm:min-w-[20px] text-center">{{ notificationCount }}</span>
+          </button>
+
+          <?= $this->element('/notif/notification_dropdown') ?>
+        </div>
 
         <!-- Messages -->
         <!-- <a href="/messages" class="relative p-2 rounded hover:bg-gray-100" title="Messages">
@@ -109,39 +113,141 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
     if (typeof Vue === 'undefined') return;
     const el = document.getElementById('headerApp');
     if (!el) return;
+    
+    function getCsrfToken() {
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      return meta ? meta.getAttribute('content') : '';
+    }
+    
     const app = Vue.createApp({
       data() {
         return {
           open: false,
           mobileMenuOpen: false,
+          notificationsOpen: false,
+          messagesOpen: false,
           username: <?= json_encode($username) ?>,
           avatar: <?= json_encode($avatar) ?>,
           notificationCount: 0,
-          messageCount: 0
+          messageCount: 0,
+          notifications: []
         };
       },
       methods: {
-        toggle() { this.open = !this.open; },
+        toggle() { 
+          this.open = !this.open;
+          this.notificationsOpen = false;
+          this.messagesOpen = false;
+        },
         close() { this.open = false; },
         toggleMobileMenu() { this.mobileMenuOpen = !this.mobileMenuOpen; },
         closeMobileMenu() { this.mobileMenuOpen = false; },
+        toggleNotifications() {
+          this.notificationsOpen = !this.notificationsOpen;
+          this.open = false;
+          this.messagesOpen = false;
+        },
+        toggleMessages() {
+          this.messagesOpen = !this.messagesOpen;
+          this.open = false;
+          this.notificationsOpen = false;
+        },
         focusSearch() {
           const s = document.getElementById('header-search');
           if (s) { s.focus(); } else { /* fallback: open a quick search modal later */ }
+        },
+        async fetchNotifications() {
+          try {
+            const response = await fetch('/api/notifications/recent');
+            if (response.ok) {
+              const data = await response.json();
+              this.notifications = data.notifications || [];
+              this.notificationCount = data.unreadCount || 0;
+            }
+          } catch (error) {
+            console.error('Failed to fetch notifications:', error);
+          }
+        },
+        async markAsRead(notificationId) {
+          try {
+            await fetch(`/api/notifications/mark-read/${notificationId}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCsrfToken()
+              }
+            });
+            
+            const notif = this.notifications.find(n => n.id === notificationId);
+            if (notif && !notif.is_read) {
+              notif.is_read = true;
+              this.notificationCount = Math.max(0, this.notificationCount - 1);
+            }
+          } catch (error) {
+            console.error('Failed to mark notification as read:', error);
+          }
+        },
+        async markAllAsRead() {
+          try {
+            await fetch('/api/notifications/mark-all-read', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCsrfToken()
+              }
+            });
+            
+            this.notifications.forEach(n => n.is_read = true);
+            this.notificationCount = 0;
+          } catch (error) {
+            console.error('Failed to mark all as read:', error);
+          }
+        },
+        formatTime(timestamp) {
+          const date = new Date(timestamp);
+          const now = new Date();
+          const seconds = Math.floor((now - date) / 1000);
+          
+          if (seconds < 60) return 'Just now';
+          if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+          if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+          if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+          
+          return date.toLocaleDateString();
         }
       },
       mounted() {
         document.addEventListener('click', (e) => {
           if (!el.contains(e.target)) {
             this.close();
+            this.notificationsOpen = false;
+            this.messagesOpen = false;
           }
         });
+        
         // Emit custom event when mobile menu toggles
         this.$watch('mobileMenuOpen', (newVal) => {
           window.dispatchEvent(new CustomEvent('mobile-menu-toggle', { detail: { open: newVal } }));
         });
-        // optionally fetch counts via API (uncomment and implement endpoint)
-        // fetch('/api/notifications/count').then(r=>r.json()).then(d=>{ this.notificationCount = d.count })
+        
+        // Fetch notifications on load
+        this.fetchNotifications();
+        
+        // Poll for new notifications every 30 seconds
+        setInterval(() => {
+          this.fetchNotifications();
+        }, 30000);
+        
+        // Initialize Lucide icons
+        if (window.lucide) lucide.createIcons();
+      },
+      updated() {
+        // Re-initialize icons when dropdown content updates
+        if (window.lucide) {
+          this.$nextTick(() => {
+            lucide.createIcons();
+          });
+        }
       }
     });
     app.mount(el);

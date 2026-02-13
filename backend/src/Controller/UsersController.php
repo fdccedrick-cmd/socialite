@@ -212,13 +212,15 @@ class UsersController extends AppController
         
         // Fetch all posts with user and images, ordered by most recent
         $postsTable = $this->getTableLocator()->get('Posts');
+        $likesTable = $this->getTableLocator()->get('Likes');
+        
         $posts = $postsTable->find()
             ->where(['Posts.deleted IS' => null])
             ->contain(['Users', 'PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]])
             ->order(['Posts.created' => 'DESC'])
             ->toArray();
         
-        // Convert posts to array with formatted dates
+        // Convert posts to array with formatted dates and like data
         $postsArray = [];
         foreach ($posts as $post) {
             $postData = $post->toArray();
@@ -228,6 +230,21 @@ class UsersController extends AppController
             if (!empty($postData['modified']) && $postData['modified'] instanceof \DateTimeInterface) {
                 $postData['modified'] = $postData['modified']->format(DATE_ATOM);
             }
+            
+            // Add like count
+            $postData['like_count'] = $likesTable->find()
+                ->where(['target_type' => 'Post', 'target_id' => $post->id])
+                ->count();
+            
+            // Check if current user has liked this post
+            $postData['is_liked'] = $likesTable->find()
+                ->where([
+                    'target_type' => 'Post',
+                    'target_id' => $post->id,
+                    'user_id' => $userId
+                ])
+                ->count() > 0;
+            
             $postsArray[] = $postData;
         }
 
@@ -285,6 +302,8 @@ class UsersController extends AppController
         
         // Fetch user's posts with images, ordered by most recent
         $postsTable = $this->getTableLocator()->get('Posts');
+        $likesTable = $this->getTableLocator()->get('Likes');
+        
         $posts = $postsTable->find()
             ->where([
                 'Posts.user_id' => $userId,
@@ -297,7 +316,7 @@ class UsersController extends AppController
             ->order(['Posts.created' => 'DESC'])
             ->toArray();
         
-        // Convert posts to array with formatted dates
+        // Convert posts to array with formatted dates and like data
         $postsArray = [];
         foreach ($posts as $post) {
             $postData = $post->toArray();
@@ -307,6 +326,21 @@ class UsersController extends AppController
             if (!empty($postData['modified']) && $postData['modified'] instanceof \DateTimeInterface) {
                 $postData['modified'] = $postData['modified']->format(DATE_ATOM);
             }
+            
+            // Add like count
+            $postData['like_count'] = $likesTable->find()
+                ->where(['target_type' => 'Post', 'target_id' => $post->id])
+                ->count();
+            
+            // Check if current user has liked this post
+            $postData['is_liked'] = $likesTable->find()
+                ->where([
+                    'target_type' => 'Post',
+                    'target_id' => $post->id,
+                    'user_id' => $userId
+                ])
+                ->count() > 0;
+            
             $postsArray[] = $postData;
         }
         

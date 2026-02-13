@@ -68,7 +68,7 @@ class NotificationHelper
             'like',
             'Post',
             $postId,
-            "{$likerName} liked your post"
+            "<strong>" . htmlspecialchars($likerName) . "</strong> liked your post"
         );
     }
 
@@ -89,7 +89,7 @@ class NotificationHelper
             'comment',
             'Post',
             $postId,
-            "{$commenterName} commented on your post"
+            "<strong>" . htmlspecialchars($commenterName) . "</strong> commented on your post"
         );
     }
 
@@ -110,7 +110,7 @@ class NotificationHelper
             'reply',
             'Comment',
             $commentId,
-            "{$replierName} replied to your comment"
+            "<strong>" . htmlspecialchars($replierName) . "</strong> replied to your comment"
         );
     }
 
@@ -130,7 +130,7 @@ class NotificationHelper
             'follow',
             'User',
             $followerId,
-            "{$followerName} started following you"
+            "<strong>" . htmlspecialchars($followerName) . "</strong> started following you"
         );
     }
 }
