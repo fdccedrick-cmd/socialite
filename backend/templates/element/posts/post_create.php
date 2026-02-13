@@ -11,7 +11,7 @@ $username = $currentUser['username'] ?? 'user';
 $fullName = $currentUser['full_name'] ?? $username;
 ?>
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
   <div class="p-3 sm:p-4">
     <!-- Profile + Input Row -->
     <div class="flex items-start gap-2 sm:gap-3 mb-3">
@@ -40,6 +40,18 @@ $fullName = $currentUser['full_name'] ?? $username;
             {{ newPost.content.length }}/5000
           </span>
         </div>
+      </div>
+    </div>
+    
+    <!-- Emoji Picker Popup -->
+    <div 
+      v-if="newPost.showEmojiPicker" 
+      class="fixed z-50 mt-2"
+      style="left: 50%; transform: translateX(-50%);"
+      @click.stop
+    >
+      <div class="shadow-2xl rounded-lg overflow-hidden border border-gray-200 bg-white">
+        <emoji-picker class="light"></emoji-picker>
       </div>
     </div>
     
@@ -117,9 +129,11 @@ $fullName = $currentUser['full_name'] ?? $username;
         
         <!-- Emoji Button -->
         <button 
-          class="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 text-gray-700 hover:bg-gray-50 rounded-lg transition-all group opacity-50 cursor-not-allowed"
-          title="Add emoji (coming soon)"
-          disabled
+          @click="toggleEmojiPicker"
+          type="button"
+          class="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 text-gray-700 hover:bg-gray-50 rounded-lg transition-all group"
+          :class="{'bg-gray-100': newPost.showEmojiPicker}"
+          title="Add emoji"
         >
           <i data-lucide="smile" class="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500"></i>
           <span class="text-xs sm:text-sm font-medium hidden sm:inline">Emoji</span>
@@ -153,18 +167,3 @@ $fullName = $currentUser['full_name'] ?? $username;
     </div>
   </div>
 </div>
-
-<style>
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.fade-enter-from {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-.fade-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
-</style>
-

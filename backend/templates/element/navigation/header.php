@@ -1,6 +1,9 @@
 <?php
 /** @var \App\View\AppView $this */
 $user = $currentUser ?? $user ?? null;
+if (is_array($user)) {
+    $user = (object)$user;
+}
 $username = $user->full_name ?? $user->username ?? 'Guest';
 $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
 ?>
@@ -99,51 +102,48 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
       </div>
     </div>
   </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.259.0/dist/lucide.min.js"></script>
-  <script>document.addEventListener('DOMContentLoaded', function(){ if (window.lucide) lucide.createIcons(); });</script>
-
-  <script>
-    (function () {
-      if (typeof Vue === 'undefined') return;
-      const el = document.getElementById('headerApp');
-      if (!el) return;
-      const app = Vue.createApp({
-        data() {
-          return {
-            open: false,
-            mobileMenuOpen: false,
-            username: <?= json_encode($username) ?>,
-            avatar: <?= json_encode($avatar) ?>,
-            notificationCount: 0,
-            messageCount: 0
-          };
-        },
-        methods: {
-          toggle() { this.open = !this.open; },
-          close() { this.open = false; },
-          toggleMobileMenu() { this.mobileMenuOpen = !this.mobileMenuOpen; },
-          closeMobileMenu() { this.mobileMenuOpen = false; },
-          focusSearch() {
-            const s = document.getElementById('header-search');
-            if (s) { s.focus(); } else { /* fallback: open a quick search modal later */ }
-          }
-        },
-        mounted() {
-          document.addEventListener('click', (e) => {
-            if (!el.contains(e.target)) {
-              this.close();
-            }
-          });
-          // Emit custom event when mobile menu toggles
-          this.$watch('mobileMenuOpen', (newVal) => {
-            window.dispatchEvent(new CustomEvent('mobile-menu-toggle', { detail: { open: newVal } }));
-          });
-          // optionally fetch counts via API (uncomment and implement endpoint)
-          // fetch('/api/notifications/count').then(r=>r.json()).then(d=>{ this.notificationCount = d.count })
-        }
-      });
-      app.mount(el);
-    })();
-  </script>
 </div>
+
+<script>
+  (function () {
+    if (typeof Vue === 'undefined') return;
+    const el = document.getElementById('headerApp');
+    if (!el) return;
+    const app = Vue.createApp({
+      data() {
+        return {
+          open: false,
+          mobileMenuOpen: false,
+          username: <?= json_encode($username) ?>,
+          avatar: <?= json_encode($avatar) ?>,
+          notificationCount: 0,
+          messageCount: 0
+        };
+      },
+      methods: {
+        toggle() { this.open = !this.open; },
+        close() { this.open = false; },
+        toggleMobileMenu() { this.mobileMenuOpen = !this.mobileMenuOpen; },
+        closeMobileMenu() { this.mobileMenuOpen = false; },
+        focusSearch() {
+          const s = document.getElementById('header-search');
+          if (s) { s.focus(); } else { /* fallback: open a quick search modal later */ }
+        }
+      },
+      mounted() {
+        document.addEventListener('click', (e) => {
+          if (!el.contains(e.target)) {
+            this.close();
+          }
+        });
+        // Emit custom event when mobile menu toggles
+        this.$watch('mobileMenuOpen', (newVal) => {
+          window.dispatchEvent(new CustomEvent('mobile-menu-toggle', { detail: { open: newVal } }));
+        });
+        // optionally fetch counts via API (uncomment and implement endpoint)
+        // fetch('/api/notifications/count').then(r=>r.json()).then(d=>{ this.notificationCount = d.count })
+      }
+    });
+    app.mount(el);
+  })();
+</script>

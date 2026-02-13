@@ -27,7 +27,8 @@ createApp({
                 imagePreview: [],
                 privacy: 'public',
                 isSubmitting: false,
-                error: ''
+                error: '',
+                showEmojiPicker: false
             }
         }
     },
@@ -51,7 +52,30 @@ createApp({
         autoResize(event) {
             const textarea = event.target;
             textarea.style.height = 'auto';
-            textarea.style.height = textarea.scrollHeight + 'px';
+            textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+        },
+        toggleEmojiPicker() {
+            this.newPost.showEmojiPicker = !this.newPost.showEmojiPicker;
+        },
+        insertEmoji(emoji) {
+            const textarea = this.$refs.postTextarea;
+            if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const text = this.newPost.content;
+                this.newPost.content = text.substring(0, start) + emoji + text.substring(end);
+                this.newPost.showEmojiPicker = false;
+                
+                this.$nextTick(() => {
+                    textarea.focus();
+                    const newPos = start + emoji.length;
+                    textarea.setSelectionRange(newPos, newPos);
+                    
+                    // Trigger auto-resize
+                    textarea.style.height = 'auto';
+                    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+                });
+            }
         },
         handleImageSelect(event) {
             const files = Array.from(event.target.files);
@@ -103,8 +127,10 @@ createApp({
             this.newPost.error = '';
             this.newPost.isSubmitting = true;
             
+            const textContent = this.newPost.content.trim();
+            
             // Validate at least content or images
-            if (!this.newPost.content.trim() && this.newPost.images.length === 0) {
+            if (!textContent && this.newPost.images.length === 0) {
                 this.newPost.error = 'Please add some text or images to your post';
                 this.newPost.isSubmitting = false;
                 return;
@@ -112,7 +138,7 @@ createApp({
             
             // Create FormData for file upload
             const formData = new FormData();
-            formData.append('content_text', this.newPost.content);
+            formData.append('content_text', textContent);
             formData.append('privacy', this.newPost.privacy);
             
             // Append all images
@@ -134,6 +160,8 @@ createApp({
                     this.newPost.images = [];
                     this.newPost.imagePreview = [];
                     this.newPost.privacy = 'public';
+                    
+                    // Reset textarea height
                     if (this.$refs.postTextarea) {
                         this.$refs.postTextarea.style.height = 'auto';
                     }
@@ -157,12 +185,32 @@ createApp({
         if (window.lucide) {
             lucide.createIcons();
         }
+        
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', (e) => {
+            const emojiButton = e.target.closest('[title="Add emoji"]');
+            const emojiPicker = e.target.closest('emoji-picker');
+            if (!emojiButton && !emojiPicker && this.newPost.showEmojiPicker) {
+                this.newPost.showEmojiPicker = false;
+            }
+        });
     },
     updated() {
         // Re-initialize Lucide icons after DOM updates
         if (window.lucide) {
             lucide.createIcons();
         }
+        
+        // Setup emoji picker event listener when it appears
+        this.$nextTick(() => {
+            const picker = document.querySelector('emoji-picker');
+            if (picker && !picker.hasAttribute('data-listener')) {
+                picker.setAttribute('data-listener', 'true');
+                picker.addEventListener('emoji-click', (event) => {
+                    this.insertEmoji(event.detail.unicode);
+                });
+            }
+        });
     }
 }).mount('#dashboardApp');
 </script>

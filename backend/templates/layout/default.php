@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
     
     <style>
         body {
@@ -63,6 +64,19 @@
         .main-scroll-container::-webkit-scrollbar {
             display: none; /* Chrome, Safari, Opera */
         }
+        
+        /* Vue transition styles */
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .fade-enter-from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        .fade-leave-to {
+            opacity: 0;
+            transform: translateY(10px);
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -117,6 +131,13 @@
     // Close mobile menu when clicking overlay
     document.getElementById('mobileMenuOverlay')?.addEventListener('click', function() {
         window.dispatchEvent(new CustomEvent('mobile-menu-toggle', { detail: { open: false } }));
+    });
+    
+    // Initialize Lucide icons after DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.lucide) {
+            lucide.createIcons();
+        }
     });
     </script>
 

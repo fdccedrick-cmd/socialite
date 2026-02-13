@@ -25,56 +25,89 @@ $currentUser = $currentUser ?? [];
     </div>
     
     <!-- Post Content -->
-    <p v-if="post.content_text" class="text-gray-800 text-xs sm:text-sm whitespace-pre-wrap" :class="{'mb-2 sm:mb-3': post.post_images && post.post_images.length > 0}">{{ post.content_text }}</p>
+    <div 
+      v-if="post.content_text" 
+      class="text-gray-800 text-xs sm:text-sm whitespace-pre-wrap" 
+      :class="{'mb-2 sm:mb-3': post.post_images && post.post_images.length > 0}"
+    >{{ post.content_text }}</div>
   </div>
   
   <!-- Post Images -->
-  <div v-if="post.post_images && post.post_images.length > 0" class="w-full">
+  <div v-if="post.post_images && post.post_images.length > 0" class="w-full bg-gray-100">
     <!-- Single Image -->
-    <img 
+    <div 
       v-if="post.post_images.length === 1"
-      :src="post.post_images[0].image_path" 
-      :alt="'Post image'" 
-      class="w-full h-auto max-h-96 sm:max-h-none object-cover"
-    />
+      class="w-full max-h-[500px] overflow-hidden"
+    >
+      <img 
+        :src="post.post_images[0].image_path" 
+        :alt="'Post image'" 
+        class="w-full h-full object-contain bg-black"
+      />
+    </div>
     
-    <!-- Multiple Images Grid -->
-    <div v-else-if="post.post_images.length === 2" class="grid grid-cols-2 gap-0.5 sm:gap-1">
+    <!-- Two Images Grid -->
+    <div v-else-if="post.post_images.length === 2" class="grid grid-cols-2 gap-0.5">
       <img 
         v-for="(image, index) in post.post_images" 
         :key="index"
         :src="image.image_path" 
         :alt="'Post image ' + (index + 1)" 
-        class="w-full h-40 sm:h-64 object-cover"
+        class="w-full h-[250px] sm:h-[350px] object-cover"
       />
     </div>
     
-    <div v-else-if="post.post_images.length === 3" class="grid grid-cols-2 gap-0.5 sm:gap-1">
+    <!-- Three Images Grid (Facebook Style: 1 large left, 2 stacked right) -->
+    <div v-else-if="post.post_images.length === 3" class="grid grid-cols-2 gap-0.5 h-[350px] sm:h-[450px]">
       <img 
         :src="post.post_images[0].image_path" 
         alt="Post image 1" 
-        class="w-full h-full object-cover row-span-2"
+        class="w-full h-full object-cover"
       />
-      <img 
-        :src="post.post_images[1].image_path" 
-        alt="Post image 2" 
-        class="w-full h-20 sm:h-32 object-cover"
-      />
-      <img 
-        :src="post.post_images[2].image_path" 
-        alt="Post image 3" 
-        class="w-full h-20 sm:h-32 object-cover"
-      />
+      <div class="grid grid-rows-2 gap-0.5 h-full">
+        <img 
+          :src="post.post_images[1].image_path" 
+          alt="Post image 2" 
+          class="w-full h-full object-cover"
+        />
+        <img 
+          :src="post.post_images[2].image_path" 
+          alt="Post image 3" 
+          class="w-full h-full object-cover"
+        />
+      </div>
     </div>
     
-    <div v-else class="grid grid-cols-2 gap-0.5 sm:gap-1">
-      <img 
-        v-for="(image, index) in post.post_images.slice(0, 4)" 
-        :key="index"
-        :src="image.image_path" 
-        :alt="'Post image ' + (index + 1)" 
-        class="w-full h-32 sm:h-48 object-cover"
-      />
+    <!-- Four or More Images Grid (2x2 with +X overlay for 5+) -->
+    <div v-else class="grid grid-cols-2 gap-0.5">
+      <template v-for="(image, index) in post.post_images.slice(0, 4)" :key="index">
+        <!-- Regular images for first 3 or all 4 if exactly 4 images -->
+        <div 
+          v-if="index < 3 || post.post_images.length === 4"
+          class="relative w-full h-[175px] sm:h-[250px] overflow-hidden"
+        >
+          <img 
+            :src="image.image_path" 
+            :alt="'Post image ' + (index + 1)" 
+            class="w-full h-full object-cover"
+          />
+        </div>
+        
+        <!-- 4th image with overlay if 5+ images -->
+        <div 
+          v-else-if="index === 3 && post.post_images.length > 4"
+          class="relative w-full h-[175px] sm:h-[250px] overflow-hidden cursor-pointer group"
+        >
+          <img 
+            :src="image.image_path" 
+            :alt="'Post image ' + (index + 1)" 
+            class="w-full h-full object-cover"
+          />
+          <div class="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center group-hover:bg-opacity-70 transition-all">
+            <span class="text-white text-3xl sm:text-4xl font-bold">+{{ post.post_images.length - 4 }}</span>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
   
