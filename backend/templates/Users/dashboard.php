@@ -86,7 +86,14 @@ const app = createApp({
                 username: <?= json_encode($user['username'] ?? 'user') ?>,
                 avatar: <?= json_encode($user['profile_photo_path'] ?? 'https://i.pravatar.cc/150?img=1') ?>
             },
-            posts: <?= json_encode($postsArray ?? []) ?>,
+            posts: <?= json_encode($postsArray ?? []) ?>.map(post => ({
+                ...post,
+                showComments: false,
+                newComment: '',
+                commentImage: null,
+                commentImagePreview: null,
+                comments: []
+            })),
             newPost: {
                 content: '',
                 images: [],
@@ -322,6 +329,206 @@ const app = createApp({
                 this.newPost.error = 'Failed to create post. Please try again.';
             } finally {
                 this.newPost.isSubmitting = false;
+            }
+        },
+        async toggleComments(postId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            
+            // Toggle visibility
+            post.showComments = !post.showComments;
+            
+            // Load comments if showing and not loaded yet
+            if (post.showComments && post.comments.length === 0) {
+                await this.loadComments(postId);
+            }
+        },
+        async loadComments(postId) {
+            try {
+                const response = await fetch(`/comments/get-by-post/${postId}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load comments');
+                
+                const data = await response.json();
+                const post = this.posts.find(p => p.id === postId);
+                if (post && data.comments) {
+                    // Add like status to each comment
+                    post.comments = data.comments.map(comment => ({
+                        ...comment,
+                        is_liked: false,
+                        like_count: 0
+                    }));
+                    
+                    // Load like status for each comment
+                    for (const comment of post.comments) {
+                        await this.loadCommentLikeStatus(postId, comment.id);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading comments:', error);
+            }
+        },
+        async loadCommentLikeStatus(postId, commentId) {
+            try {
+                const response = await fetch(`/likes/comment/${commentId}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const post = this.posts.find(p => p.id === postId);
+                    if (post) {
+                        const comment = post.comments.find(c => c.id === commentId);
+                        if (comment && data) {
+                            comment.like_count = data.count || 0;
+                            comment.is_liked = data.is_liked || false;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading comment like status:', error);
+            }
+        },
+        async submitComment(postId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            
+            const text = post.newComment?.trim();
+            if (!text && !post.commentImage) {
+                return; // Nothing to submit
+            }
+            
+            const formData = new FormData();
+            formData.append('post_id', postId);
+            if (text) formData.append('content_text', text);
+            if (post.commentImage) formData.append('content_image', post.commentImage);
+            
+            try {
+                const response = await fetch('/comments/add', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Reset input
+                    post.newComment = '';
+                    post.commentImage = null;
+                    post.commentImagePreview = null;
+                    
+                    // Clear file input
+                    const fileInput = document.getElementById('comment-image-' + postId);
+                    if (fileInput) fileInput.value = '';
+                    
+                    // Increment comment count
+                    post.comment_count = (post.comment_count || 0) + 1;
+                    
+                    // Add the new comment to the list if comments are visible
+                    if (post.showComments && data.comment) {
+                        // Add like status to the new comment
+                        const newComment = {
+                            ...data.comment,
+                            is_liked: false,
+                            like_count: 0
+                        };
+                        post.comments.push(newComment);
+                    } else {
+                        // Show comments section and load them
+                        post.showComments = true;
+                        await this.loadComments(postId);
+                    }
+                    
+                    // Re-initialize icons
+                    if (window.lucide) {
+                        this.$nextTick(() => lucide.createIcons());
+                    }
+                } else {
+                    console.error('Error posting comment:', data.message);
+                    alert(data.message || 'Failed to post comment. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error submitting comment:', error);
+                alert('Failed to post comment. Please try again.');
+            }
+        },
+        async toggleCommentLike(postId, commentId) {
+            try {
+                const response = await fetch(`/likes/toggle-comment/${commentId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to toggle like');
+                
+                const data = await response.json();
+                if (data.success) {
+                    const post = this.posts.find(p => p.id === postId);
+                    if (post) {
+                        const comment = post.comments.find(c => c.id === commentId);
+                        if (comment) {
+                            comment.is_liked = data.liked;
+                            comment.like_count = data.likeCount;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error toggling comment like:', error);
+            }
+        },
+        handleCommentImage(event, postId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            
+            // Validate file
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please upload a valid image file (JPG, PNG, or GIF)');
+                return;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Image must be less than 10MB');
+                return;
+            }
+            
+            post.commentImage = file;
+            
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                post.commentImagePreview = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        },
+        removeCommentImage(postId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (post) {
+                post.commentImage = null;
+                post.commentImagePreview = null;
+                const input = document.getElementById('comment-image-' + postId);
+                if (input) input.value = '';
+            }
+        },
+        showCommentOptions(postId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (post && !post.showComments && post.comment_count > 0) {
+                // Optionally auto-show comments when user starts typing
             }
         }
     },

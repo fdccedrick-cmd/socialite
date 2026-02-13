@@ -37,7 +37,7 @@
     <!-- Comment Button -->
     <button class="flex items-center gap-1 sm:gap-1.5 text-gray-600 hover:text-blue-500 transition-colors">
       <i data-lucide="message-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
-      <span class="text-[10px] sm:text-xs font-medium">0</span>
+      <span class="text-[10px] sm:text-xs font-medium">{{ post.comment_count || 0 }}</span>
     </button>
   </div>
 </div>

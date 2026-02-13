@@ -207,4 +207,5 @@ class PostsController extends AppController
                 ]));
         }
     }
+
 }

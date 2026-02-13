@@ -41,6 +41,12 @@ class UsersTable extends Table
             'foreignKey' => 'user_id',
             'dependent' => true,
         ]);
+
+        // User has many comments
+        $this->hasMany('Comments', [
+            'foreignKey' => 'user_id',
+            'dependent' => true,
+        ]);
     }
 
     public function validationDefault(Validator $validator): Validator

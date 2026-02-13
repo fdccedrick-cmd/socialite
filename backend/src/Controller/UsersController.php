@@ -213,6 +213,7 @@ class UsersController extends AppController
         // Fetch all posts with user and images, ordered by most recent
         $postsTable = $this->getTableLocator()->get('Posts');
         $likesTable = $this->getTableLocator()->get('Likes');
+        $commentsTable = $this->getTableLocator()->get('Comments');
         
         $posts = $postsTable->find()
             ->where(['Posts.deleted IS' => null])
@@ -244,6 +245,14 @@ class UsersController extends AppController
                     'user_id' => $userId
                 ])
                 ->count() > 0;
+            
+            // Add comment count (excluding soft-deleted comments)
+            $postData['comment_count'] = $commentsTable->find()
+                ->where([
+                    'post_id' => $post->id,
+                    'deleted_at IS' => null
+                ])
+                ->count();
             
             $postsArray[] = $postData;
         }
@@ -340,6 +349,12 @@ class UsersController extends AppController
                     'user_id' => $userId
                 ])
                 ->count() > 0;
+            
+            // Add comment count
+            $commentsTable = $this->getTableLocator()->get('Comments');
+            $postData['comment_count'] = $commentsTable->find('active')
+                ->where(['post_id' => $post->id])
+                ->count();
             
             $postsArray[] = $postData;
         }

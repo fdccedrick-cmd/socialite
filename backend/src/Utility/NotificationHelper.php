@@ -94,6 +94,28 @@ class NotificationHelper
     }
 
     /**
+     * Create a "comment like" notification
+     *
+     * @param int $commentOwnerId Owner of the comment
+     * @param int $likerId User who liked the comment
+     * @param int $postId Post ID (for navigation)
+     * @param int $commentId Comment ID
+     * @param string $likerName Name of the person who liked
+     * @return bool
+     */
+    public static function commentLike(int $commentOwnerId, int $likerId, int $postId, int $commentId, string $likerName): bool
+    {
+        return self::create(
+            $commentOwnerId,
+            $likerId,
+            'comment_like',
+            'Comment',
+            $commentId,
+            "<strong>" . htmlspecialchars($likerName) . "</strong> liked your comment"
+        );
+    }
+
+    /**
      * Create a "reply" notification
      *
      * @param int $commentOwnerId Owner of the comment

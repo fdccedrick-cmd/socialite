@@ -27,6 +27,16 @@ class PostsTable extends Table
             'foreignKey' => 'post_id',
             'dependent' => true,
         ]);
+
+        $this->hasMany('Comments', [
+            'foreignKey' => 'post_id',
+            'dependent' => true,
+        ]);
+
+        $this->hasMany('Likes', [
+            'foreignKey' => 'post_id',
+            'dependent' => true,
+        ]);
     }
 
     public function validationDefault(Validator $validator): Validator

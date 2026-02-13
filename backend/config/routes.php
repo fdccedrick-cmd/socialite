@@ -16,10 +16,17 @@ return static function (RouteBuilder $routes): void {
         // Posts routes
         $builder->connect('/posts/create', ['controller' => 'Posts', 'action' => 'create']);
         
+        // Comments routes
+        $builder->connect('/comments/add', ['controller' => 'Comments', 'action' => 'add']);
+        $builder->connect('/comments/edit/{id}', ['controller' => 'Comments', 'action' => 'edit'], ['pass' => ['id']]);
+        $builder->connect('/comments/delete/{id}', ['controller' => 'Comments', 'action' => 'delete'], ['pass' => ['id']]);
+        $builder->connect('/comments/get-by-post/{postId}', ['controller' => 'Comments', 'action' => 'getByPost'], ['pass' => ['postId']]);
+        
         // Likes routes
         $builder->connect('/likes/toggle-post/{id}', ['controller' => 'Likes', 'action' => 'togglePost'], ['pass' => ['id']]);
         $builder->connect('/likes/toggle-comment/{id}', ['controller' => 'Likes', 'action' => 'toggleComment'], ['pass' => ['id']]);
         $builder->connect('/likes/post/{id}', ['controller' => 'Likes', 'action' => 'getPostLikes'], ['pass' => ['id']]);
+        $builder->connect('/likes/comment/{id}', ['controller' => 'Likes', 'action' => 'getCommentLikes'], ['pass' => ['id']]);
         
         // Notifications routes
         $builder->connect('/notifications', ['controller' => 'Notifications', 'action' => 'index']);

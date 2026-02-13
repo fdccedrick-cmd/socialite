@@ -254,22 +254,48 @@ class LikesController extends AppController
             ]);
 
             if ($this->Likes->save($like)) {
-                // Get comment owner for notification (when Comments table exists)
-                // $this->loadModel('Comments');
-                // $comment = $this->Comments->get($commentId);
-                // NotificationHelper::create(...);
-
                 $likeCount = $this->Likes->find()
                     ->where(['target_type' => 'Comment', 'target_id' => $id])
                     ->count();
 
-                return $this->response
+                $response = $this->response
                     ->withType('application/json')
                     ->withStringBody(json_encode([
                         'success' => true,
                         'liked' => true,
                         'likeCount' => $likeCount
                     ]));
+
+                // Create notification for comment owner
+                try {
+                    $commentsTable = $this->fetchTable('Comments');
+                    $comment = $commentsTable->find()
+                        ->select(['id', 'user_id', 'post_id'])
+                        ->where(['id' => $id])
+                        ->first();
+
+                    if ($comment && $comment->user_id !== $userId) {
+                        $usersTable = $this->fetchTable('Users');
+                        $user = $usersTable->find()
+                            ->select(['id', 'username', 'full_name'])
+                            ->where(['id' => $userId])
+                            ->first();
+                        
+                        if ($user) {
+                            NotificationHelper::commentLike(
+                                (int)$comment->user_id,
+                                (int)$userId,
+                                (int)$comment->post_id,
+                                (int)$id,
+                                (string)($user->full_name ?? $user->username)
+                            );
+                        }
+                    }
+                } catch (\Exception $notifError) {
+                    error_log('Comment like notification error: ' . $notifError->getMessage());
+                }
+
+                return $response;
             }
         }
 
@@ -300,6 +326,57 @@ class LikesController extends AppController
                 'success' => true,
                 'likes' => $likes,
                 'count' => $likes->count()
+            ]));
+    }
+
+    /**
+     * Get like info for a comment
+     *
+     * @param int|null $id Comment ID
+     * @return \Cake\Http\Response|null JSON response
+     */
+    public function getCommentLikes($id = null)
+    {
+        $this->request->allowMethod(['get']);
+        
+        $likeCount = $this->Likes->find()
+            ->where(['target_type' => 'Comment', 'target_id' => $id])
+            ->count();
+
+        $isLiked = false;
+        $identity = $this->Authentication->getIdentity();
+        if ($identity) {
+            $userId = null;
+            if (is_object($identity)) {
+                if (method_exists($identity, 'getOriginalData')) {
+                    $orig = $identity->getOriginalData();
+                    if (is_object($orig) && isset($orig->id)) {
+                        $userId = $orig->id;
+                    } elseif (is_array($orig) && isset($orig['id'])) {
+                        $userId = $orig['id'];
+                    }
+                } elseif (isset($identity->id)) {
+                    $userId = $identity->id;
+                }
+            }
+            
+            if ($userId) {
+                $isLiked = $this->Likes->find()
+                    ->where([
+                        'target_type' => 'Comment',
+                        'target_id' => $id,
+                        'user_id' => $userId
+                    ])
+                    ->count() > 0;
+            }
+        }
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode([
+                'success' => true,
+                'count' => $likeCount,
+                'is_liked' => $isLiked
             ]));
     }
 }

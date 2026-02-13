@@ -120,5 +120,10 @@ $currentUser = $currentUser ?? [];
   
   <!-- Post Actions (Likes & Comments) -->
   <?= $this->element('likes/like_button', ['post' => $post ?? []]) ?>
-  <?= $this->element('comments/comment_input', ['post' => $post ?? [], 'currentUser' => $currentUser]) ?>
+  
+  <!-- Comment Section -->
+  <div class="border-t border-gray-100">
+    <?= $this->element('comments/comment_list', ['post' => $post ?? []]) ?>
+    <?= $this->element('comments/comment_input', ['post' => $post ?? []]) ?>
+  </div>
 </div>
