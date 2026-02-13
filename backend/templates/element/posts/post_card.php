@@ -37,12 +37,13 @@ $currentUser = $currentUser ?? [];
     <!-- Single Image -->
     <div 
       v-if="post.post_images.length === 1"
-      class="w-full max-h-[500px] overflow-hidden"
+      class="w-full max-h-[500px] overflow-hidden cursor-pointer"
+      @click="openImageViewer(post.post_images, 0)"
     >
       <img 
         :src="post.post_images[0].image_path" 
         :alt="'Post image'" 
-        class="w-full h-full object-contain bg-black"
+        class="w-full h-full object-contain bg-black hover:opacity-95 transition-opacity"
       />
     </div>
     
@@ -53,7 +54,8 @@ $currentUser = $currentUser ?? [];
         :key="index"
         :src="image.image_path" 
         :alt="'Post image ' + (index + 1)" 
-        class="w-full h-[250px] sm:h-[350px] object-cover"
+        @click="openImageViewer(post.post_images, index)"
+        class="w-full h-[250px] sm:h-[350px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
       />
     </div>
     
@@ -62,18 +64,21 @@ $currentUser = $currentUser ?? [];
       <img 
         :src="post.post_images[0].image_path" 
         alt="Post image 1" 
-        class="w-full h-full object-cover"
+        @click="openImageViewer(post.post_images, 0)"
+        class="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
       />
       <div class="grid grid-rows-2 gap-0.5 h-full">
         <img 
           :src="post.post_images[1].image_path" 
           alt="Post image 2" 
-          class="w-full h-full object-cover"
+          @click="openImageViewer(post.post_images, 1)"
+          class="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
         />
         <img 
           :src="post.post_images[2].image_path" 
           alt="Post image 3" 
-          class="w-full h-full object-cover"
+          @click="openImageViewer(post.post_images, 2)"
+          class="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
         />
       </div>
     </div>
@@ -84,12 +89,13 @@ $currentUser = $currentUser ?? [];
         <!-- Regular images for first 3 or all 4 if exactly 4 images -->
         <div 
           v-if="index < 3 || post.post_images.length === 4"
-          class="relative w-full h-[175px] sm:h-[250px] overflow-hidden"
+          class="relative w-full h-[175px] sm:h-[250px] overflow-hidden cursor-pointer"
+          @click="openImageViewer(post.post_images, index)"
         >
           <img 
             :src="image.image_path" 
             :alt="'Post image ' + (index + 1)" 
-            class="w-full h-full object-cover"
+            class="w-full h-full object-cover hover:opacity-95 transition-opacity"
           />
         </div>
         
@@ -97,6 +103,7 @@ $currentUser = $currentUser ?? [];
         <div 
           v-else-if="index === 3 && post.post_images.length > 4"
           class="relative w-full h-[175px] sm:h-[250px] overflow-hidden cursor-pointer group"
+          @click="openImageViewer(post.post_images, index)"
         >
           <img 
             :src="image.image_path" 

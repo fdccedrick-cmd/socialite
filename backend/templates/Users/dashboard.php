@@ -8,6 +8,61 @@
     'currentUser' => $user ?? [],
     'emptyMessage' => 'No posts yet. Be the first to share something!'
   ]) ?>
+  
+  <!-- Image Viewer Modal -->
+  <transition name="fade">
+    <div 
+      v-if="imageViewer.isOpen"
+      @click="closeImageViewer"
+      class="fixed inset-0 bg-black bg-opacity-95 z-[9999] flex items-center justify-center"
+    >
+      <!-- Close Button -->
+      <button 
+        @click="closeImageViewer"
+        class="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+        title="Close (Esc)"
+      >
+        <i data-lucide="x" class="w-8 h-8"></i>
+      </button>
+      
+      <!-- Image Counter -->
+      <div class="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-sm font-medium bg-black bg-opacity-50 px-3 py-1.5 rounded-full">
+        {{ imageViewer.currentIndex + 1 }} / {{ imageViewer.images.length }}
+      </div>
+      
+      <!-- Previous Button -->
+      <button 
+        v-if="imageViewer.currentIndex > 0"
+        @click.stop="prevImage"
+        class="absolute left-4 text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-3"
+        title="Previous (←)"
+      >
+        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+      </button>
+      
+      <!-- Image Container -->
+      <div 
+        @click.stop
+        class="max-w-7xl max-h-screen w-full h-full flex items-center justify-center p-4"
+      >
+        <img 
+          :src="imageViewer.images[imageViewer.currentIndex]?.image_path || imageViewer.images[imageViewer.currentIndex]"
+          :alt="'Image ' + (imageViewer.currentIndex + 1)"
+          class="max-w-full max-h-full object-contain"
+        />
+      </div>
+      
+      <!-- Next Button -->
+      <button 
+        v-if="imageViewer.currentIndex < imageViewer.images.length - 1"
+        @click.stop="nextImage"
+        class="absolute right-4 text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-3"
+        title="Next (→)"
+      >
+        <i data-lucide="chevron-right" class="w-6 h-6"></i>
+      </button>
+    </div>
+  </transition>
 </div>
 
 <script>
@@ -29,6 +84,11 @@ createApp({
                 isSubmitting: false,
                 error: '',
                 showEmojiPicker: false
+            },
+            imageViewer: {
+                isOpen: false,
+                images: [],
+                currentIndex: 0
             }
         }
     },
@@ -48,6 +108,31 @@ createApp({
             if (diffDays < 7) return `${diffDays}d ago`;
             
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        },
+        openImageViewer(images, index = 0) {
+            this.imageViewer.images = images;
+            this.imageViewer.currentIndex = index;
+            this.imageViewer.isOpen = true;
+            document.body.style.overflow = 'hidden';
+            this.$nextTick(() => {
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            });
+        },
+        closeImageViewer() {
+            this.imageViewer.isOpen = false;
+            document.body.style.overflow = '';
+        },
+        nextImage() {
+            if (this.imageViewer.currentIndex < this.imageViewer.images.length - 1) {
+                this.imageViewer.currentIndex++;
+            }
+        },
+        prevImage() {
+            if (this.imageViewer.currentIndex > 0) {
+                this.imageViewer.currentIndex--;
+            }
         },
         autoResize(event) {
             const textarea = event.target;
@@ -192,6 +277,19 @@ createApp({
             const emojiPicker = e.target.closest('emoji-picker');
             if (!emojiButton && !emojiPicker && this.newPost.showEmojiPicker) {
                 this.newPost.showEmojiPicker = false;
+            }
+        });
+        
+        // Handle keyboard navigation for image viewer
+        document.addEventListener('keydown', (e) => {
+            if (this.imageViewer.isOpen) {
+                if (e.key === 'Escape') {
+                    this.closeImageViewer();
+                } else if (e.key === 'ArrowLeft') {
+                    this.prevImage();
+                } else if (e.key === 'ArrowRight') {
+                    this.nextImage();
+                }
             }
         });
     },

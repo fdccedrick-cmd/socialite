@@ -16,6 +16,25 @@ class UsersTable extends Table
         $this->setDisplayField('full_name');
         $this->setPrimaryKey('id');
         $this->addBehavior('Timestamp');
+
+        // User has many notifications they receive
+        $this->hasMany('Notifications', [
+            'foreignKey' => 'user_id',
+            'dependent' => true,
+        ]);
+
+        // User has many notifications they triggered (as actor)
+        $this->hasMany('ActorNotifications', [
+            'className' => 'Notifications',
+            'foreignKey' => 'actor_id',
+            'dependent' => true,
+        ]);
+
+        // User has many posts
+        $this->hasMany('Posts', [
+            'foreignKey' => 'user_id',
+            'dependent' => true,
+        ]);
     }
 
     public function validationDefault(Validator $validator): Validator
