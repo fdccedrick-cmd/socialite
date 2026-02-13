@@ -6,7 +6,7 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
 $currentPath = $this->request->getPath();
 ?>
 
-<div class="w-full lg:w-56 xl:w-60 bg-white lg:rounded-xl lg:shadow-sm lg:border lg:border-gray-100 p-3 lg:p-4 lg:sticky lg:top-20 h-full lg:h-fit">
+<div class="w-full bg-white lg:rounded-xl lg:shadow-sm lg:border lg:border-gray-100 p-3 lg:p-4 lg:sticky lg:top-20 h-full lg:h-fit">
   <!-- Profile Section (Desktop Only) -->
   <div class="hidden lg:block text-center mb-3 lg:mb-4 pb-3 lg:pb-4 border-b border-gray-100">
     <img 

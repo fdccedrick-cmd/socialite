@@ -2,7 +2,7 @@
 /** @var \App\View\AppView $this */
 ?>
 
-<div class="w-full xl:w-64 2xl:w-72 space-y-3 xl:space-y-4 sticky top-20 h-fit">
+<div class="w-full space-y-3 lg:space-y-4 sticky top-20 h-fit">
   <!-- Friends Section -->
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3 xl:p-4">
     <div class="flex items-center justify-between mb-3">

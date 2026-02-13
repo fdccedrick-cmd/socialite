@@ -81,20 +81,20 @@
         <?= $this->element('navigation/leftnav', ['user' => $currentUser]) ?>
     </div>
     
-    <div class="w-full mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 pt-16 sm:pt-20 max-w-[1920px]">
-        <div class="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6 mx-auto" style="max-width: 1600px;">
+    <div class="w-full px-2 sm:px-4 lg:px-0 pt-16 sm:pt-20">
+        <div class="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-4 xl:gap-5 2xl:gap-6">
             <!-- Left Navigation - Desktop Only -->
-            <aside class="hidden lg:block flex-shrink-0 w-56 lg:w-60 xl:w-64">
+            <aside class="hidden lg:block flex-shrink-0 w-64 lg:w-72 xl:w-80 2xl:w-96 lg:pl-4 xl:pl-6 2xl:pl-8">
                 <?= $this->element('navigation/leftnav', ['user' => $currentUser]) ?>
             </aside>
             
             <!-- Main Content - Scrollable -->
-            <main class="flex-1 min-w-0 max-w-full lg:max-w-2xl xl:max-w-3xl mx-auto w-full main-scroll-container pb-6 sm:pb-10">
+            <main class="flex-1 min-w-0 w-full main-scroll-container pb-6 sm:pb-10">
                 <?= $this->fetch('content') ?>
             </main>
             
             <!-- Right Sidebar - Desktop Only -->
-            <aside class="hidden xl:block flex-shrink-0 w-64 xl:w-72">
+            <aside class="hidden lg:block flex-shrink-0 w-64 lg:w-72 xl:w-80 2xl:w-96 lg:pr-4 xl:pr-6 2xl:pr-8">
                 <?= $this->element('navigation/rightnav') ?>
             </aside>
         </div>
