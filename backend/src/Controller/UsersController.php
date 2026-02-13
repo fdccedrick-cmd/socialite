@@ -269,6 +269,12 @@ class UsersController extends AppController
         // Fetch fresh user data from database
         $userEntity = $this->Users->get($userId);
         $user = $userEntity->toArray();
+        
+        // Ensure all required fields exist with defaults
+        $user['full_name'] = $user['full_name'] ?? $user['username'] ?? 'User';
+        $user['username'] = $user['username'] ?? 'user';
+        $user['profile_photo_path'] = $user['profile_photo_path'] ?? null;
+        $user['bio'] = $user['bio'] ?? null;
 
         // Convert DateTime objects to ISO strings for client-side parsing
         foreach (['created', 'modified'] as $dtField) {
@@ -284,7 +290,10 @@ class UsersController extends AppController
                 'Posts.user_id' => $userId,
                 'Posts.deleted IS' => null
             ])
-            ->contain(['PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]])
+            ->contain([
+                'Users',
+                'PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]
+            ])
             ->order(['Posts.created' => 'DESC'])
             ->toArray();
         

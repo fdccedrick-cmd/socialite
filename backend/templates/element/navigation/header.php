@@ -5,34 +5,39 @@ $username = $user->full_name ?? $user->username ?? 'Guest';
 $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
 ?>
 <div id="headerApp" class="fixed top-0 left-0 w-full bg-white border-b z-50 shadow-sm" v-cloak>
-  <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+  <div class="max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
     <div class="flex items-center justify-between h-14 sm:h-16">
-      <!-- Left: Logo + Search -->
+      <!-- Left: Mobile Menu + Logo + Search -->
        <div class="flex items-center flex-1 gap-2 sm:gap-4">
+  <!-- Mobile Menu Button -->
+  <button @click="toggleMobileMenu" class="lg:hidden p-2 rounded-md hover:bg-gray-100" aria-label="Menu">
+    <i data-lucide="menu" class="h-5 w-5 text-gray-700"></i>
+  </button>
+  
   <!-- Logo -->
-  <a href="/" class="flex items-center gap-1.5 sm:gap-3 shrink-0">
-    <svg class="h-7 w-7 sm:h-9 sm:w-9 text-indigo-600" viewBox="0 0 24 24" fill="none">
+  <a href="/dashboard" class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+    <svg class="h-6 w-6 sm:h-8 sm:w-8 text-indigo-600" viewBox="0 0 24 24" fill="none">
       <path d="M21 12c0 4.97-4.03 9-9 9-1.5 0-2.92-.36-4.18-1L3 21l1.03-4.82C3.36 14.92 3 13.5 3 12 3 7.03 7.03 3 12 3s9 4.03 9 9z" stroke="currentColor" stroke-width="1.5"/>
     </svg>
-    <span class="font-bold text-lg sm:text-2xl text-gray-800">Socialite</span>
+    <span class="font-bold text-base sm:text-xl lg:text-2xl text-gray-800">Socialite</span>
   </a>
 
   <!-- Search -->
-  <div class="flex-1 hidden md:flex">
+  <div class="flex-1 hidden md:flex max-w-md lg:max-w-lg">
     <form action="/search" method="get" class="w-full">
-        <div class="relative w-80">
-        <i data-lucide="search" class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+        <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 lg:w-5 lg:h-5 text-gray-400 absolute left-3 lg:left-4 top-1/2 -translate-y-1/2"></i>
         <input
           id="header-search"
           name="q"
           type="search"
           placeholder="Search people, posts, groups"
-          class="pl-12 pr-4 py-2 rounded-full border border-gray-200 bg-white text-sm text-gray-700 shadow-sm w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          class="pl-10 lg:pl-12 pr-4 py-1.5 lg:py-2 rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-700 shadow-sm w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
         />
       </div>
     </form>
   </div>
-        <button @click="focusSearch" class="md:hidden p-1.5 sm:p-2 rounded hover:bg-gray-100" title="Search">
+        <button @click="focusSearch" class="md:hidden p-1.5 rounded hover:bg-gray-100" title="Search">
           <i data-lucide="search" class="h-4 w-4 sm:h-5 sm:w-5 text-gray-700"></i>
         </button>
       </div>
@@ -107,6 +112,7 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
         data() {
           return {
             open: false,
+            mobileMenuOpen: false,
             username: <?= json_encode($username) ?>,
             avatar: <?= json_encode($avatar) ?>,
             notificationCount: 0,
@@ -116,6 +122,8 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
         methods: {
           toggle() { this.open = !this.open; },
           close() { this.open = false; },
+          toggleMobileMenu() { this.mobileMenuOpen = !this.mobileMenuOpen; },
+          closeMobileMenu() { this.mobileMenuOpen = false; },
           focusSearch() {
             const s = document.getElementById('header-search');
             if (s) { s.focus(); } else { /* fallback: open a quick search modal later */ }
@@ -123,7 +131,13 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
         },
         mounted() {
           document.addEventListener('click', (e) => {
-            if (!el.contains(e.target)) this.close();
+            if (!el.contains(e.target)) {
+              this.close();
+            }
+          });
+          // Emit custom event when mobile menu toggles
+          this.$watch('mobileMenuOpen', (newVal) => {
+            window.dispatchEvent(new CustomEvent('mobile-menu-toggle', { detail: { open: newVal } }));
           });
           // optionally fetch counts via API (uncomment and implement endpoint)
           // fetch('/api/notifications/count').then(r=>r.json()).then(d=>{ this.notificationCount = d.count })

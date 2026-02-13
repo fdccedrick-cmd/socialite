@@ -76,36 +76,11 @@
   <div class="bg-white rounded-b-xl sm:rounded-b-2xl shadow-sm border border-gray-100">
     <!-- Posts Tab -->
     <div v-if="activeTab === 'posts'" class="p-3 sm:p-4 lg:p-6">
-      <!-- Empty State -->
-      <div v-if="posts.length === 0" class="text-center py-12 sm:py-16">
-        <i data-lucide="image" class="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4"></i>
-        <p class="text-gray-500 text-base sm:text-lg">No posts yet</p>
-        <p class="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2">Share your first post to get started</p>
-      </div>
-      
-      <!-- User Posts Grid -->
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
-        <div v-for="post in posts" :key="post.id" class="bg-white rounded-lg border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
-          <!-- Post with images -->
-          <div v-if="post.post_images && post.post_images.length > 0" class="aspect-square">
-            <img 
-              :src="post.post_images[0].image_path" 
-              :alt="'Post image'" 
-              class="w-full h-full object-cover"
-            />
-          </div>
-          <!-- Post with text only -->
-          <div v-else class="aspect-square bg-gradient-to-br from-blue-50 to-purple-50 p-3 sm:p-4 flex items-center justify-center">
-            <p class="text-gray-700 text-xs sm:text-sm line-clamp-6 text-center">{{ post.content_text }}</p>
-          </div>
-          
-          <!-- Post info overlay -->
-          <div class="p-2 sm:p-3 bg-white border-t border-gray-100">
-            <p class="text-[10px] sm:text-xs text-gray-500 truncate">{{ formatDate(post.created) }}</p>
-            <p v-if="post.content_text && post.post_images && post.post_images.length > 0" class="text-[10px] sm:text-xs text-gray-700 truncate mt-0.5 sm:mt-1">{{ post.content_text }}</p>
-          </div>
-        </div>
-      </div>
+      <?= $this->element('posts/post_list', [
+        'posts' => $postsArray ?? [],
+        'currentUser' => $user ?? [],
+        'emptyMessage' => 'No posts yet. Share your first post to get started!'
+      ]) ?>
     </div>
     
     <!-- Saved Tab -->
@@ -119,7 +94,7 @@
   </div>
 
   <!-- Edit Profile Modal -->
-  <?= $this->element('edit_profile_modal') ?>
+  <?= $this->element('users/edit_profile_modal') ?>
 </div>
 
 <script>
@@ -133,11 +108,27 @@
           activeTab: 'posts',
           posts: <?= json_encode($postsArray ?? []) ?>,
           user: {
-            full_name: <?= json_encode($user['full_name'] ?? $user['username'] ?? 'User') ?>,
-            username: <?= json_encode($user['username'] ?? 'user') ?>,
-            avatar: <?= json_encode($user['profile_photo_path'] ?? 'https://i.pravatar.cc/150?img=1') ?>,
-            joinedDate: <?= json_encode(isset($user['created']) ? 'Joined ' . date('M Y', strtotime($user['created'])) : 'Joined recently') ?>,
-            bio: '🌍 Explorer · 📷 Photography enthusiast · ☕ Coffee lover',
+            full_name: <?= json_encode(!empty($user['full_name']) ? $user['full_name'] : (!empty($user['username']) ? $user['username'] : 'User')) ?>,
+            username: <?= json_encode(!empty($user['username']) ? $user['username'] : 'user') ?>,
+            avatar: <?= json_encode(!empty($user['profile_photo_path']) ? $user['profile_photo_path'] : 'https://i.pravatar.cc/150?img=1') ?>,
+            joinedDate: <?php 
+              $joinedDate = 'Joined recently';
+              if (!empty($user['created'])) {
+                try {
+                  $dateStr = is_string($user['created']) ? $user['created'] : (is_object($user['created']) ? $user['created']->format('Y-m-d') : '');
+                  if ($dateStr) {
+                    $timestamp = strtotime($dateStr);
+                    if ($timestamp !== false) {
+                      $joinedDate = 'Joined ' . date('M Y', $timestamp);
+                    }
+                  }
+                } catch (Exception $e) {
+                  $joinedDate = 'Joined recently';
+                }
+              }
+              echo json_encode($joinedDate);
+            ?>,
+            bio: <?= json_encode(!empty($user['bio']) ? $user['bio'] : '🌍 Explorer · 📷 Photography enthusiast · ☕ Coffee lover') ?>,
             stats: {
               posts: <?= json_encode($postCount ?? 0) ?>,
               friends: '0',

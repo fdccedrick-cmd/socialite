@@ -67,30 +67,58 @@
 </head>
 <body class="bg-gray-50">
     <?php $currentUser = $currentUser ?? ($this->Identity->get() ?? null); ?>
-    <?= $this->element('header', ['user' => $currentUser]) ?>
+    <?= $this->element('navigation/header', ['user' => $currentUser]) ?>
     
     <div id="flashContainer" class="flash-container fixed top-16 sm:top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
         <?= $this->Flash->render() ?>
     </div>
     
-    <div class="w-full mx-auto px-2 sm:px-4 lg:px-6 pt-16 sm:pt-20">
-        <div class="flex flex-col lg:flex-row gap-2 sm:gap-4 max-w-[1400px] mx-auto">
-            <!-- Left Navigation - Hidden on mobile, show in sidebar -->
-            <aside class="hidden lg:block flex-shrink-0">
-                <?= $this->element('leftnav', ['user' => $currentUser]) ?>
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenuOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden" onclick="this.classList.add('hidden')"></div>
+    
+    <!-- Mobile Sidebar -->
+    <div id="mobileSidebar" class="fixed top-14 sm:top-16 left-0 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] w-64 bg-white shadow-lg transform -translate-x-full transition-transform duration-300 z-40 lg:hidden overflow-y-auto">
+        <?= $this->element('navigation/leftnav', ['user' => $currentUser]) ?>
+    </div>
+    
+    <div class="w-full mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 pt-16 sm:pt-20 max-w-[1920px]">
+        <div class="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6 mx-auto" style="max-width: 1600px;">
+            <!-- Left Navigation - Desktop Only -->
+            <aside class="hidden lg:block flex-shrink-0 w-56 lg:w-60 xl:w-64">
+                <?= $this->element('navigation/leftnav', ['user' => $currentUser]) ?>
             </aside>
             
             <!-- Main Content - Scrollable -->
-            <main class="flex-1 min-w-0 main-scroll-container pb-6 sm:pb-10">
+            <main class="flex-1 min-w-0 max-w-full lg:max-w-2xl xl:max-w-3xl mx-auto w-full main-scroll-container pb-6 sm:pb-10">
                 <?= $this->fetch('content') ?>
             </main>
             
-            <!-- Right Sidebar - Hidden on mobile and tablet -->
-            <aside class="hidden xl:block flex-shrink-0">
-                <?= $this->element('rightnav') ?>
+            <!-- Right Sidebar - Desktop Only -->
+            <aside class="hidden xl:block flex-shrink-0 w-64 xl:w-72">
+                <?= $this->element('navigation/rightnav') ?>
             </aside>
         </div>
     </div>
+    
+    <script>
+    // Mobile menu toggle handler
+    window.addEventListener('mobile-menu-toggle', function(e) {
+        const overlay = document.getElementById('mobileMenuOverlay');
+        const sidebar = document.getElementById('mobileSidebar');
+        if (e.detail.open) {
+            overlay.classList.remove('hidden');
+            sidebar.classList.remove('-translate-x-full');
+        } else {
+            overlay.classList.add('hidden');
+            sidebar.classList.add('-translate-x-full');
+        }
+    });
+    
+    // Close mobile menu when clicking overlay
+    document.getElementById('mobileMenuOverlay')?.addEventListener('click', function() {
+        window.dispatchEvent(new CustomEvent('mobile-menu-toggle', { detail: { open: false } }));
+    });
+    </script>
 
 </body>
 </html>
