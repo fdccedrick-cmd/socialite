@@ -208,4 +208,321 @@ class PostsController extends AppController
         }
     }
 
+    /**
+     * Edit/Update a post
+     */
+    public function edit($id = null)
+    {
+        $this->request->allowMethod(['post', 'put', 'patch']);
+        $this->viewBuilder()->disableAutoLayout();
+        
+        // Verify authentication
+        $result = $this->Authentication->getResult();
+        if (!($result && $result->isValid())) {
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(401)
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ]));
+        }
+
+        $identity = $this->Authentication->getIdentity();
+        $userId = null;
+        
+        // Extract user ID from identity
+        if (is_object($identity)) {
+            if (method_exists($identity, 'getOriginalData')) {
+                $orig = $identity->getOriginalData();
+                if (is_object($orig) && isset($orig->id)) {
+                    $userId = $orig->id;
+                } elseif (is_array($orig) && isset($orig['id'])) {
+                    $userId = $orig['id'];
+                }
+            } elseif (isset($identity->id)) {
+                $userId = $identity->id;
+            }
+        } elseif (is_array($identity) && isset($identity['id'])) {
+            $userId = $identity['id'];
+        }
+
+        if (!$userId) {
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(401)
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'User not found'
+                ]));
+        }
+
+        try {
+            $post = $this->Posts->get($id, [
+                'contain' => ['PostImages']
+            ]);
+            
+            // Check if user owns this post
+            if ($post->user_id !== $userId) {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStatus(403)
+                    ->withStringBody(json_encode([
+                        'success' => false,
+                        'message' => 'You can only edit your own posts'
+                    ]));
+            }
+            
+            // Get updated content
+            $contentText = $this->request->getData('content_text');
+            $removedImageIds = $this->request->getData('removed_images', []);
+            $newImages = $this->request->getData('new_images');
+            
+            // Validate at least content or images
+            $remainingImagesCount = count($post->post_images) - count($removedImageIds);
+            $newImagesCount = !empty($newImages) ? (is_array($newImages) ? count($newImages) : 1) : 0;
+            
+            if (empty($contentText) && ($remainingImagesCount + $newImagesCount) === 0) {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStatus(400)
+                    ->withStringBody(json_encode([
+                        'success' => false,
+                        'message' => 'Post must have either text or images'
+                    ]));
+            }
+            
+            // Start transaction
+            $connection = $this->Posts->getConnection();
+            $connection->begin();
+            
+            // Update post text
+            $post->content_text = $contentText;
+            $post->modified = new \DateTime();
+            
+            if (!$this->Posts->save($post)) {
+                $connection->rollback();
+                return $this->response
+                    ->withType('application/json')
+                    ->withStatus(500)
+                    ->withStringBody(json_encode([
+                        'success' => false,
+                        'message' => 'Failed to update post'
+                    ]));
+            }
+            
+            // Handle removed images
+            if (!empty($removedImageIds)) {
+                $postImagesTable = $this->getTableLocator()->get('PostImages');
+                foreach ($removedImageIds as $imageId) {
+                    $image = $postImagesTable->get($imageId);
+                    if ($image->post_id === $post->id) {
+                        // Delete file from filesystem
+                        $imagePath = WWW_ROOT . ltrim($image->image_path, '/');
+                        if (file_exists($imagePath)) {
+                            unlink($imagePath);
+                        }
+                        $postImagesTable->delete($image);
+                    }
+                }
+            }
+            
+            // Handle new images
+            if (!empty($newImages)) {
+                $postImagesTable = $this->getTableLocator()->get('PostImages');
+                
+                // Ensure newImages is an array
+                if (!is_array($newImages)) {
+                    $newImages = [$newImages];
+                }
+                
+                // Get current max sort order
+                $maxSortOrder = $postImagesTable->find()
+                    ->where(['post_id' => $post->id])
+                    ->max('sort_order');
+                $sortOrder = $maxSortOrder ? $maxSortOrder + 1 : 0;
+                
+                foreach ($newImages as $uploadedFile) {
+                    if (is_object($uploadedFile) && method_exists($uploadedFile, 'getError') && $uploadedFile->getError() === UPLOAD_ERR_OK) {
+                        // Validate file type
+                        $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+                        $fileType = $uploadedFile->getClientMediaType();
+                        
+                        if (!in_array($fileType, $allowedTypes)) {
+                            $connection->rollback();
+                            return $this->response
+                                ->withType('application/json')
+                                ->withStatus(400)
+                                ->withStringBody(json_encode([
+                                    'success' => false,
+                                    'message' => 'Invalid file type'
+                                ]));
+                        }
+                        
+                        // Validate file size
+                        $maxSize = 10 * 1024 * 1024;
+                        if ($uploadedFile->getSize() > $maxSize) {
+                            $connection->rollback();
+                            return $this->response
+                                ->withType('application/json')
+                                ->withStatus(400)
+                                ->withStringBody(json_encode([
+                                    'success' => false,
+                                    'message' => 'File too large'
+                                ]));
+                        }
+                        
+                        // Generate unique filename
+                        $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
+                        $filename = 'post_' . $post->id . '_' . time() . '_' . $sortOrder . '.' . $extension;
+                        
+                        $uploadDir = WWW_ROOT . 'img' . DS . 'post_uploads';
+                        if (!is_dir($uploadDir)) {
+                            mkdir($uploadDir, 0755, true);
+                        }
+                        
+                        $uploadPath = $uploadDir . DS . $filename;
+                        $uploadedFile->moveTo($uploadPath);
+                        
+                        // Create PostImage entity
+                        $postImage = $postImagesTable->newEmptyEntity();
+                        $postImage = $postImagesTable->patchEntity($postImage, [
+                            'post_id' => $post->id,
+                            'image_path' => '/img/post_uploads/' . $filename,
+                            'sort_order' => $sortOrder
+                        ]);
+                        
+                        if (!$postImagesTable->save($postImage)) {
+                            throw new \Exception('Failed to save post image');
+                        }
+                        
+                        $sortOrder++;
+                    }
+                }
+            }
+            
+            $connection->commit();
+            
+            // Reload post with updated images
+            $updatedPost = $this->Posts->get($id, [
+                'contain' => ['Users', 'PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]]
+            ]);
+            
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode([
+                    'success' => true,
+                    'message' => 'Post updated successfully',
+                    'post' => $updatedPost
+                ]));
+                
+        } catch (\Exception $e) {
+            if (isset($connection)) {
+                $connection->rollback();
+            }
+            Log::error('Error editing post: ' . $e->getMessage());
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(500)
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'An error occurred while updating the post'
+                ]));
+        }
+    }
+
+    /**
+     * Delete a post (soft delete)
+     */
+    public function delete($id = null)
+    {
+        $this->request->allowMethod(['post', 'delete']);
+        $this->viewBuilder()->disableAutoLayout();
+        
+        // Verify authentication
+        $result = $this->Authentication->getResult();
+        if (!($result && $result->isValid())) {
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(401)
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ]));
+        }
+
+        $identity = $this->Authentication->getIdentity();
+        $userId = null;
+        
+        // Extract user ID from identity
+        if (is_object($identity)) {
+            if (method_exists($identity, 'getOriginalData')) {
+                $orig = $identity->getOriginalData();
+                if (is_object($orig) && isset($orig->id)) {
+                    $userId = $orig->id;
+                } elseif (is_array($orig) && isset($orig['id'])) {
+                    $userId = $orig['id'];
+                }
+            } elseif (isset($identity->id)) {
+                $userId = $identity->id;
+            }
+        } elseif (is_array($identity) && isset($identity['id'])) {
+            $userId = $identity['id'];
+        }
+
+        if (!$userId) {
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(401)
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'User not found'
+                ]));
+        }
+
+        try {
+            $post = $this->Posts->get($id);
+            
+            // Check if user owns this post
+            if ($post->user_id !== $userId) {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStatus(403)
+                    ->withStringBody(json_encode([
+                        'success' => false,
+                        'message' => 'You can only delete your own posts'
+                    ]));
+            }
+            
+            // Soft delete by setting deleted field
+            $post->deleted = new \DateTime();
+            
+            if ($this->Posts->save($post)) {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([
+                        'success' => true,
+                        'message' => 'Post deleted successfully'
+                    ]));
+            } else {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStatus(500)
+                    ->withStringBody(json_encode([
+                        'success' => false,
+                        'message' => 'Failed to delete post'
+                    ]));
+            }
+        } catch (\Exception $e) {
+            Log::error('Error deleting post: ' . $e->getMessage());
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(500)
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'An error occurred while deleting the post'
+                ]));
+        }
+    }
+
 }

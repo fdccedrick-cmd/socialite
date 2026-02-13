@@ -16,6 +16,8 @@ return static function (RouteBuilder $routes): void {
         
         // Posts routes
         $builder->connect('/posts/create', ['controller' => 'Posts', 'action' => 'create']);
+        $builder->connect('/posts/edit/{id}', ['controller' => 'Posts', 'action' => 'edit'], ['pass' => ['id']]);
+        $builder->connect('/posts/delete/{id}', ['controller' => 'Posts', 'action' => 'delete'], ['pass' => ['id']]);
         
         // Comments routes
         $builder->connect('/comments/add', ['controller' => 'Comments', 'action' => 'add']);

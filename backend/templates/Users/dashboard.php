@@ -551,8 +551,13 @@ const app = createApp({
                     this.insertEmoji(event.detail.unicode);
                 });
             }
-        });
-        
+        });        
+        // Close post menu when clicking outside
+        document.addEventListener('click', this.handleClickOutside);
+    },
+    beforeUnmount() {
+        // Clean up event listener
+        document.removeEventListener('click', this.handleClickOutside);        
         // Close emoji picker when clicking outside
         document.addEventListener('click', (e) => {
             const emojiButton = e.target.closest('[title="Add emoji"]');

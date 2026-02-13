@@ -366,7 +366,7 @@ class UsersController extends AppController
         // Count posts for stats
         $postCount = count($postsArray);
 
-        $this->set(compact('user', 'postsArray', 'postCount'));
+        $this->set(compact('user', 'postsArray', 'postCount', 'currentUserId'));
     }
 
     public function updateProfile()
