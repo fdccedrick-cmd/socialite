@@ -89,4 +89,25 @@ class UsersTable extends Table
         $rules->add($rules->isUnique(['username'], 'This username is already taken'), ['errorField' => 'username']);
         return $rules;
     }
+
+    /**
+     * Get user data formatted for templates
+     * 
+     * @param int $userId
+     * @return array
+     */
+    public function getFormatted($userId)
+    {
+        $userEntity = $this->get($userId);
+        $user = $userEntity->toArray();
+
+        // Format date fields
+        foreach (['created', 'modified'] as $dtField) {
+            if (!empty($user[$dtField]) && $user[$dtField] instanceof \DateTimeInterface) {
+                $user[$dtField] = $user[$dtField]->format(DATE_ATOM);
+            }
+        }
+
+        return $user;
+    }
 }

@@ -6,6 +6,7 @@ namespace App\Model\Table;
 use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
+use Cake\ORM\TableRegistry;
 use Cake\Validation\Validator;
 
 /**
@@ -149,5 +150,44 @@ class CommentsTable extends Table
         $comment = $this->get($id);
         $comment->deleted_at = new \DateTime();
         return (bool)$this->save($comment);
+    }
+
+    /**
+     * Get comments for a post with like data
+     * 
+     * @param int $postId
+     * @param int|null $userId Current user ID
+     * @return array
+     */
+    public function getCommentsForPost(int $postId, ?int $userId): array
+    {
+        $likesTable = TableRegistry::getTableLocator()->get('Likes');
+        
+        $comments = $this->find()
+            ->where([
+                'post_id' => $postId,
+                'deleted_at IS' => null
+            ])
+            ->contain(['Users'])
+            ->order(['Comments.created_at' => 'ASC'])
+            ->toArray();
+        
+        $commentsArray = [];
+        foreach ($comments as $comment) {
+            $commentData = $comment->toArray();
+            
+            // Format comment dates
+            if (!empty($commentData['created_at']) && $commentData['created_at'] instanceof \DateTimeInterface) {
+                $commentData['created_at'] = $commentData['created_at']->format(DATE_ATOM);
+            }
+            
+            // Add like data (delegated to LikesTable)
+            $commentData['like_count'] = $likesTable->getLikeCount('Comment', $comment->id);
+            $commentData['is_liked'] = $likesTable->isLikedByUser('Comment', $comment->id, $userId);
+            
+            $commentsArray[] = $commentData;
+        }
+        
+        return $commentsArray;
     }
 }

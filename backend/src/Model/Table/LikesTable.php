@@ -91,4 +91,44 @@ class LikesTable extends Table
 
         return $rules;
     }
+
+    /**
+     * Get like count for a target
+     * 
+     * @param string $targetType 'Post' or 'Comment'
+     * @param int $targetId
+     * @return int
+     */
+    public function getLikeCount(string $targetType, int $targetId): int
+    {
+        return $this->find()
+            ->where([
+                'target_type' => $targetType,
+                'target_id' => $targetId
+            ])
+            ->count();
+    }
+
+    /**
+     * Check if user liked a target
+     * 
+     * @param string $targetType 'Post' or 'Comment'
+     * @param int $targetId
+     * @param int|null $userId
+     * @return bool
+     */
+    public function isLikedByUser(string $targetType, int $targetId, ?int $userId): bool
+    {
+        if (!$userId) {
+            return false;
+        }
+
+        return $this->find()
+            ->where([
+                'target_type' => $targetType,
+                'target_id' => $targetId,
+                'user_id' => $userId
+            ])
+            ->count() > 0;
+    }
 }

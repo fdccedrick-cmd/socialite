@@ -5,6 +5,7 @@ namespace App\Model\Table;
 
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
+use Cake\ORM\TableRegistry;
 use Cake\Validation\Validator;
 
 class PostsTable extends Table
@@ -75,4 +76,51 @@ class PostsTable extends Table
 
         return $rules;
     }
+
+    /**
+     * Get posts with engagement data for feed
+     * 
+     * @param int $userId
+     * @return array
+     */
+    public function getPostsWithEngagement(int $userId): array
+    {
+        $likesTable = TableRegistry::getTableLocator()->get('Likes');
+        $commentsTable = TableRegistry::getTableLocator()->get('Comments');
+        
+        $posts = $this->find()
+            ->where(['Posts.deleted IS' => null])
+            ->contain([
+                'Users',
+                'PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]
+            ])
+            ->order(['Posts.created' => 'DESC'])
+            ->toArray();
+        
+        $postsArray = [];
+        foreach ($posts as $post) {
+            $postData = $post->toArray();
+            
+            // Format dates
+            if (!empty($postData['created']) && $postData['created'] instanceof \DateTimeInterface) {
+                $postData['created'] = $postData['created']->format(DATE_ATOM);
+            }
+            if (!empty($postData['modified']) && $postData['modified'] instanceof \DateTimeInterface) {
+                $postData['modified'] = $postData['modified']->format(DATE_ATOM);
+            }
+            
+            // Add like data (delegated to LikesTable)
+            $postData['like_count'] = $likesTable->getLikeCount('Post', $post->id);
+            $postData['is_liked'] = $likesTable->isLikedByUser('Post', $post->id, $userId);
+            
+            // Add comments (delegated to CommentsTable)
+            $postData['comments'] = $commentsTable->getCommentsForPost($post->id, $userId);
+            $postData['comment_count'] = count($postData['comments']);
+            
+            $postsArray[] = $postData;
+        }
+        
+        return $postsArray;
+    }
+      
 }
