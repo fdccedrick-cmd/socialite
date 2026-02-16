@@ -80,6 +80,11 @@ const app = createApp({
                 console.error('Error toggling like:', error);
             }
         },
+                handleOpenComment(postId) {
+                    if (typeof this.openCommentInput === 'function') return this.openCommentInput(postId);
+                    if (typeof window.openCommentInput === 'function') return window.openCommentInput(postId);
+                    console.warn('openCommentInput not available');
+                },
         async openCommentInput(postId) {
             const post = this.posts.find(p => p.id === postId);
             if (!post) return;
@@ -495,7 +500,13 @@ const app = createApp({
         // Close post menu when clicking outside
         document.addEventListener('click', this.handleClickOutside);
         // Expose comment opener globally as a fallback for templates
-        window.openCommentInput = this.openCommentInput.bind(this);
+        if (typeof this.openCommentInput === 'function') {
+            window.openCommentInput = this.openCommentInput.bind(this);
+        }
+        // Expose the delegator globally so templates outside instance scope still work
+        if (typeof this.handleOpenComment === 'function') {
+            window.handleOpenComment = this.handleOpenComment.bind(this);
+        }
     },
     beforeUnmount() {
         // Clean up event listener
@@ -532,6 +543,9 @@ const app = createApp({
         // Remove global fallback
         if (window.openCommentInput && window.openCommentInput === this.openCommentInput) {
             try { delete window.openCommentInput; } catch (e) { window.openCommentInput = undefined; }
+        }
+        if (window.handleOpenComment && window.handleOpenComment === this.handleOpenComment) {
+            try { delete window.handleOpenComment; } catch (e) { window.handleOpenComment = undefined; }
         }
     },
     updated() {

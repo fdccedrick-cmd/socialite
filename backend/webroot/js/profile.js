@@ -252,6 +252,31 @@
           await this.loadComments(postId);
         }
       },
+      async openCommentInput(postId) {
+        const post = this.posts.find(p => p.id === postId);
+        if (!post) return;
+
+        post.showComments = true;
+
+        if (post.comments.length === 0) {
+          try {
+            await this.loadComments(postId);
+          } catch (e) {
+            console.error('Error loading comments for openCommentInput:', e);
+          }
+        }
+
+        this.$nextTick(() => {
+          const input = document.getElementById('comment-input-' + postId);
+          if (input) input.focus();
+        });
+      },
+      // Safe delegator used by templates to avoid "not a function" errors
+        handleOpenComment(postId) {
+          if (typeof this.openCommentInput === 'function') return this.openCommentInput(postId);
+          if (typeof window.openCommentInput === 'function') return window.openCommentInput(postId);
+          console.warn('openCommentInput not available on profile instance');
+        },
       async loadComments(postId) {
         try {
           const response = await fetch(`/comments/get-by-post/${postId}`, {
@@ -679,6 +704,9 @@
       
       // Close post menu when clicking outside
       document.addEventListener('click', this.handleClickOutside);
+      // Expose global fallback handlers
+      window.openCommentInput = this.openCommentInput.bind(this);
+      window.handleOpenComment = this.handleOpenComment.bind(this);
       
       // Handle keyboard navigation for image viewer
       document.addEventListener('keydown', (e) => {
@@ -696,6 +724,12 @@
     beforeUnmount() {
       // Clean up event listener
       document.removeEventListener('click', this.handleClickOutside);
+      if (window.openCommentInput && window.openCommentInput === this.openCommentInput) {
+        try { delete window.openCommentInput; } catch (e) { window.openCommentInput = undefined; }
+      }
+      if (window.handleOpenComment && window.handleOpenComment === this.handleOpenComment) {
+        try { delete window.handleOpenComment; } catch (e) { window.handleOpenComment = undefined; }
+      }
     },
     updated() {
       // Re-initialize Lucide icons after DOM updates

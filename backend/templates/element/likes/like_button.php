@@ -36,7 +36,7 @@
     
     <!-- Comment Button -->
     <button 
-      @click.prevent="openCommentInput(post.id)"
+      @click.prevent="(typeof handleOpenComment === 'function' ? handleOpenComment(post.id) : (typeof window !== 'undefined' && typeof window.handleOpenComment === 'function' ? window.handleOpenComment(post.id) : null))"
       class="flex items-center gap-1 sm:gap-1.5 text-gray-700 hover:text-blue-500 transition-colors"
       title="Comment"
     >
