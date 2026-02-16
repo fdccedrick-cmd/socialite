@@ -110,7 +110,6 @@
 </div>
 
 <style>
-/* Reset CakePHP Form Helper default styles */
 .form-group {
     width: 100%;
 }
@@ -119,7 +118,6 @@
     border-color: inherit;
 }
 
-/* Hide CakePHP's default error messages - using Vue validation */
 .error-message {
     display: none;
 }
@@ -161,17 +159,8 @@ createApp({
         handleSubmit(e) {
             this.errors = {};
             this.showError = false;
-            
-            // Debug logging
-            console.log('Register form submit - Vue formData:', this.formData);
-            console.log('Form inputs:', {
-                full_name: e.target.querySelector('[name="full_name"]')?.value,
-                username: e.target.querySelector('[name="username"]')?.value,
-                password: e.target.querySelector('[name="password"]')?.value,
-                confirm_password: e.target.querySelector('[name="confirm_password"]')?.value
-            });
 
-            // Full name validation - only prevent if validation fails
+            // validations
             if (!this.formData.full_name || this.formData.full_name.trim().length < 2) {
                 this.errors.full_name = 'Full name is required (at least 2 characters)';
                 e.preventDefault();
@@ -185,7 +174,6 @@ createApp({
                 return;
             }
             
-            // Check if username contains only alphanumeric characters
             const alphaNumeric = /^[a-zA-Z0-9]+$/;
             if (!alphaNumeric.test(this.formData.username)) {
                 this.errors.username = 'Username can only contain letters and numbers';
@@ -206,10 +194,6 @@ createApp({
                 e.preventDefault();
                 return;
             }
-
-            // Validation passed - let browser submit naturally
-            // DON'T set isSubmitting = true here as it disables inputs, preventing their values from POSTing
-            console.log('Form validation passed, allowing natural submit');
         }
     },
     mounted() {

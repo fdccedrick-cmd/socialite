@@ -145,10 +145,8 @@ const app = createApp({
                 const data = await response.json();
 
                 if (data.success) {
-                    // Find the index of the post
                     const postIndex = this.posts.findIndex(p => p.id === postId);
                     if (postIndex !== -1) {
-                        // Use Vue's splice to ensure reactivity
                         const updatedPost = {
                             ...this.posts[postIndex],
                             is_liked: data.liked,

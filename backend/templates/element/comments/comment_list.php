@@ -30,7 +30,7 @@
       <div class="bg-gray-100 rounded-2xl px-3 py-2 inline-block max-w-full">
         <!-- <p class="font-semibold text-[10px] sm:text-xs">{{ comment.user?.full_name }}</p> -->
          <a v-if="comment.user" 
-            :href="`/users/profile/${comment.user.id}`"
+            :href="`/profile/${comment.user.id}`"
             class="font-semibold text-[10px] sm:text-xs text-gray-900 hover:underline cursor-pointer inline-block"
          >
             {{ comment.user.full_name }}

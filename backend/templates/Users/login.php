@@ -96,7 +96,6 @@
 </div>
 
 <style>
-/* Reset CakePHP Form Helper default styles */
 .form-group {
     width: 100%;
 }
@@ -105,7 +104,6 @@
     border-color: inherit;
 }
 
-/* Hide CakePHP's default error messages - using Vue validation */
 .error-message {
     display: none;
 }
@@ -147,15 +145,8 @@ createApp({
     methods: {
         handleSubmit(e) {
             this.errors = {};
-            
-            // Debug logging
-            console.log('Form submit - Vue formData:', this.formData);
-            console.log('Form inputs:', {
-                username: e.target.querySelector('[name="username"]')?.value,
-                password: e.target.querySelector('[name="password"]')?.value
-            });
 
-            // Basic validation - only prevent default if validation fails
+            // validation
             if (!this.formData.username) {
                 this.errors.username = 'Username is required';
                 e.preventDefault();
@@ -167,18 +158,12 @@ createApp({
                 e.preventDefault();
                 return;
             }
-
-            // Validation passed - let browser submit naturally
-            // DON'T set isSubmitting = true here as it disables inputs, preventing their values from POSTing
-            console.log('Form validation passed, allowing natural submit');
         }
     },
     mounted() {
-        // Check for flash messages in URL params or session
         const urlParams = new URLSearchParams(window.location.search);
         const success = urlParams.get('success');
         
-        // Display success message if coming from registration
         if (success) {
             this.showSuccess = true;
             this.successMessage = 'Account created successfully! Please login.';
@@ -189,7 +174,6 @@ createApp({
         
         lucide.createIcons();
 
-        // password toggle handled by Vue's `showPassword` reactive state
     }
 }).mount('#loginApp');
 

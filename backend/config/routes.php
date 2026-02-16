@@ -10,9 +10,11 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/register', ['controller' => 'Users', 'action' => 'register']);
         $builder->connect('/logout', ['controller' => 'Users', 'action' => 'logout']);
         $builder->connect('/dashboard', ['controller' => 'Users', 'action' => 'dashboard']);
-        $builder->connect('/profile', ['controller' => 'Users', 'action' => 'profile']);
-        $builder->connect('/users/profile/{id}', ['controller' => 'Users', 'action' => 'profile'], ['pass' => ['id']]);
-        $builder->connect('/users/update-profile', ['controller' => 'Users', 'action' => 'updateProfile']);
+        
+        // Profile routes
+        $builder->connect('/profile', ['controller' => 'Profile', 'action' => 'view']);
+        $builder->connect('/profile/{id}', ['controller' => 'Profile', 'action' => 'view'], ['pass' => ['id']]);
+        $builder->connect('/profile/update', ['controller' => 'Profile', 'action' => 'update']);
         
         // Posts routes
         $builder->connect('/posts/create', ['controller' => 'Posts', 'action' => 'create']);

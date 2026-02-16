@@ -339,8 +339,9 @@ class PostsController extends AppController
                 // Get current max sort order
                 $maxSortOrder = $postImagesTable->find()
                     ->where(['post_id' => $post->id])
-                    ->max('sort_order');
-                $sortOrder = $maxSortOrder ? $maxSortOrder + 1 : 0;
+                    ->select(['max_order' => $postImagesTable->query()->func()->max('sort_order')])
+                    ->first();
+                $sortOrder = ($maxSortOrder && $maxSortOrder->max_order) ? $maxSortOrder->max_order + 1 : 0;
                 
                 foreach ($newImages as $uploadedFile) {
                     if (is_object($uploadedFile) && method_exists($uploadedFile, 'getError') && $uploadedFile->getError() === UPLOAD_ERR_OK) {

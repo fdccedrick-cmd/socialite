@@ -19,7 +19,7 @@ $currentUser = $currentUser ?? [];
         class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
       />
       <div class="flex-1 min-w-0">
-        <a :href="`/users/profile/${post.user.id}`"
+        <a :href="`/profile/${post.user.id}`"
            class="block font-semibold text-xs sm:text-sm text-gray-900 truncate hover:underline cursor-pointer inline-block">
             {{ post.user.full_name }}
         </a>
@@ -144,8 +144,7 @@ $currentUser = $currentUser ?? [];
   </div>
   
   <!-- Post Images (only show when not editing) -->
-  <div v-if="!post.isEditing" class="post-images-container">
-  <div v-if="post.post_images && post.post_images.length > 0" class="w-full bg-gray-100">
+  <div v-if="!post.isEditing && post.post_images && post.post_images.length > 0" class="w-full bg-gray-100">
     <!-- Single Image -->
     <div 
       v-if="post.post_images.length === 1"
@@ -229,10 +228,9 @@ $currentUser = $currentUser ?? [];
       </template>
     </div>
   </div>
-  </div>
   
   <!-- Post Actions (Likes & Comments) - Hide when editing -->
-  <div v-if="!post.isEditing">
+  <div v-if="!post.isEditing" class="relative w-full">
     <?= $this->element('likes/like_button', ['post' => $post ?? []]) ?>
   
     <!-- Comment Section -->
