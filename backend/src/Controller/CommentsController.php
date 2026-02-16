@@ -25,10 +25,8 @@ class CommentsController extends AppController
             $comment = $this->Comments->newEmptyEntity();
             $data = $this->request->getData();
             
-            // Get the logged-in user
             $user = $this->Authentication->getIdentity();
             if (!$user) {
-                // Check if it's an AJAX request
                 if ($this->request->is('ajax') || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
                     return $this->response
                         ->withType('application/json')
@@ -46,14 +44,13 @@ class CommentsController extends AppController
             $data['user_id'] = $user->id;
             $data['created_at'] = new \DateTime();
             
-            // Handle image upload if present
+            // image upload
             if (!empty($data['content_image'])) {
                 $image = $data['content_image'];
                 if (is_object($image) && method_exists($image, 'getError') && $image->getError() === UPLOAD_ERR_OK) {
                     $filename = uniqid() . '_' . $image->getClientFilename();
                     $targetPath = WWW_ROOT . 'img' . DS . 'comment_uploads' . DS . $filename;
                     
-                    // Create directory if it doesn't exist
                     $dir = WWW_ROOT . 'img' . DS . 'comment_uploads';
                     if (!file_exists($dir)) {
                         mkdir($dir, 0755, true);
@@ -88,9 +85,7 @@ class CommentsController extends AppController
                     error_log('Comment notification error: ' . $e->getMessage());
                 }
                 
-                // Return JSON for AJAX requests
                 if ($this->request->is('ajax') || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
-                    // Load the comment with user data
                     $savedComment = $this->Comments->get($comment->id, [
                         'contain' => ['Users']
                     ]);
@@ -105,14 +100,12 @@ class CommentsController extends AppController
                 }
                 
                 $this->Flash->success(__('Your comment has been posted.'));
-                
-                // Redirect back to dashboard (for non-AJAX)
+               
                 return $this->redirect(['controller' => 'Users', 'action' => 'dashboard']);
             } else {
                 $errors = $comment->getErrors();
                 error_log('Comment save failed: ' . json_encode($errors));
                 
-                // Return JSON error for AJAX
                 if ($this->request->is('ajax') || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
                     return $this->response
                         ->withType('application/json')
@@ -131,7 +124,6 @@ class CommentsController extends AppController
             error_log('Comment add error: ' . $e->getMessage());
             error_log('Stack trace: ' . $e->getTraceAsString());
             
-            // Return JSON error for AJAX
             if ($this->request->is('ajax') || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
                 return $this->response
                     ->withType('application/json')
@@ -162,7 +154,6 @@ class CommentsController extends AppController
             'contain' => [],
         ]);
         
-        // Check if user owns this comment
         $user = $this->Authentication->getIdentity();
         if ($comment->user_id !== $user->id) {
             $this->Flash->error(__('You can only edit your own comments.'));
@@ -172,11 +163,9 @@ class CommentsController extends AppController
         $data = $this->request->getData();
         $data['updated_at'] = new \DateTime();
         
-        // Handle image upload if present
         if (!empty($data['content_image'])) {
             $image = $data['content_image'];
             if ($image->getError() === UPLOAD_ERR_OK) {
-                // Delete old image if exists
                 if (!empty($comment->content_image_path)) {
                     $oldPath = WWW_ROOT . $comment->content_image_path;
                     if (file_exists($oldPath)) {
@@ -187,7 +176,6 @@ class CommentsController extends AppController
                 $filename = uniqid() . '_' . $image->getClientFilename();
                 $targetPath = WWW_ROOT . 'img' . DS . 'comments' . DS . $filename;
                 
-                // Create directory if it doesn't exist
                 $dir = WWW_ROOT . 'img' . DS . 'comments';
                 if (!file_exists($dir)) {
                     mkdir($dir, 0755, true);
@@ -223,7 +211,6 @@ class CommentsController extends AppController
         
         $comment = $this->Comments->get($id);
         
-        // Check if user owns this comment
         $user = $this->Authentication->getIdentity();
         if ($comment->user_id !== $user->id) {
             $this->Flash->error(__('You can only delete your own comments.'));

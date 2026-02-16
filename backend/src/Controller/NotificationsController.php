@@ -39,7 +39,6 @@ class NotificationsController extends AppController
             ->limit(50)
             ->all();
 
-        // Mark all as read when viewing
         $this->Notifications->updateAll(
             ['is_read' => true, 'read_at' => new \DateTime()],
             ['user_id' => $userId, 'is_read' => false]
@@ -99,7 +98,7 @@ class NotificationsController extends AppController
             
             $userId = $identity->getOriginalData()->id;
             
-            // Get recent notifications with actor user data
+            
             $notifications = $this->Notifications->find()
                 ->where(['Notifications.user_id' => $userId])
                 ->contain(['Actors'])
@@ -107,14 +106,14 @@ class NotificationsController extends AppController
                 ->limit(10)
                 ->toArray();
             
-            // Format notifications with actor avatar
+            
             $formattedNotifications = array_map(function ($notif) {
-                // Default avatar - use pravatar as fallback
+                
                 $actorAvatar = 'https://i.pravatar.cc/150?img=' . ($notif->actor_id % 70 + 1);
                 
-                // Check if actor exists and has profile_photo_path
+                
                 if (isset($notif->actor) && !empty($notif->actor->profile_photo_path)) {
-                    // Use the profile_photo_path directly (it's already a full path from DB)
+                    
                     $actorAvatar = $notif->actor->profile_photo_path;
                 }
                 
@@ -132,7 +131,7 @@ class NotificationsController extends AppController
                 ];
             }, $notifications);
             
-            // Count unread
+           
             $unreadCount = $this->Notifications->find()
                 ->where([
                     'user_id' => $userId,
@@ -171,7 +170,7 @@ class NotificationsController extends AppController
         $identity = $this->Authentication->getIdentity();
         
         if (!$identity) {
-            // Check if AJAX/API request
+            
             if ($this->request->is('ajax') || $this->request->accepts('application/json')) {
                 return $this->response
                     ->withType('application/json')
@@ -188,7 +187,6 @@ class NotificationsController extends AppController
         try {
             $notification = $this->Notifications->get($id);
             
-            // Ensure user owns this notification
             if ($notification->user_id !== $userId) {
                 if ($this->request->is('ajax') || $this->request->accepts('application/json')) {
                     return $this->response
@@ -205,7 +203,7 @@ class NotificationsController extends AppController
             $notification->read_at = new \DateTime();
             
             if ($this->Notifications->save($notification)) {
-                // AJAX/API response
+             
                 if ($this->request->is('ajax') || $this->request->accepts('application/json')) {
                     return $this->response
                         ->withType('application/json')
@@ -246,7 +244,7 @@ class NotificationsController extends AppController
         $identity = $this->Authentication->getIdentity();
         
         if (!$identity) {
-            // Check if AJAX/API request
+            
             if ($this->request->is('ajax') || $this->request->accepts('application/json')) {
                 return $this->response
                     ->withType('application/json')
@@ -266,7 +264,6 @@ class NotificationsController extends AppController
                 ['user_id' => $userId, 'is_read' => false]
             );
 
-            // AJAX/API response
             if ($this->request->is('ajax') || $this->request->accepts('application/json')) {
                 return $this->response
                     ->withType('application/json')
@@ -309,7 +306,6 @@ class NotificationsController extends AppController
 
         $notification = $this->Notifications->get($id);
         
-        // Ensure user owns this notification
         if ($notification->user_id !== $user->id) {
             $this->Flash->error('You cannot delete this notification');
             return $this->redirect(['action' => 'index']);

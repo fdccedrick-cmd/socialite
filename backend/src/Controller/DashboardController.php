@@ -12,20 +12,15 @@ class DashboardController extends AppController
      */
     public function index()
     {
-        // Ensure user is authenticated
         $result = $this->Authentication->getResult();
         if (!($result && $result->isValid())) {
             return $this->redirect('/login');
         }
-
-        // Get current user ID
         $userId = $this->getCurrentUserId();
         
-        // Load user data (delegated to UsersTable)
         $usersTable = $this->getTableLocator()->get('Users');
         $user = $usersTable->getFormatted($userId);
         
-        // Load posts with engagement data (delegated to PostsTable)
         $postsTable = $this->getTableLocator()->get('Posts');
         $postsArray = $postsTable->getPostsWithEngagement($userId);
 

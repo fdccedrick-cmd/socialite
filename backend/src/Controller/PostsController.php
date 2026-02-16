@@ -12,8 +12,7 @@ class PostsController extends AppController
     {
         $this->request->allowMethod(['post']);
         $this->viewBuilder()->disableAutoLayout();
-        
-        // Verify authentication
+    
         $result = $this->Authentication->getResult();
         if (!($result && $result->isValid())) {
             return $this->response
@@ -27,7 +26,6 @@ class PostsController extends AppController
         $identity = $this->Authentication->getIdentity();
         $userId = null;
         
-        // Extract user ID from identity
         if (is_object($identity)) {
             if (method_exists($identity, 'getOriginalData')) {
                 $orig = $identity->getOriginalData();
@@ -52,12 +50,10 @@ class PostsController extends AppController
                 ]));
         }
 
-        // Get post data
         $contentText = $this->request->getData('content_text');
         $privacy = $this->request->getData('privacy', 'public');
         $uploadedFiles = $this->request->getData('post_images');
 
-        // Validate at least content or images
         if (empty($contentText) && empty($uploadedFiles)) {
             $this->Flash->error('Post must have either text or images.');
             return $this->response
@@ -68,7 +64,6 @@ class PostsController extends AppController
                 ]));
         }
 
-        // Create post entity
         $post = $this->Posts->newEmptyEntity();
         $postData = [
             'user_id' => $userId,
@@ -78,12 +73,10 @@ class PostsController extends AppController
 
         $post = $this->Posts->patchEntity($post, $postData);
 
-        // Use transaction to save post and images together
         $connection = $this->Posts->getConnection();
         $connection->begin();
 
         try {
-            // Save the post
             if (!$this->Posts->save($post)) {
                 $connection->rollback();
                 $errors = $post->getErrors();
@@ -99,20 +92,16 @@ class PostsController extends AppController
                     ]));
             }
 
-            // Handle multiple image uploads
             if (!empty($uploadedFiles)) {
                 $postImagesTable = $this->getTableLocator()->get('PostImages');
-                
-                // Ensure uploadedFiles is an array
+            
                 if (!is_array($uploadedFiles)) {
                     $uploadedFiles = [$uploadedFiles];
                 }
 
                 $sortOrder = 0;
                 foreach ($uploadedFiles as $uploadedFile) {
-                    // Check if it's a valid uploaded file
                     if (is_object($uploadedFile) && method_exists($uploadedFile, 'getError') && $uploadedFile->getError() === UPLOAD_ERR_OK) {
-                        // Validate file type
                         $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
                         $fileType = $uploadedFile->getClientMediaType();
                         
@@ -127,7 +116,6 @@ class PostsController extends AppController
                                 ]));
                         }
 
-                        // Validate file size (10MB max per image)
                         $maxSize = 10 * 1024 * 1024;
                         if ($uploadedFile->getSize() > $maxSize) {
                             $connection->rollback();
@@ -140,11 +128,10 @@ class PostsController extends AppController
                                 ]));
                         }
 
-                        // Generate unique filename
                         $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
                         $filename = 'post_' . $post->id . '_' . time() . '_' . $sortOrder . '.' . $extension;
                         
-                        // Create directory if it doesn't exist
+                        
                         $uploadDir = WWW_ROOT . 'img' . DS . 'post_uploads';
                         if (!is_dir($uploadDir)) {
                             mkdir($uploadDir, 0755, true);
@@ -152,11 +139,11 @@ class PostsController extends AppController
                         
                         $uploadPath = $uploadDir . DS . $filename;
                         
-                        // Move uploaded file
+                        
                         try {
                             $uploadedFile->moveTo($uploadPath);
                             
-                            // Create PostImage entity
+                            
                             $postImage = $postImagesTable->newEmptyEntity();
                             $postImage = $postImagesTable->patchEntity($postImage, [
                                 'post_id' => $post->id,
@@ -216,7 +203,6 @@ class PostsController extends AppController
         $this->request->allowMethod(['post', 'put', 'patch']);
         $this->viewBuilder()->disableAutoLayout();
         
-        // Verify authentication
         $result = $this->Authentication->getResult();
         if (!($result && $result->isValid())) {
             return $this->response
@@ -230,8 +216,7 @@ class PostsController extends AppController
 
         $identity = $this->Authentication->getIdentity();
         $userId = null;
-        
-        // Extract user ID from identity
+
         if (is_object($identity)) {
             if (method_exists($identity, 'getOriginalData')) {
                 $orig = $identity->getOriginalData();
@@ -262,7 +247,6 @@ class PostsController extends AppController
                 'contain' => ['PostImages']
             ]);
             
-            // Check if user owns this post
             if ($post->user_id !== $userId) {
                 return $this->response
                     ->withType('application/json')
@@ -273,12 +257,10 @@ class PostsController extends AppController
                     ]));
             }
             
-            // Get updated content
             $contentText = $this->request->getData('content_text');
             $removedImageIds = $this->request->getData('removed_images', []);
             $newImages = $this->request->getData('new_images');
             
-            // Validate at least content or images
             $remainingImagesCount = count($post->post_images) - count($removedImageIds);
             $newImagesCount = !empty($newImages) ? (is_array($newImages) ? count($newImages) : 1) : 0;
             
@@ -292,11 +274,11 @@ class PostsController extends AppController
                     ]));
             }
             
-            // Start transaction
+           
             $connection = $this->Posts->getConnection();
             $connection->begin();
             
-            // Update post text
+            
             $post->content_text = $contentText;
             $post->modified = new \DateTime();
             
@@ -311,13 +293,13 @@ class PostsController extends AppController
                     ]));
             }
             
-            // Handle removed images
+            
             if (!empty($removedImageIds)) {
                 $postImagesTable = $this->getTableLocator()->get('PostImages');
                 foreach ($removedImageIds as $imageId) {
                     $image = $postImagesTable->get($imageId);
                     if ($image->post_id === $post->id) {
-                        // Delete file from filesystem
+                       
                         $imagePath = WWW_ROOT . ltrim($image->image_path, '/');
                         if (file_exists($imagePath)) {
                             unlink($imagePath);

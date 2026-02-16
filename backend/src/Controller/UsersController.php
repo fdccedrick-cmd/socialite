@@ -14,7 +14,6 @@ class UsersController extends AppController
         $this->viewBuilder()->setLayout('auth');
         $this->request->allowMethod(['get', 'post']);
     
-        // Debug
         if ($this->request->is('post')) {
             error_log('LOGIN ATTEMPT - POST data: ' . json_encode($this->request->getData()));
             error_log('LOGIN ATTEMPT - $_POST: ' . json_encode($_POST));
@@ -45,10 +44,6 @@ class UsersController extends AppController
         $user = $this->Users->newEmptyEntity();
         
         if ($this->request->is('post')) {
-            // Debug
-            error_log('REGISTER ATTEMPT - POST data: ' . json_encode($this->request->getData()));
-            error_log('REGISTER ATTEMPT - $_POST: ' . json_encode($_POST));
-            
             $data = $this->request->getData();
             
             if (!empty($data['password']) && !empty($data['confirm_password'])) {
@@ -78,16 +73,13 @@ class UsersController extends AppController
     
             }
 
-            // Expose raw POST data to the view for temporary debugging
             $this->set('rawPost', $this->request->getData());
             
-            // Collect all validation errors and include field names for clarity
             $errors = $user->getErrors();
             $errorMessages = [];
             foreach ($errors as $field => $fieldErrors) {
                 foreach ($fieldErrors as $errorKey => $error) {
                     $msg = is_array($error) ? implode(', ', $error) : $error;
-                    // Use human-friendly field label when possible
                     $label = $field;
                     if ($field === 'password_hash') {
                         $label = 'password';

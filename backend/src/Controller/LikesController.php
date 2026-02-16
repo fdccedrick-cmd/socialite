@@ -20,7 +20,6 @@ class LikesController extends AppController
         // Disable auto-render for this controller (API only)
         $this->viewBuilder()->setClassName('Json');
         $this->viewBuilder()->disableAutoLayout();
-        
         // Load the Likes table
         $this->Likes = $this->fetchTable('Likes');
     }
@@ -43,7 +42,6 @@ class LikesController extends AppController
                 ->withStringBody(json_encode(['success' => false, 'message' => 'Unauthorized']));
         }
 
-        // Extract user ID from identity
         $userId = null;
         if (is_object($identity)) {
             if (method_exists($identity, 'getOriginalData')) {
@@ -68,7 +66,6 @@ class LikesController extends AppController
         }
 
         try {
-            // Check if already liked
             $existingLike = $this->Likes->find()
                 ->where([
                     'user_id' => $userId,
@@ -78,9 +75,7 @@ class LikesController extends AppController
                 ->first();
 
             if ($existingLike) {
-                // Unlike - delete the like
                 if ($this->Likes->delete($existingLike)) {
-                    // Get new like count
                     $likeCount = $this->Likes->find()
                         ->where(['target_type' => 'Post', 'target_id' => $id])
                         ->count();
@@ -102,7 +97,6 @@ class LikesController extends AppController
                         ]));
                 }
             } else {
-                // Like - create new like
                 $like = $this->Likes->newEntity([
                     'user_id' => $userId,
                     'target_type' => 'Post',
@@ -110,12 +104,10 @@ class LikesController extends AppController
                 ]);
 
                 if ($this->Likes->save($like)) {
-                    // Get new like count
                     $likeCount = $this->Likes->find()
                         ->where(['target_type' => 'Post', 'target_id' => $id])
                         ->count();
 
-                    // Return success immediately - notification creation moved to background
                     $response = $this->response
                         ->withType('application/json')
                         ->withStringBody(json_encode([
@@ -124,7 +116,7 @@ class LikesController extends AppController
                             'likeCount' => $likeCount
                         ]));
 
-                    // Create notification asynchronously (don't let it break the like action)
+    
                     try {
                         $postsTable = $this->fetchTable('Posts');
                         $post = $postsTable->find()
@@ -149,7 +141,6 @@ class LikesController extends AppController
                             }
                         }
                     } catch (\Exception $notifError) {
-                        // Notification failed but like succeeded - just log it
                         error_log('Notification error: ' . $notifError->getMessage());
                     }
 
@@ -202,7 +193,6 @@ class LikesController extends AppController
                     ->withStringBody(json_encode(['success' => false, 'message' => 'Unauthorized']));
             }
 
-            // Extract user ID from identity
             $userId = null;
             if (is_object($identity)) {
                 if (method_exists($identity, 'getOriginalData')) {
@@ -226,7 +216,7 @@ class LikesController extends AppController
                     ->withStringBody(json_encode(['success' => false, 'message' => 'User ID not found']));
             }
 
-            // Check if already liked
+            
             $existingLike = $this->Likes->find()
                 ->where([
                     'user_id' => $userId,
@@ -236,7 +226,7 @@ class LikesController extends AppController
                 ->first();
 
             if ($existingLike) {
-                // Unlike
+                
                 if ($this->Likes->delete($existingLike)) {
                     $likeCount = $this->Likes->find()
                         ->where(['target_type' => 'Comment', 'target_id' => $id])
@@ -251,7 +241,7 @@ class LikesController extends AppController
                         ]));
                 }
             } else {
-                // Like
+               
                 $like = $this->Likes->newEntity([
                     'user_id' => $userId,
                     'target_type' => 'Comment',
@@ -271,46 +261,33 @@ class LikesController extends AppController
                             'likeCount' => $likeCount
                         ]));
 
-                    // Create notification for comment owner
+                   
                     try {
-                        error_log('[DEBUG] Starting comment like notification creation for comment ID: ' . $id);
                         $commentsTable = $this->fetchTable('Comments');
                         $comment = $commentsTable->find()
                             ->select(['id', 'user_id', 'post_id'])
                             ->where(['id' => $id])
                             ->first();
 
-                        error_log('[DEBUG] Comment found: ' . ($comment ? 'yes' : 'no'));
-                        if ($comment) {
-                            error_log('[DEBUG] Comment owner ID: ' . $comment->user_id . ', Liker ID: ' . $userId);
-                        }
-
                         if ($comment && $comment->user_id !== $userId) {
-                            error_log('[DEBUG] Different user, fetching liker details...');
                             $usersTable = $this->fetchTable('Users');
                             $user = $usersTable->find()
                                 ->select(['id', 'username', 'full_name'])
                                 ->where(['id' => $userId])
                                 ->first();
                             
-                            error_log('[DEBUG] User found: ' . ($user ? 'yes' : 'no'));
                             if ($user) {
-                                error_log('[DEBUG] Calling NotificationHelper::commentLike()');
-                                $result = NotificationHelper::commentLike(
+                                NotificationHelper::commentLike(
                                     (int)$comment->user_id,
                                     (int)$userId,
                                     (int)$comment->post_id,
                                     (int)$id,
                                     (string)($user->full_name ?? $user->username)
                                 );
-                                error_log('[DEBUG] Notification creation result: ' . ($result ? 'success' : 'failed'));
                             }
-                        } else {
-                            error_log('[DEBUG] Skipping notification - same user or no comment');
                         }
                     } catch (\Exception $notifError) {
-                        error_log('[ERROR] Comment like notification error: ' . $notifError->getMessage());
-                        error_log('[ERROR] Stack trace: ' . $notifError->getTraceAsString());
+                        error_log('Comment like notification error: ' . $notifError->getMessage());
                     }
 
                     return $response;

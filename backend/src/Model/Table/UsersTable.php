@@ -101,7 +101,6 @@ class UsersTable extends Table
         $userEntity = $this->get($userId);
         $user = $userEntity->toArray();
 
-        // Format date fields
         foreach (['created', 'modified'] as $dtField) {
             if (!empty($user[$dtField]) && $user[$dtField] instanceof \DateTimeInterface) {
                 $user[$dtField] = $user[$dtField]->format(DATE_ATOM);

@@ -14,8 +14,7 @@ class AppController extends Controller
         parent::initialize();
         $this->loadComponent('Flash');
         $this->loadComponent('Authentication.Authentication');
-        
-        // Make current user available to all views - fetch fresh from database
+    
         $identity = $this->Authentication->getIdentity();
         $currentUser = null;
         
@@ -35,14 +34,12 @@ class AppController extends Controller
             } elseif (is_array($identity) && isset($identity['id'])) {
                 $userId = $identity['id'];
             }
-            
-            // Fetch fresh user data from database
+        
             if ($userId) {
                 try {
                     $usersTable = $this->getTableLocator()->get('Users');
                     $currentUser = $usersTable->get($userId);
                 } catch (\Exception $e) {
-                    // If user not found, use identity
                     $currentUser = $identity;
                 }
             }
@@ -54,8 +51,6 @@ class AppController extends Controller
     public function beforeFilter(\Cake\Event\EventInterface $event)
     {
         parent::beforeFilter($event);
-        
-        // Allow unauthenticated access to login and register
         $this->Authentication->addUnauthenticatedActions(['login', 'register']);
     }
 }
