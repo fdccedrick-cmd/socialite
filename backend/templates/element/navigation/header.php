@@ -27,18 +27,22 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
 
   <!-- Search -->
   <div class="flex-1 hidden md:flex max-w-md lg:max-w-lg">
-    <form action="/search" method="get" class="w-full">
+    <?= $this->Form->create(null, [
+        'type' => 'get',
+        'url' => '/search',
+        'class' => 'w-full'
+    ]) ?>
         <div class="relative">
         <i data-lucide="search" class="w-4 h-4 lg:w-5 lg:h-5 text-gray-400 absolute left-3 lg:left-4 top-1/2 -translate-y-1/2"></i>
-        <input
-          id="header-search"
-          name="q"
-          type="search"
-          placeholder="Search people, posts, groups"
-          class="pl-10 lg:pl-12 pr-4 py-1.5 lg:py-2 rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-700 shadow-sm w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
-        />
+        <?= $this->Form->control('q', [
+          'label' => false,
+          'id' => 'header-search',
+          'type' => 'search',
+          'placeholder' => 'Search people, posts, groups',
+          'class' => 'pl-10 lg:pl-12 pr-4 py-1.5 lg:py-2 rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-700 shadow-sm w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white'
+        ]) ?>
       </div>
-    </form>
+    <?= $this->Form->end() ?>
   </div>
         <button @click="focusSearch" class="md:hidden p-1.5 rounded hover:bg-gray-100" title="Search">
           <i data-lucide="search" class="h-4 w-4 sm:h-5 sm:w-5 text-gray-700"></i>
@@ -97,9 +101,16 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
               <a href="/profile" class="block px-4 py-2 hover:bg-gray-50">Profile</a>
               <a href="/settings" class="block px-4 py-2 hover:bg-gray-50">Settings</a>
               <a href="/saved" class="block px-4 py-2 hover:bg-gray-50">Saved</a>
-              <form method="post" action="/logout" class="m-0">
-                <button type="submit" class="w-full text-left px-4 py-2 hover:bg-gray-50">Logout</button>
-              </form>
+              <?= $this->Form->create(null, [
+                'type' => 'post',
+                'url' => '/logout',
+                'class' => 'm-0'
+              ]) ?>
+                <?= $this->Form->button('Logout', [
+                  'type' => 'submit',
+                  'class' => 'w-full text-left px-4 py-2 hover:bg-gray-50'
+                ]) ?>
+              <?= $this->Form->end() ?>
             </div>
           </div>
         </div>
