@@ -80,6 +80,27 @@ const app = createApp({
                 console.error('Error toggling like:', error);
             }
         },
+        async openCommentInput(postId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+
+            // Ensure comments section is visible
+            post.showComments = true;
+
+            // Load comments if not already loaded
+            if (post.comments.length === 0) {
+                try {
+                    await this.loadComments(postId);
+                } catch (e) {
+                    console.error('Error loading comments for openCommentInput:', e);
+                }
+            }
+
+            this.$nextTick(() => {
+                const input = document.getElementById('comment-input-' + postId);
+                if (input) input.focus();
+            });
+        },
         openImageViewer(images, index = 0) {
             this.imageViewer.images = images;
             this.imageViewer.currentIndex = index;
@@ -473,6 +494,8 @@ const app = createApp({
         });        
         // Close post menu when clicking outside
         document.addEventListener('click', this.handleClickOutside);
+        // Expose comment opener globally as a fallback for templates
+        window.openCommentInput = this.openCommentInput.bind(this);
     },
     beforeUnmount() {
         // Clean up event listener
@@ -506,6 +529,10 @@ const app = createApp({
                 }
             }
         });
+        // Remove global fallback
+        if (window.openCommentInput && window.openCommentInput === this.openCommentInput) {
+            try { delete window.openCommentInput; } catch (e) { window.openCommentInput = undefined; }
+        }
     },
     updated() {
         // Re-initialize Lucide icons after DOM updates

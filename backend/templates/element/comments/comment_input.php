@@ -17,6 +17,7 @@
     />
     <div class="flex-1 relative">
       <input 
+        :id="'comment-input-' + post.id"
         v-model="post.newComment"
         @keyup.enter="submitComment(post.id)"
         @focus="showCommentOptions(post.id)"

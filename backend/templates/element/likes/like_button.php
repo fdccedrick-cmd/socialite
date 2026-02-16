@@ -35,9 +35,14 @@
     </button>
     
     <!-- Comment Button -->
-    <button class="flex items-center gap-1 sm:gap-1.5 text-gray-700 hover:text-blue-500 transition-colors">
+    <button 
+      @click.prevent="openCommentInput(post.id)"
+      class="flex items-center gap-1 sm:gap-1.5 text-gray-700 hover:text-blue-500 transition-colors"
+      title="Comment"
+    >
       <i data-lucide="message-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
       <span class="text-[10px] sm:text-xs font-semibold">{{ post.comment_count || 0 }}</span>
     </button>
   </div>
 </div>
+
