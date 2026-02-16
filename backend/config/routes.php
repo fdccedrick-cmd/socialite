@@ -9,7 +9,7 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/login', ['controller' => 'Users', 'action' => 'login']);
         $builder->connect('/register', ['controller' => 'Users', 'action' => 'register']);
         $builder->connect('/logout', ['controller' => 'Users', 'action' => 'logout']);
-        $builder->connect('/dashboard', ['controller' => 'Users', 'action' => 'dashboard']);
+        $builder->connect('/dashboard', ['controller' => 'Dashboard', 'action' => 'index']);
         
         // Profile routes
         $builder->connect('/profile', ['controller' => 'Profile', 'action' => 'view']);
