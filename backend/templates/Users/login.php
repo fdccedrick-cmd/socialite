@@ -53,7 +53,7 @@
                     'required' => true,
                     'autocomplete' => 'current-password',
                     'templates' => [
-                        'input' => '<input type="password" name="{{name}}"{{attrs}} :type="showPassword ? \'text\' : \'password\'" v-model="formData.password" :disabled="isSubmitting" :class="{ \'border-red-400\': errors.password }" class="w-full pr-12 px-3 py-3 border border-gray-300 rounded-md text-base transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"/>',
+                        'input' => '<input name="{{name}}"{{attrs}} :type="showPassword ? \'text\' : \'password\'" v-model="formData.password" :disabled="isSubmitting" :class="{ \'border-red-400\': errors.password }" class="w-full pr-12 px-3 py-3 border border-gray-300 rounded-md text-base transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"/>',
                         'inputContainer' => '<div class="form-group">{{content}}</div>',
                         'inputContainerError' => '<div class="form-group error">{{content}}</div>',
                     ],
