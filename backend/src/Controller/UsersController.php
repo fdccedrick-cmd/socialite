@@ -14,6 +14,12 @@ class UsersController extends AppController
         $this->viewBuilder()->setLayout('auth');
         $this->request->allowMethod(['get', 'post']);
         
+        // Debug: Log POST data
+        if ($this->request->is('post')) {
+            error_log('LOGIN ATTEMPT - POST data: ' . json_encode($this->request->getData()));
+            error_log('LOGIN ATTEMPT - $_POST: ' . json_encode($_POST));
+        }
+        
         $result = $this->Authentication->getResult();
         
         if ($result && $result->isValid()) {
@@ -22,6 +28,7 @@ class UsersController extends AppController
         }
         
         if ($this->request->is('post')) {
+            error_log('LOGIN FAILED - Auth result: ' . json_encode($result));
             $this->Flash->error('Invalid username or password');
         }
 
@@ -38,6 +45,10 @@ class UsersController extends AppController
         $user = $this->Users->newEmptyEntity();
         
         if ($this->request->is('post')) {
+            // Debug: Log POST data
+            error_log('REGISTER ATTEMPT - POST data: ' . json_encode($this->request->getData()));
+            error_log('REGISTER ATTEMPT - $_POST: ' . json_encode($_POST));
+            
             $data = $this->request->getData();
             
             if (!empty($data['password']) && !empty($data['confirm_password'])) {

@@ -12,73 +12,71 @@
     </div>
     <p class="text-gray-700 text-sm text-center pb-6">Create your account and start sharing.</p>
     
-    <form method="post" action="/register" @submit="handleSubmit">
+    <?= $this->Form->create(null, [
+        'url' => '/register',
+        'type' => 'post',
+        'templates' => [
+            'formStart' => '<form{{attrs}} @submit="handleSubmit">',
+        ]
+    ]) ?>
         <div class="mt-4 flex flex-col gap-4">
             <div>
-                <label for="full_name" class="block mb-2 font-small text-sm text-gray-500">Full Name</label>
-                <input 
-                    id="full_name"
-                    type="text" 
-                    name="full_name" 
-                    autocomplete="name"
-                    v-model="formData.full_name"
-                    required
-                    aria-required="true"
-                    :disabled="isSubmitting"
-                    class="w-full px-3 py-3 border-2 border-gray-200 rounded-md text-sm transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                    :class="{ 'border-red-400': errors.full_name }"
-                >
+                <?= $this->Form->control('full_name', [
+                    'label' => ['text' => 'Full Name', 'class' => 'block mb-2 font-small text-sm text-gray-500'],
+                    'type' => 'text',
+                    'required' => true,
+                    'autocomplete' => 'name',
+                    'templates' => [
+                        'input' => '<input type="{{type}}" name="{{name}}"{{attrs}} v-model="formData.full_name" :disabled="isSubmitting" :class="{ \'border-red-400\': errors.full_name }" aria-required="true" class="w-full px-3 py-3 border-2 border-gray-200 rounded-md text-sm transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"/>',
+                        'inputContainer' => '<div class="form-group">{{content}}</div>',
+                        'inputContainerError' => '<div class="form-group error">{{content}}</div>',
+                    ],
+                ]) ?>
                 <small v-if="errors.full_name" class="text-red-600 text-sm mt-1 block">{{ errors.full_name }}</small>
             </div>
             
             <div>
-                <label for="username" class="block mb-2 font-small text-sm text-gray-500">Username</label>
-                <input 
-                    id="username"
-                    type="text" 
-                    name="username" 
-                    autocomplete="username"
-                    v-model="formData.username"
-                    required
-                    aria-required="true"
-                    :disabled="isSubmitting"
-                    class="w-full px-3 py-3 border-2 border-gray-200 rounded-md text-sm transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                    :class="{ 'border-red-400': errors.username }"
-                >
+                <?= $this->Form->control('username', [
+                    'label' => ['text' => 'Username', 'class' => 'block mb-2 font-small text-sm text-gray-500'],
+                    'type' => 'text',
+                    'required' => true,
+                    'autocomplete' => 'username',
+                    'templates' => [
+                        'input' => '<input type="{{type}}" name="{{name}}"{{attrs}} v-model="formData.username" :disabled="isSubmitting" :class="{ \'border-red-400\': errors.username }" aria-required="true" class="w-full px-3 py-3 border-2 border-gray-200 rounded-md text-sm transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"/>',
+                        'inputContainer' => '<div class="form-group">{{content}}</div>',
+                        'inputContainerError' => '<div class="form-group error">{{content}}</div>',
+                    ],
+                ]) ?>
                 <small v-if="errors.username" class="text-red-600 text-sm mt-1 block">{{ errors.username }}</small>
             </div>
             
             <div>
-                <label for="password" class="block mb-2 font-small text-sm text-gray-500">Password</label>
-                <input 
-                    id="password"
-                    type="password" 
-                    name="password" 
-                    autocomplete="new-password"
-                    v-model="formData.password"
-                    required
-                    aria-required="true"
-                    :disabled="isSubmitting"
-                    class="w-full px-3 py-3 border-2 border-gray-200 rounded-md text-sm transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                    :class="{ 'border-red-400': errors.password }"
-                >
+                <?= $this->Form->control('password', [
+                    'label' => ['text' => 'Password', 'class' => 'block mb-2 font-small text-sm text-gray-500'],
+                    'type' => 'password',
+                    'required' => true,
+                    'autocomplete' => 'new-password',
+                    'templates' => [
+                        'input' => '<input type="{{type}}" name="{{name}}"{{attrs}} v-model="formData.password" :disabled="isSubmitting" :class="{ \'border-red-400\': errors.password }" aria-required="true" class="w-full px-3 py-3 border-2 border-gray-200 rounded-md text-sm transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"/>',
+                        'inputContainer' => '<div class="form-group">{{content}}</div>',
+                        'inputContainerError' => '<div class="form-group error">{{content}}</div>',
+                    ],
+                ]) ?>
                 <small v-if="errors.password" class="text-red-600 text-sm mt-1 block">{{ errors.password }}</small>
             </div>
             
             <div class="mb-2">
-                <label for="confirm_password" class="block mb-2 font-small text-sm text-gray-500">Confirm Password</label>
-                <input 
-                    id="confirm_password"
-                    type="password" 
-                    name="confirm_password"
-                    autocomplete="new-password"
-                    v-model="formData.confirm_password"
-                    required
-                    aria-required="true"
-                    :disabled="isSubmitting"
-                    class="w-full px-3 py-3 border-2 border-gray-200 rounded-md text-sm transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                    :class="{ 'border-red-400': errors.confirm_password }"
-                >
+                <?= $this->Form->control('confirm_password', [
+                    'label' => ['text' => 'Confirm Password', 'class' => 'block mb-2 font-small text-sm text-gray-500'],
+                    'type' => 'password',
+                    'required' => true,
+                    'autocomplete' => 'new-password',
+                    'templates' => [
+                        'input' => '<input type="{{type}}" name="{{name}}"{{attrs}} v-model="formData.confirm_password" :disabled="isSubmitting" :class="{ \'border-red-400\': errors.confirm_password }" aria-required="true" class="w-full px-3 py-3 border-2 border-gray-200 rounded-md text-sm transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"/>',
+                        'inputContainer' => '<div class="form-group">{{content}}</div>',
+                        'inputContainerError' => '<div class="form-group error">{{content}}</div>',
+                    ],
+                ]) ?>
                 <small v-if="errors.confirm_password" class="text-red-600 text-sm mt-1 block">{{ errors.confirm_password }}</small>
             </div>
             
@@ -97,7 +95,7 @@
                 </span>
             </button>
         </div>
-    </form>
+    <?= $this->Form->end() ?>
     <?php if (!empty($rawPost)): ?>
     <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded">
         <strong>Debug (server received):</strong>
@@ -112,6 +110,20 @@
 </div>
 
 <style>
+/* Reset CakePHP Form Helper default styles */
+.form-group {
+    width: 100%;
+}
+
+.form-group.error input {
+    border-color: inherit;
+}
+
+/* Hide CakePHP's default error messages - using Vue validation */
+.error-message {
+    display: none;
+}
+
 @keyframes fade-in {
     from {
         opacity: 0;
@@ -147,14 +159,22 @@ createApp({
     },
     methods: {
         handleSubmit(e) {
-            // Always prevent default and perform a controlled submit
-            e.preventDefault();
             this.errors = {};
             this.showError = false;
+            
+            // Debug logging
+            console.log('Register form submit - Vue formData:', this.formData);
+            console.log('Form inputs:', {
+                full_name: e.target.querySelector('[name="full_name"]')?.value,
+                username: e.target.querySelector('[name="username"]')?.value,
+                password: e.target.querySelector('[name="password"]')?.value,
+                confirm_password: e.target.querySelector('[name="confirm_password"]')?.value
+            });
 
-            // Full name validation
+            // Full name validation - only prevent if validation fails
             if (!this.formData.full_name || this.formData.full_name.trim().length < 2) {
                 this.errors.full_name = 'Full name is required (at least 2 characters)';
+                e.preventDefault();
                 return;
             }
             
@@ -183,19 +203,13 @@ createApp({
             // Confirm password validation
             if (this.formData.password !== this.formData.confirm_password) {
                 this.errors.confirm_password = 'Passwords do not match';
+                e.preventDefault();
                 return;
             }
 
-            this.isSubmitting = true;
-
-            // Submit the native form to ensure the browser sends the fields
-            try {
-                e.target.submit();
-            } catch (err) {
-                // fallback: find the closest form and submit
-                const form = document.querySelector('#registerApp').closest('form') || document.querySelector('form');
-                if (form) form.submit();
-            }
+            // Validation passed - let browser submit naturally
+            // DON'T set isSubmitting = true here as it disables inputs, preventing their values from POSTing
+            console.log('Form validation passed, allowing natural submit');
         }
     },
     mounted() {

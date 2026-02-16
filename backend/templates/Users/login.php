@@ -20,38 +20,44 @@
     </div>
     <p class="text-gray-700 text-sm text-right pb-8">Connect with friends and the world around you.</p>
     
-    <form method="post" action="/login" @submit="handleSubmit">
+    <?= $this->Form->create(null, [
+        'url' => '/login',
+        'type' => 'post',
+        'templates' => [
+            'formStart' => '<form{{attrs}} @submit="handleSubmit">',
+        ]
+    ]) ?>
         <div class="mt-8 space-y-6">
             <div>
-                <label for="login_username" class="block mb-2 text-gray-600 font-small">Username</label>
-                <input 
-                    id="login_username"
-                    type="text" 
-                    name="username" 
-                    autocomplete="username"
-                    placeholder="johndoe"
-                    v-model="formData.username"
-                    required
-                    :disabled="isSubmitting"
-                    class="w-full px-3 py-3 border border-gray-300 rounded-md text-base transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                    :class="{ 'border-red-400': errors.username }"
-                >
+                <?= $this->Form->control('username', [
+                    'label' => ['text' => 'Username', 'class' => 'block mb-2 text-gray-600 font-small'],
+                    'type' => 'text',
+                    'id' => 'login_username',
+                    'placeholder' => 'johndoe',
+                    'required' => true,
+                    'autocomplete' => 'username',
+                    'templates' => [
+                        'input' => '<input type="{{type}}" name="{{name}}"{{attrs}} v-model="formData.username" :disabled="isSubmitting" :class="{ \'border-red-400\': errors.username }" class="w-full px-3 py-3 border border-gray-300 rounded-md text-base transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"/>',
+                        'inputContainer' => '<div class="form-group">{{content}}</div>',
+                        'inputContainerError' => '<div class="form-group error">{{content}}</div>',
+                    ],
+                ]) ?>
                 <small v-if="errors.username" class="text-red-600 text-sm mt-1 block">{{ errors.username }}</small>
             </div>
             
             <div class="relative">
-                <label for="login_password" class="block mb-2 text-gray-600 font-small">Password</label>
-                <input 
-                    id="login_password"
-                    :type="showPassword ? 'text' : 'password'"
-                    name="password" 
-                    autocomplete="current-password"
-                    v-model="formData.password"
-                    required
-                    :disabled="isSubmitting"
-                    class="w-full pr-12 px-3 py-3 border border-gray-300 rounded-md text-base transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                    :class="{ 'border-red-400': errors.password }"
-                >
+                <?= $this->Form->control('password', [
+                    'label' => ['text' => 'Password', 'class' => 'block mb-2 text-gray-600 font-small'],
+                    'type' => 'password',
+                    'id' => 'login_password',
+                    'required' => true,
+                    'autocomplete' => 'current-password',
+                    'templates' => [
+                        'input' => '<input type="password" name="{{name}}"{{attrs}} :type="showPassword ? \'text\' : \'password\'" v-model="formData.password" :disabled="isSubmitting" :class="{ \'border-red-400\': errors.password }" class="w-full pr-12 px-3 py-3 border border-gray-300 rounded-md text-base transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"/>',
+                        'inputContainer' => '<div class="form-group">{{content}}</div>',
+                        'inputContainerError' => '<div class="form-group error">{{content}}</div>',
+                    ],
+                ]) ?>
                 <button type="button" @click.prevent="showPassword = !showPassword" class="absolute inset-y-0 right-3 mt-8 flex items-center text-gray-500 px-2" aria-label="Toggle password visibility" title="Toggle password visibility">
                     <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -81,7 +87,7 @@
                 </span>
             </button>
         </div>
-    </form>
+    <?= $this->Form->end() ?>
     
     <p class="text-center mt-6 text-gray-600">
         Don't have an account? 
@@ -90,6 +96,20 @@
 </div>
 
 <style>
+/* Reset CakePHP Form Helper default styles */
+.form-group {
+    width: 100%;
+}
+
+.form-group.error input {
+    border-color: inherit;
+}
+
+/* Hide CakePHP's default error messages - using Vue validation */
+.error-message {
+    display: none;
+}
+
 @keyframes fade-in {
     from {
         opacity: 0;
@@ -126,30 +146,31 @@ createApp({
     },
     methods: {
         handleSubmit(e) {
-            // Controlled submit: prevent default then submit natively after validation
-            e.preventDefault();
             this.errors = {};
+            
+            // Debug logging
+            console.log('Form submit - Vue formData:', this.formData);
+            console.log('Form inputs:', {
+                username: e.target.querySelector('[name="username"]')?.value,
+                password: e.target.querySelector('[name="password"]')?.value
+            });
 
-            // Basic validation
+            // Basic validation - only prevent default if validation fails
             if (!this.formData.username) {
                 this.errors.username = 'Username is required';
+                e.preventDefault();
                 return;
             }
 
             if (!this.formData.password) {
                 this.errors.password = 'Password is required';
+                e.preventDefault();
                 return;
             }
 
-            this.isSubmitting = true;
-
-            // Submit the native form to ensure fields are sent
-            try {
-                e.target.submit();
-            } catch (err) {
-                const form = document.querySelector('#loginApp').closest('form') || document.querySelector('form');
-                if (form) form.submit();
-            }
+            // Validation passed - let browser submit naturally
+            // DON'T set isSubmitting = true here as it disables inputs, preventing their values from POSTing
+            console.log('Form validation passed, allowing natural submit');
         }
     },
     mounted() {
