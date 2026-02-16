@@ -31,24 +31,51 @@ class NotificationHelper
         int $notifiableId,
         string $message
     ): bool {
+        error_log('[DEBUG NotificationHelper] create() called - userId: ' . $userId . ', actorId: ' . $actorId . ', type: ' . $type);
+        
         // Don't notify yourself
         if ($userId === $actorId) {
+            error_log('[DEBUG NotificationHelper] Skipping - user is actor');
             return false;
         }
 
-        $notificationsTable = TableRegistry::getTableLocator()->get('Notifications');
-        
-        $notification = $notificationsTable->newEntity([
-            'user_id' => $userId,
-            'actor_id' => $actorId,
-            'type' => $type,
-            'notifiable_type' => $notifiableType,
-            'notifiable_id' => $notifiableId,
-            'message' => $message,
-            'is_read' => false,
-        ]);
-
-        return (bool) $notificationsTable->save($notification);
+        try {
+            $notificationsTable = TableRegistry::getTableLocator()->get('Notifications');
+            error_log('[DEBUG NotificationHelper] Got Notifications table');
+            
+            $notification = $notificationsTable->newEntity([
+                'user_id' => $userId,
+                'actor_id' => $actorId,
+                'type' => $type,
+                'notifiable_type' => $notifiableType,
+                'notifiable_id' => $notifiableId,
+                'message' => $message,
+                'is_read' => false,
+            ]);
+            error_log('[DEBUG NotificationHelper] Created entity: ' . json_encode([
+                'user_id' => $userId,
+                'actor_id' => $actorId,
+                'type' => $type,
+                'notifiable_type' => $notifiableType,
+                'notifiable_id' => $notifiableId,
+            ]));
+            
+            $saveResult = $notificationsTable->save($notification);
+            
+            if (!$saveResult) {
+                $errors = $notification->getErrors();
+                error_log('[ERROR NotificationHelper] Notification save failed: ' . json_encode($errors));
+                return false;
+            }
+            
+            error_log('[DEBUG NotificationHelper] Notification saved successfully with ID: ' . $notification->id);
+            return true;
+            
+        } catch (\Exception $e) {
+            error_log('[ERROR NotificationHelper] Exception: ' . $e->getMessage());
+            error_log('[ERROR NotificationHelper] Stack trace: ' . $e->getTraceAsString());
+            return false;
+        }
     }
 
     /**

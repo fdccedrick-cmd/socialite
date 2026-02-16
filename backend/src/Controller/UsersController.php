@@ -159,9 +159,6 @@ class UsersController extends AppController
         } catch (\Throwable $e) {
         
         }
-
-        // Redirect to login with a flag so the new session can show a logout message
-        // Also explicitly send an expired Set-Cookie header to ensure browsers drop the session cookie
         try {
             $cookieName = session_name() ?: 'PHPSESSID';
             $expired = sprintf("%s=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax", $cookieName);
@@ -232,6 +229,7 @@ class UsersController extends AppController
                 $postData['modified'] = $postData['modified']->format(DATE_ATOM);
             }
             
+            // Post likes
             $postData['like_count'] = $likesTable->find()
                 ->where(['target_type' => 'Post', 'target_id' => $post->id])
                 ->count();
@@ -244,13 +242,49 @@ class UsersController extends AppController
                 ])
                 ->count() > 0;
             
-            $postData['comment_count'] = $commentsTable->find()
+            // Fetch comments with user data
+            $comments = $commentsTable->find()
                 ->where([
                     'post_id' => $post->id,
                     'deleted_at IS' => null
                 ])
-                ->count();
+                ->contain(['Users'])
+                ->order(['Comments.created_at' => 'ASC'])
+                ->toArray();
             
+            $postData['comment_count'] = count($comments);
+            
+            // Add like data to each comment
+            $commentsArray = [];
+            foreach ($comments as $comment) {
+                $commentData = $comment->toArray();
+                
+                // Format comment dates
+                if (!empty($commentData['created_at']) && $commentData['created_at'] instanceof \DateTimeInterface) {
+                    $commentData['created_at'] = $commentData['created_at']->format(DATE_ATOM);
+                }
+                
+                // Comment like count
+                $commentData['like_count'] = $likesTable->find()
+                    ->where([
+                        'target_type' => 'Comment',
+                        'target_id' => $comment->id
+                    ])
+                    ->count();
+                
+                // Check if current user liked this comment
+                $commentData['is_liked'] = $likesTable->find()
+                    ->where([
+                        'target_type' => 'Comment',
+                        'target_id' => $comment->id,
+                        'user_id' => $userId
+                    ])
+                    ->count() > 0;
+                
+                $commentsArray[] = $commentData;
+            }
+            
+            $postData['comments'] = $commentsArray;
             $postsArray[] = $postData;
         }
 

@@ -17,6 +17,10 @@ class LikesController extends AppController
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
         
+        // Disable auto-render for this controller (API only)
+        $this->viewBuilder()->setClassName('Json');
+        $this->viewBuilder()->disableAutoLayout();
+        
         // Load the Likes table
         $this->Likes = $this->fetchTable('Likes');
     }
@@ -187,122 +191,147 @@ class LikesController extends AppController
      */
     public function toggleComment($id = null)
     {
-        $this->request->allowMethod(['post']);
-        $identity = $this->Authentication->getIdentity();
-        
-        if (!$identity) {
-            return $this->response
-                ->withType('application/json')
-                ->withStatus(401)
-                ->withStringBody(json_encode(['success' => false, 'message' => 'Unauthorized']));
-        }
-
-        // Extract user ID from identity
-        $userId = null;
-        if (is_object($identity)) {
-            if (method_exists($identity, 'getOriginalData')) {
-                $orig = $identity->getOriginalData();
-                if (is_object($orig) && isset($orig->id)) {
-                    $userId = $orig->id;
-                } elseif (is_array($orig) && isset($orig['id'])) {
-                    $userId = $orig['id'];
-                }
-            } elseif (isset($identity->id)) {
-                $userId = $identity->id;
-            }
-        } elseif (is_array($identity) && isset($identity['id'])) {
-            $userId = $identity['id'];
-        }
-
-        if (!$userId) {
-            return $this->response
-                ->withType('application/json')
-                ->withStatus(401)
-                ->withStringBody(json_encode(['success' => false, 'message' => 'User ID not found']));
-        }
-
-        // Check if already liked
-        $existingLike = $this->Likes->find()
-            ->where([
-                'user_id' => $userId,
-                'target_type' => 'Comment',
-                'target_id' => $id
-            ])
-            ->first();
-
-        if ($existingLike) {
-            // Unlike
-            if ($this->Likes->delete($existingLike)) {
-                $likeCount = $this->Likes->find()
-                    ->where(['target_type' => 'Comment', 'target_id' => $id])
-                    ->count();
-
+        try {
+            $this->request->allowMethod(['post']);
+            $identity = $this->Authentication->getIdentity();
+            
+            if (!$identity) {
                 return $this->response
                     ->withType('application/json')
-                    ->withStringBody(json_encode([
-                        'success' => true,
-                        'liked' => false,
-                        'likeCount' => $likeCount
-                    ]));
+                    ->withStatus(401)
+                    ->withStringBody(json_encode(['success' => false, 'message' => 'Unauthorized']));
             }
-        } else {
-            // Like
-            $like = $this->Likes->newEntity([
-                'user_id' => $userId,
-                'target_type' => 'Comment',
-                'target_id' => $id
-            ]);
 
-            if ($this->Likes->save($like)) {
-                $likeCount = $this->Likes->find()
-                    ->where(['target_type' => 'Comment', 'target_id' => $id])
-                    ->count();
-
-                $response = $this->response
-                    ->withType('application/json')
-                    ->withStringBody(json_encode([
-                        'success' => true,
-                        'liked' => true,
-                        'likeCount' => $likeCount
-                    ]));
-
-                // Create notification for comment owner
-                try {
-                    $commentsTable = $this->fetchTable('Comments');
-                    $comment = $commentsTable->find()
-                        ->select(['id', 'user_id', 'post_id'])
-                        ->where(['id' => $id])
-                        ->first();
-
-                    if ($comment && $comment->user_id !== $userId) {
-                        $usersTable = $this->fetchTable('Users');
-                        $user = $usersTable->find()
-                            ->select(['id', 'username', 'full_name'])
-                            ->where(['id' => $userId])
-                            ->first();
-                        
-                        if ($user) {
-                            NotificationHelper::commentLike(
-                                (int)$comment->user_id,
-                                (int)$userId,
-                                (int)$comment->post_id,
-                                (int)$id,
-                                (string)($user->full_name ?? $user->username)
-                            );
-                        }
+            // Extract user ID from identity
+            $userId = null;
+            if (is_object($identity)) {
+                if (method_exists($identity, 'getOriginalData')) {
+                    $orig = $identity->getOriginalData();
+                    if (is_object($orig) && isset($orig->id)) {
+                        $userId = $orig->id;
+                    } elseif (is_array($orig) && isset($orig['id'])) {
+                        $userId = $orig['id'];
                     }
-                } catch (\Exception $notifError) {
-                    error_log('Comment like notification error: ' . $notifError->getMessage());
+                } elseif (isset($identity->id)) {
+                    $userId = $identity->id;
                 }
-
-                return $response;
+            } elseif (is_array($identity) && isset($identity['id'])) {
+                $userId = $identity['id'];
             }
-        }
 
-        return $this->response
-            ->withType('application/json')
-            ->withStatus(400)
-            ->withStringBody(json_encode(['success' => false, 'message' => 'Failed to toggle like']));
+            if (!$userId) {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStatus(401)
+                    ->withStringBody(json_encode(['success' => false, 'message' => 'User ID not found']));
+            }
+
+            // Check if already liked
+            $existingLike = $this->Likes->find()
+                ->where([
+                    'user_id' => $userId,
+                    'target_type' => 'Comment',
+                    'target_id' => $id
+                ])
+                ->first();
+
+            if ($existingLike) {
+                // Unlike
+                if ($this->Likes->delete($existingLike)) {
+                    $likeCount = $this->Likes->find()
+                        ->where(['target_type' => 'Comment', 'target_id' => $id])
+                        ->count();
+
+                    return $this->response
+                        ->withType('application/json')
+                        ->withStringBody(json_encode([
+                            'success' => true,
+                            'liked' => false,
+                            'likeCount' => $likeCount
+                        ]));
+                }
+            } else {
+                // Like
+                $like = $this->Likes->newEntity([
+                    'user_id' => $userId,
+                    'target_type' => 'Comment',
+                    'target_id' => $id
+                ]);
+
+                if ($this->Likes->save($like)) {
+                    $likeCount = $this->Likes->find()
+                        ->where(['target_type' => 'Comment', 'target_id' => $id])
+                        ->count();
+
+                    $response = $this->response
+                        ->withType('application/json')
+                        ->withStringBody(json_encode([
+                            'success' => true,
+                            'liked' => true,
+                            'likeCount' => $likeCount
+                        ]));
+
+                    // Create notification for comment owner
+                    try {
+                        error_log('[DEBUG] Starting comment like notification creation for comment ID: ' . $id);
+                        $commentsTable = $this->fetchTable('Comments');
+                        $comment = $commentsTable->find()
+                            ->select(['id', 'user_id', 'post_id'])
+                            ->where(['id' => $id])
+                            ->first();
+
+                        error_log('[DEBUG] Comment found: ' . ($comment ? 'yes' : 'no'));
+                        if ($comment) {
+                            error_log('[DEBUG] Comment owner ID: ' . $comment->user_id . ', Liker ID: ' . $userId);
+                        }
+
+                        if ($comment && $comment->user_id !== $userId) {
+                            error_log('[DEBUG] Different user, fetching liker details...');
+                            $usersTable = $this->fetchTable('Users');
+                            $user = $usersTable->find()
+                                ->select(['id', 'username', 'full_name'])
+                                ->where(['id' => $userId])
+                                ->first();
+                            
+                            error_log('[DEBUG] User found: ' . ($user ? 'yes' : 'no'));
+                            if ($user) {
+                                error_log('[DEBUG] Calling NotificationHelper::commentLike()');
+                                $result = NotificationHelper::commentLike(
+                                    (int)$comment->user_id,
+                                    (int)$userId,
+                                    (int)$comment->post_id,
+                                    (int)$id,
+                                    (string)($user->full_name ?? $user->username)
+                                );
+                                error_log('[DEBUG] Notification creation result: ' . ($result ? 'success' : 'failed'));
+                            }
+                        } else {
+                            error_log('[DEBUG] Skipping notification - same user or no comment');
+                        }
+                    } catch (\Exception $notifError) {
+                        error_log('[ERROR] Comment like notification error: ' . $notifError->getMessage());
+                        error_log('[ERROR] Stack trace: ' . $notifError->getTraceAsString());
+                    }
+
+                    return $response;
+                }
+            }
+
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(400)
+                ->withStringBody(json_encode(['success' => false, 'message' => 'Failed to toggle like']));
+                
+        } catch (\Exception $e) {
+            error_log('toggleComment error: ' . $e->getMessage());
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(500)
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'Server error: ' . $e->getMessage()
+                ]));
+        }
     }
 
     /**

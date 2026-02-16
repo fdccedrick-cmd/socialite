@@ -92,7 +92,7 @@ const app = createApp({
                 newComment: '',
                 commentImage: null,
                 commentImagePreview: null,
-                comments: []
+                comments: post.comments || []
             })),
             newPost: {
                 content: '',

@@ -81,7 +81,7 @@ class NotificationsTable extends Table
             ->maxLength('type', 50)
             ->requirePresence('type', 'create')
             ->notEmptyString('type')
-            ->inList('type', ['like', 'comment', 'follow', 'mention', 'share', 'reply']);
+            ->inList('type', ['like', 'comment', 'comment_like', 'follow', 'mention', 'share', 'reply']);
 
         $validator
             ->scalar('notifiable_type')
