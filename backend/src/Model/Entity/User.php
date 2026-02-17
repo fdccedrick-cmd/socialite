@@ -16,9 +16,11 @@ class User extends Entity
         'profile_photo_path' => true,
         'created' => true,
         'modified' => true,
+        'bio' => true,
     ];
 
     protected array $_hidden = [
+        
         'password_hash',
     ];
 

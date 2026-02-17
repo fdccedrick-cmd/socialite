@@ -42,9 +42,14 @@
               
               <!-- Notification Content -->
               <div class="flex-1 min-w-0">
-                <p class="text-sm sm:text-base text-gray-900 mb-1">
-                  <?= $notification->message ?>
-                </p>
+                <div class="flex items-center space-x-1">
+                  <p class="text-sm text-gray-900 font-bold">
+                    <?= h($notification->actor->full_name ?? $notification->actor->username ?? 'Unknown') ?>
+                  </p>
+                  <p class="text-sm text-gray-900">
+                    <?= h($notification->message) ?>
+                  </p>
+                </div>
                 <p class="text-xs text-gray-500">
                   <?= $notification->created->timeAgoInWords() ?>
                 </p>

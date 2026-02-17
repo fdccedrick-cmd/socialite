@@ -48,6 +48,10 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/api/notifications/mark-read/{id}', ['controller' => 'Notifications', 'action' => 'markAsRead'], ['pass' => ['id']]);
         $builder->connect('/api/notifications/mark-all-read', ['controller' => 'Notifications', 'action' => 'markAllAsRead']);
         
+        // Settings routes
+        $builder->connect('/settings/account', ['controller' => 'Settings', 'action' => 'account']);
+        $builder->connect('/settings/update-password', ['controller' => 'Settings', 'action' => 'updatePassword']);
+        
         $builder->fallbacks();
     });
 };

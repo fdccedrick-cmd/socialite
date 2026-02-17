@@ -1,4 +1,5 @@
 (function () {
+  console.debug('profile.js sees window.profileData', window.profileData);
   const el = document.getElementById('profileApp');
   if (!el) return;
   
@@ -27,27 +28,26 @@
           username: window.profileData?.user?.username || 'user',
           avatar: window.profileData?.user?.avatar || 'https://i.pravatar.cc/150?img=1',
           joinedDate: window.profileData?.user?.joinedDate || 'Joined recently',
-          bio: window.profileData?.user?.bio || '🌍 Explorer · 📷 Photography enthusiast · ☕ Coffee lover',
+          bio: window.profileData?.user?.bio || null,
           stats: {
             posts: window.profileData?.postCount || 0,
             friends: '0',
-            likes: '0'
+            // Use server-provided likes value (total likes across all user's posts)
+            likes: (window.profileData && typeof window.profileData.likes === 'number') 
+              ? window.profileData.likes 
+              : 0
           }
         },
         showEditModal: false,
         isSubmitting: false,
-        showCurrentPassword: false,
-        showNewPassword: false,
-        showConfirmPassword: false,
+        
         uploadError: '',
         editForm: {
           full_name: '',
           username: '',
           avatar: '',
           profile_picture_file: null,
-          current_password: '',
-          new_password: '',
-          confirm_password: ''
+          bio: ''
         },
         errors: {},
         imageViewer: {
@@ -74,6 +74,43 @@
         if (diffDays < 7) return `${diffDays}d ago`;
         
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      },
+      async toggleLike(postId) {
+        console.debug('toggleLike called for', postId);
+        try {
+          const response = await fetch(`/likes/toggle-post/${postId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (data.success) {
+            const postIndex = this.posts.findIndex(p => p.id === postId);
+            if (postIndex !== -1) {
+              const updatedPost = {
+                ...this.posts[postIndex],
+                is_liked: data.liked,
+                like_count: data.likeCount
+              };
+              this.posts.splice(postIndex, 1, updatedPost);
+              
+              // Update the total likes count in stats
+              const likeDelta = data.liked ? 1 : -1;
+              this.user.stats.likes = Math.max(0, this.user.stats.likes + likeDelta);
+            }
+          }
+        } catch (error) {
+          console.error('Error toggling like:', error);
+        }
       },
       openImageViewer(images, index = 0) {
         if (!Array.isArray(images)) {
@@ -110,11 +147,13 @@
           username: this.user.username,
           avatar: this.user.avatar,
           profile_picture_file: null,
+          bio: this.user.bio,
           current_password: '',
           new_password: '',
           confirm_password: ''
         };
         this.errors = {};
+        console.debug('openEditModal - editForm initialized', { full_name: this.editForm.full_name, bio: this.editForm.bio, username: this.editForm.username });
         this.uploadError = '';
         this.showEditModal = true;
         this.$nextTick(() => {
@@ -128,6 +167,7 @@
           username: '',
           avatar: '',
           profile_picture_file: null,
+          bio: '',
           current_password: '',
           new_password: '',
           confirm_password: ''
@@ -169,6 +209,9 @@
         this.errors = {};
         this.isSubmitting = true;
 
+        // Debug: log what is about to be submitted
+        console.debug('Submitting profile update - editForm snapshot', { full_name: this.editForm.full_name, bio: this.editForm.bio, hasFile: !!this.editForm.profile_picture_file });
+
         // Validate form
         if (!this.editForm.full_name || this.editForm.full_name.trim() === '') {
           this.errors.full_name = 'Full name is required';
@@ -177,41 +220,17 @@
         }
 
         // Validate password fields if any password field is filled
-        if (this.editForm.current_password || this.editForm.new_password || this.editForm.confirm_password) {
-          if (!this.editForm.current_password) {
-            this.errors.current_password = 'Current password is required to change password';
-            this.isSubmitting = false;
-            return;
-          }
-          if (!this.editForm.new_password) {
-            this.errors.new_password = 'New password is required';
-            this.isSubmitting = false;
-            return;
-          }
-          if (this.editForm.new_password.length < 6) {
-            this.errors.new_password = 'Password must be at least 6 characters';
-            this.isSubmitting = false;
-            return;
-          }
-          if (this.editForm.new_password !== this.editForm.confirm_password) {
-            this.errors.confirm_password = 'Passwords do not match';
-            this.isSubmitting = false;
-            return;
-          }
-        }
+        
 
         // Create FormData for file upload
         const formData = new FormData();
         formData.append('full_name', this.editForm.full_name);
-        
+        formData.append('bio', this.editForm.bio);
         if (this.editForm.profile_picture_file) {
           formData.append('profile_picture', this.editForm.profile_picture_file);
         }
         
-        if (this.editForm.current_password) {
-          formData.append('current_password', this.editForm.current_password);
-          formData.append('new_password', this.editForm.new_password);
-        }
+        
 
         try {
           const response = await fetch('/profile/update', {
@@ -220,11 +239,13 @@
           });
           
           const data = await response.json();
+          console.debug('Profile update response from backend', data);
           
           if (data.success) {
             // Update user data with response
             this.user.full_name = data.user.full_name;
             this.user.username = data.user.username;
+            this.user.bio = data.user.bio;
             if (data.user.profile_photo_path) {
               this.user.avatar = data.user.profile_photo_path;
             }
@@ -750,5 +771,15 @@
     }
   });
   
+  // Debug: show what likes value we're initializing the header with
+  try {
+    const initialLikes = (typeof window.profileData?.likes !== 'undefined')
+      ? Number(window.profileData.likes)
+      : ((window.profileData?.posts || []).reduce((sum, p) => sum + (Number(p.like_count) || 0), 0) || 0);
+    console.debug('profile.js initialLikes:', initialLikes, 'window.profileData.likes:', window.profileData?.likes, 'posts:', window.profileData?.posts);
+  } catch (e) {
+    console.debug('profile.js debug error:', e);
+  }
+
   app.mount(el);
 })();

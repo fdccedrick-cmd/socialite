@@ -13,7 +13,7 @@
     <style>
         body {
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f3f4f6;
+            
         }
         
         @media (min-width: 1024px) {
@@ -79,7 +79,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-100">
     <?php $currentUser = $currentUser ?? ($this->Identity->get() ?? null); ?>
     <?= $this->element('navigation/header', ['user' => $currentUser]) ?>
     

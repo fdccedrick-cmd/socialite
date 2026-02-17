@@ -1,3 +1,48 @@
+<script>
+// Pass data to profile.js (moved outside the Vue-mounted template to avoid Vue compile errors)
+<?php 
+?>
+window.profileData = {
+    currentUserId: <?= json_encode($currentUserId ?? null) ?>,
+    posts: <?= json_encode($postsArray ?? []) ?>,
+    user: {
+        full_name: <?= json_encode(!empty($user['full_name']) ? $user['full_name'] : (!empty($user['username']) ? $user['username'] : 'User')) ?>,
+        username: <?= json_encode(!empty($user['username']) ? $user['username'] : 'user') ?>,
+        avatar: <?= json_encode(!empty($user['profile_photo_path']) ? $user['profile_photo_path'] : 'https://i.pravatar.cc/150?img=1') ?>,
+        joinedDate: <?php 
+          $joinedDate = 'Joined recently';
+          if (!empty($user['created'])) {
+            try {
+              $dateStr = is_string($user['created']) ? $user['created'] : (is_object($user['created']) ? $user['created']->format('Y-m-d') : '');
+              if ($dateStr) {
+                $timestamp = strtotime($dateStr);
+                if ($timestamp !== false) {
+                  $joinedDate = 'Joined ' . date('M Y', $timestamp);
+                }
+              }
+            } catch (Exception $e) {
+              $joinedDate = 'Joined recently';
+            }
+          }
+          echo json_encode($joinedDate);
+        ?>,
+        bio: <?= json_encode(!empty($user['bio']) ? $user['bio'] : null) ?>
+    },
+    postCount: <?= json_encode($postCount ?? 0) ?>,
+    likes: <?= json_encode($userLikeCount ?? 0) ?>
+};
+
+// Debug: Log the profileData immediately
+console.log('🔍 Profile Data Debug:', {
+    likes: window.profileData.likes,
+    'typeof likes': typeof window.profileData.likes,
+    postCount: window.profileData.postCount,
+    postsLength: window.profileData.posts?.length,
+    firstPostLikeCount: window.profileData.posts?.[0]?.like_count,
+    bio: window.profileData.user.bio
+});
+</script>
+
 <div id="profileApp" class="space-y-3 sm:space-y-4 lg:space-y-6" v-cloak>
   <!-- Profile Header Card -->
   <div class="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 lg:p-8 mb-3 sm:mb-4 lg:mb-6">
@@ -38,6 +83,7 @@
             <span class="text-gray-500 text-xs sm:text-sm ml-1">Likes</span>
           </div>
         </div>
+        
       </div>
       
       <!-- Edit Profile Button -->
@@ -46,7 +92,6 @@
           <i data-lucide="settings" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-700"></i>
           <span class="text-xs sm:text-sm font-medium text-gray-700"></span>
         </button>
-      </div>
     </div>
   </div>
   
@@ -153,36 +198,4 @@
   
 </div>
 
-<script>
-// Pass data to profile.js
-window.profileData = {
-    currentUserId: <?= json_encode($currentUserId ?? null) ?>,
-    posts: <?= json_encode($postsArray ?? []) ?>,
-    user: {
-        full_name: <?= json_encode(!empty($user['full_name']) ? $user['full_name'] : (!empty($user['username']) ? $user['username'] : 'User')) ?>,
-        username: <?= json_encode(!empty($user['username']) ? $user['username'] : 'user') ?>,
-        avatar: <?= json_encode(!empty($user['profile_photo_path']) ? $user['profile_photo_path'] : 'https://i.pravatar.cc/150?img=1') ?>,
-        joinedDate: <?php 
-          $joinedDate = 'Joined recently';
-          if (!empty($user['created'])) {
-            try {
-              $dateStr = is_string($user['created']) ? $user['created'] : (is_object($user['created']) ? $user['created']->format('Y-m-d') : '');
-              if ($dateStr) {
-                $timestamp = strtotime($dateStr);
-                if ($timestamp !== false) {
-                  $joinedDate = 'Joined ' . date('M Y', $timestamp);
-                }
-              }
-            } catch (Exception $e) {
-              $joinedDate = 'Joined recently';
-            }
-          }
-          echo json_encode($joinedDate);
-        ?>,
-        bio: <?= json_encode(!empty($user['bio']) ? $user['bio'] : '🌍 Explorer · 📷 Photography enthusiast · ☕ Coffee lover') ?>
-    },
-    postCount: <?= json_encode($postCount ?? 0) ?>
-};
-</script>
-
-<script src="/js/profile.js"></script>
+<script src="/js/profile.js?v=<?= time() ?>"></script>

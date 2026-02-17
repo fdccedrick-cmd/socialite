@@ -95,7 +95,8 @@ class NotificationHelper
             'like',
             'Post',
             $postId,
-            "<strong>" . htmlspecialchars($likerName) . "</strong> liked your post"
+            " liked your post"
+            // htmlspecialchars($likerName) . 
         );
     }
 
@@ -116,7 +117,8 @@ class NotificationHelper
             'comment',
             'Post',
             $postId,
-            "<strong>" . htmlspecialchars($commenterName) . "</strong> commented on your post"
+            " commented on your post"
+            // htmlspecialchars($commenterName) . 
         );
     }
 
@@ -138,7 +140,8 @@ class NotificationHelper
             'comment_like',
             'Comment',
             $commentId,
-            "<strong>" . htmlspecialchars($likerName) . "</strong> liked your comment"
+            " liked your comment"
+            // htmlspecialchars($likerName) . 
         );
     }
 
@@ -159,7 +162,7 @@ class NotificationHelper
             'reply',
             'Comment',
             $commentId,
-            "<strong>" . htmlspecialchars($replierName) . "</strong> replied to your comment"
+            htmlspecialchars($replierName) . " replied to your comment"
         );
     }
 
@@ -179,7 +182,7 @@ class NotificationHelper
             'follow',
             'User',
             $followerId,
-            "<strong>" . htmlspecialchars($followerName) . "</strong> started following you"
+            htmlspecialchars($followerName) . " started following you"
         );
     }
 }

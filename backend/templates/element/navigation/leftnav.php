@@ -50,7 +50,7 @@ $currentPath = $this->request->getPath();
     </a>
     
     <a 
-      href="/settings" 
+      href="/settings/account" 
       class="flex items-center gap-3 px-3 py-2.5 lg:py-2 rounded-lg transition-colors <?= str_contains($currentPath, '/settings') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50' ?>"
     >
       <i data-lucide="settings" class="w-5 h-5 lg:w-4 lg:h-4 flex-shrink-0"></i>

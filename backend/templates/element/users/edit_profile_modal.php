@@ -47,7 +47,20 @@
 
       <!-- Divider -->
       <div class="border-t border-gray-200"></div>
-
+      <div class="space-y-1.5 sm:space-y-2">
+        <label for="bio" class="block text-xs sm:text-sm font-semibold text-gray-700">
+          Bio
+        </label>
+        <textarea
+          id="bio"
+          v-model="editForm.bio"
+          maxlength="500"
+          class="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+          placeholder="Tell us about yourself"
+          rows="4"
+        ></textarea>
+        <p class="text-[10px] sm:text-xs text-gray-500 mt-1">Maximum 500 characters</p>
+        </div>
       <!-- Full Name -->
       <div class="space-y-1.5 sm:space-y-2">
         <label for="full_name" class="block text-xs sm:text-sm font-semibold text-gray-700">
@@ -87,84 +100,7 @@
       <!-- Divider -->
       <div class="border-t border-gray-200"></div>
 
-      <!-- Password Section Header -->
-      <div>
-        <h3 class="text-sm sm:text-base font-semibold text-gray-900 mb-0.5 sm:mb-1">Change Password</h3>
-        <p class="text-xs sm:text-sm text-gray-500">Leave blank if you don't want to change your password</p>
-      </div>
-
-      <!-- Current Password -->
-      <div class="space-y-1.5 sm:space-y-2">
-        <label for="current_password" class="block text-xs sm:text-sm font-semibold text-gray-700">
-          Current Password
-        </label>
-        <div class="relative">
-          <input 
-            :type="showCurrentPassword ? 'text' : 'password'"
-            id="current_password"
-            v-model="editForm.current_password"
-            class="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-10 sm:pr-12"
-            placeholder="Enter your current password"
-          />
-          <button 
-            type="button"
-            @click="showCurrentPassword = !showCurrentPassword"
-            class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          >
-            <i :data-lucide="showCurrentPassword ? 'eye-off' : 'eye'" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          </button>
-        </div>
-        <p v-if="errors.current_password" class="text-xs sm:text-sm text-red-600">{{ errors.current_password }}</p>
-      </div>
-
-      <!-- New Password -->
-      <div class="space-y-1.5 sm:space-y-2">
-        <label for="new_password" class="block text-xs sm:text-sm font-semibold text-gray-700">
-          New Password
-        </label>
-        <div class="relative">
-          <input 
-            :type="showNewPassword ? 'text' : 'password'"
-            id="new_password"
-            v-model="editForm.new_password"
-            class="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-10 sm:pr-12"
-            placeholder="Enter new password (min. 6 characters)"
-            minlength="6"
-          />
-          <button 
-            type="button"
-            @click="showNewPassword = !showNewPassword"
-            class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          >
-            <i :data-lucide="showNewPassword ? 'eye-off' : 'eye'" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          </button>
-        </div>
-        <p v-if="errors.new_password" class="text-xs sm:text-sm text-red-600">{{ errors.new_password }}</p>
-      </div>
-
-      <!-- Confirm New Password -->
-      <div class="space-y-1.5 sm:space-y-2">
-        <label for="confirm_password" class="block text-xs sm:text-sm font-semibold text-gray-700">
-          Confirm New Password
-        </label>
-        <div class="relative">
-          <input 
-            :type="showConfirmPassword ? 'text' : 'password'"
-            id="confirm_password"
-            v-model="editForm.confirm_password"
-            class="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-10 sm:pr-12"
-            placeholder="Re-enter new password"
-          />
-          <button 
-            type="button"
-            @click="showConfirmPassword = !showConfirmPassword"
-            class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          >
-            <i :data-lucide="showConfirmPassword ? 'eye-off' : 'eye'" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          </button>
-        </div>
-        <p v-if="errors.confirm_password" class="text-xs sm:text-sm text-red-600">{{ errors.confirm_password }}</p>
-      </div>
+      <!-- Password moved to Settings/account.php -->
 
       <!-- Modal Footer -->
       <div class="flex items-center justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200">

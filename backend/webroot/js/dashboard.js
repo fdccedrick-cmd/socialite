@@ -26,6 +26,13 @@ const app = createApp({
                 error: '',
                 showEmojiPicker: false
             },
+            // Indicates when a file is being dragged over the post input area
+            dragOverPost: false,
+            // Thumbnail-specific drag indicator
+            showThumbnailDrag: false,
+            // Simple toast for brief messages (e.g., invalid file dropped)
+            toastMessage: '',
+            toastTimeoutId: null,
             imageViewer: {
                 isOpen: false,
                 images: [],
@@ -146,6 +153,55 @@ const app = createApp({
             textarea.style.height = 'auto';
             textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
         },
+        onDragOver(event) {
+            event.dataTransfer.dropEffect = 'copy';
+            this.dragOverPost = true;
+        },
+        onDragLeave(event) {
+            this.dragOverPost = false;
+        },
+        async handleDrop(event) {
+            this.dragOverPost = false;
+            const dt = event.dataTransfer;
+            let files = [];
+            if (dt && dt.files && dt.files.length > 0) {
+                files = Array.from(dt.files);
+            } else if (dt && dt.items) {
+                for (const item of dt.items) {
+                    if (item.kind === 'file') {
+                        const f = item.getAsFile();
+                        if (f) files.push(f);
+                    }
+                }
+            }
+            if (files.length > 0) {
+                this.addImages(files);
+            }
+        },
+        onThumbnailDragOver(event) {
+            event.dataTransfer.dropEffect = 'copy';
+            this.showThumbnailDrag = true;
+        },
+        onThumbnailDragLeave(event) {
+            this.showThumbnailDrag = false;
+        },
+        handleDropOnThumbnails(event) {
+            this.showThumbnailDrag = false;
+            const dt = event.dataTransfer;
+            let files = [];
+            if (dt && dt.files && dt.files.length > 0) {
+                files = Array.from(dt.files);
+            }
+            if (files.length === 0) return;
+            // Reuse addImages but surface errors as a toast for drops
+            const prevError = this.newPost.error;
+            this.addImages(files);
+            if (this.newPost.error) {
+                this.showToast(this.newPost.error);
+                // restore previous error state so the inline error area isn't immediately overwritten
+                this.newPost.error = prevError;
+            }
+        },
         toggleEmojiPicker() {
             const picker = document.getElementById('emojiPickerContainer');
             if (picker) {
@@ -185,46 +241,53 @@ const app = createApp({
             }
         },
         handleImageSelect(event) {
-            const files = Array.from(event.target.files);
+            const files = Array.from(event.target.files || []);
+            this.addImages(files);
+            // Clear file input so same file can be re-selected later
+            if (event.target) event.target.value = '';
+        },
+        addImages(files) {
             this.newPost.error = '';
-            
+
             // Validate file count
             if (this.newPost.images.length + files.length > 10) {
                 this.newPost.error = 'You can upload a maximum of 10 images per post';
-                event.target.value = '';
                 return;
             }
-            
-            // Validate each file
+
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+            const maxSize = 10 * 1024 * 1024;
+
             for (const file of files) {
-                // Validate file type
-                const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
                 if (!validTypes.includes(file.type)) {
                     this.newPost.error = 'Please upload valid image files (JPG, PNG, or GIF)';
-                    event.target.value = '';
                     return;
                 }
-                
-                // Validate file size (10MB max)
-                const maxSize = 10 * 1024 * 1024;
+
                 if (file.size > maxSize) {
                     this.newPost.error = 'Each image must be less than 10MB';
-                    event.target.value = '';
                     return;
                 }
-                
-                // Add to images array
+
                 this.newPost.images.push(file);
-                
-                // Create preview
+
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     this.newPost.imagePreview.push(e.target.result);
                 };
                 reader.readAsDataURL(file);
             }
-            
-            event.target.value = '';
+        },
+        showToast(message, timeout = 3000) {
+            if (this.toastTimeoutId) {
+                clearTimeout(this.toastTimeoutId);
+                this.toastTimeoutId = null;
+            }
+            this.toastMessage = message;
+            this.toastTimeoutId = setTimeout(() => {
+                this.toastMessage = '';
+                this.toastTimeoutId = null;
+            }, timeout);
         },
         removeImage(index) {
             this.newPost.images.splice(index, 1);
@@ -552,6 +615,22 @@ const app = createApp({
         if (typeof this.openImageViewer === 'function') {
             window.openImageViewer = this.openImageViewer.bind(this);
         }
+        // Prevent default browser behavior for drag/drop that can open files in a new tab
+        this._onDocumentDragOver = (e) => {
+            e.preventDefault();
+        };
+        this._onDocumentDrop = (e) => {
+            // Always prevent default to stop navigation
+            e.preventDefault();
+            // If drop happened inside the post-create card, route to our drop handler
+            const el = e.target.closest && e.target.closest('.post-create-card');
+            if (el) {
+                // prefer calling component handler so validation/path is consistent
+                this.handleDrop(e);
+            }
+        };
+        document.addEventListener('dragover', this._onDocumentDragOver);
+        document.addEventListener('drop', this._onDocumentDrop);
     },
     beforeUnmount() {
         // Clean up any listeners added earlier (none for dashboard)
@@ -591,6 +670,11 @@ const app = createApp({
         if (window.handleOpenComment && window.handleOpenComment === this.handleOpenComment) {
             try { delete window.handleOpenComment; } catch (e) { window.handleOpenComment = undefined; }
         }
+        // Remove document-level drag/drop listeners
+        try {
+            document.removeEventListener('dragover', this._onDocumentDragOver);
+            document.removeEventListener('drop', this._onDocumentDrop);
+        } catch (e) {}
     },
     updated() {
         // Re-initialize Lucide icons after DOM updates

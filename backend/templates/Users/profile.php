@@ -181,7 +181,8 @@
       ?>,
       bio: <?= json_encode(!empty($user['bio']) ? $user['bio'] : '🌍 Explorer · 📷 Photography enthusiast · ☕ Coffee lover') ?>
     },
-    postCount: <?= json_encode($postCount ?? 0) ?>
+    postCount: <?= json_encode($postCount ?? 0) ?>,
+    likes: <?= json_encode($userLikeCount ?? 0) ?>
   };
 </script>
 <script src="/js/profile.js"></script>

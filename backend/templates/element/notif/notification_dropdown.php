@@ -30,7 +30,11 @@
             @error="$event.target.src='https://i.pravatar.cc/150?img=1'"
           />
           <div class="flex-1 min-w-0">
-            <p class="text-sm text-gray-900" v-html="notif.message"></p>
+            <div class="flex items-center space-x-1">
+              <p class="text-sm text-gray-900 font-bold" v-html="notif.actor_full_name"></p>
+              <p class="text-sm text-gray-900" v-html="notif.message"></p>
+            </div>
+
             <p class="text-xs text-gray-500 mt-1">{{ formatTime(notif.created) }}</p>
           </div>
           <div v-if="!notif.is_read" class="flex-shrink-0">

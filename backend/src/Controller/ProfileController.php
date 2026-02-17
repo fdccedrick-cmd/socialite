@@ -72,6 +72,24 @@ class ProfileController extends AppController
             ->toArray();
         
         $postsArray = [];
+        // compute total likes across all posts with a single query for reliability
+        $postIds = array_map(function($p) { return $p->id; }, $posts);
+        if (!empty($postIds)) {
+            $userLikeCount = (int)$likesTable->find()
+                ->where(["LOWER(target_type) =" => 'post', 'target_id IN' => $postIds])
+                ->count();
+        } else {
+            $userLikeCount = 0;
+        }
+
+        // Debug logging: show post IDs and computed like count
+        try {
+            error_log('Profile view - userId: ' . $userId . ' postIds: ' . json_encode($postIds));
+            error_log('Profile view - computed userLikeCount: ' . $userLikeCount);
+        } catch (\Throwable $e) {
+            // ignore logging errors
+        }
+
         foreach ($posts as $post) {
             $postData = $post->toArray();
             if (!empty($postData['created']) && $postData['created'] instanceof \DateTimeInterface) {
@@ -82,14 +100,14 @@ class ProfileController extends AppController
             }
             
            
-            $postData['like_count'] = $likesTable->find()
-                ->where(['target_type' => 'Post', 'target_id' => $post->id])
+            $postData['like_count'] = (int)$likesTable->find()
+                ->where(["LOWER(target_type) =" => 'post', 'target_id' => $post->id])
                 ->count();
             
             
             $postData['is_liked'] = $likesTable->find()
                 ->where([
-                    'target_type' => 'Post',
+                    "LOWER(target_type) =" => 'post',
                     'target_id' => $post->id,
                     'user_id' => $currentUserId
                 ])
@@ -105,7 +123,7 @@ class ProfileController extends AppController
         
         $postCount = count($postsArray);
 
-        $this->set(compact('user', 'postsArray', 'postCount', 'currentUserId'));
+        $this->set(compact('user', 'postsArray', 'postCount', 'currentUserId', 'userLikeCount', 'postIds'));
     }
 
     public function update()
@@ -154,6 +172,11 @@ class ProfileController extends AppController
         $user = $usersTable->get($userId);
         $data = [];
         $errors = [];
+
+        $bio = $this->request->getData('bio');
+        if (!empty($bio)) {
+            $data['bio'] = trim($bio);
+        }
 
         $fullName = $this->request->getData('full_name');
         if (!empty($fullName)) {
@@ -228,36 +251,77 @@ class ProfileController extends AppController
                 ]));
         }
 
-        
-        $user = $usersTable->patchEntity($user, $data);
-        
-        if ($usersTable->save($user)) {
-            $this->Authentication->setIdentity($user);
-            
-            
-            $this->Flash->success('Profile updated successfully!');
-            
-            $responseData = [
-                'full_name' => $user->full_name,
-                'username' => $user->username,
-                'profile_photo_path' => $user->profile_photo_path
-            ];
-            
-            return $this->response
-                ->withType('application/json')
-                ->withStringBody(json_encode([
-                    'success' => true,
-                    'user' => $responseData
-                ]));
-        } else {
-            $validationErrors = $user->getErrors();
-            $this->Flash->error('Failed to update profile. Please check your input.');
-            return $this->response
-                ->withType('application/json')
-                ->withStringBody(json_encode([
-                    'success' => false,
-                    'errors' => $validationErrors
-                ]));
+
+        // Debug: log incoming request data and prepared $data (redact passwords)
+        try {
+            $raw = $this->request->getData();
+            $logRaw = $raw;
+            if (is_array($logRaw) && isset($logRaw['current_password'])) {
+                $logRaw['current_password'] = '[REDACTED]';
+            }
+            if (is_array($logRaw) && isset($logRaw['new_password'])) {
+                $logRaw['new_password'] = '[REDACTED]';
+            }
+            $logData = $data;
+            if (isset($logData['password_hash'])) {
+                $logData['password_hash'] = '[REDACTED]';
+            }
+            error_log('Profile update - raw post data: ' . json_encode($logRaw));
+            error_log('Profile update - prepared data: ' . json_encode($logData));
+        } catch (\Throwable $e) {
+            // ignore logging errors
         }
+
+        $user = $usersTable->patchEntity($user, $data);
+
+        try {
+            error_log('Profile update - patched entity: ' . json_encode($user->toArray()));
+        } catch (\Throwable $e) {
+            // ignore
+        }
+        
+        try {
+            $saveResult = $usersTable->save($user);
+            error_log('Profile update - save result: ' . ($saveResult ? 'true' : 'false'));
+
+            if ($saveResult) {
+                // Re-fetch fresh record from DB to confirm persisted values
+                try {
+                    $fresh = $usersTable->get($userId);
+                    error_log('Profile update - fresh from DB after save: ' . json_encode($fresh->toArray()));
+                } catch (\Throwable $e) {
+                    error_log('Profile update - failed to fetch fresh user: ' . $e->getMessage());
+                }
+
+                $this->Authentication->setIdentity($user);
+                $this->Flash->success('Profile updated successfully!');
+
+                $responseData = [
+                    'full_name' => $user->full_name,
+                    'username' => $user->username,
+                    'bio' => $user->bio,
+                    'profile_photo_path' => $user->profile_photo_path
+                ];
+
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([
+                        'success' => true,
+                        'user' => $responseData
+                    ]));
+            }
+        } catch (\Throwable $e) {
+            error_log('Profile update - save exception: ' . $e->getMessage());
+        }
+
+        $validationErrors = $user->getErrors();
+        error_log('Profile update - validation errors: ' . json_encode($validationErrors));
+        $this->Flash->error('Failed to update profile. Please check your input.');
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode([
+                'success' => false,
+                'errors' => $validationErrors
+            ]));
     }
 }

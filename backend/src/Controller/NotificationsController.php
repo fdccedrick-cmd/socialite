@@ -103,7 +103,9 @@ class NotificationsController extends AppController
             
             $notifications = $this->Notifications->find()
                 ->where(['Notifications.user_id' => $userId])
-                ->contain(['Actors'])
+                ->contain(['Actors' => function ($q) {
+                    return $q->select(['Actors.id', 'Actors.username', 'Actors.full_name', 'Actors.profile_photo_path']);
+                }])
                 ->order(['Notifications.created' => 'DESC'])
                 ->limit(10)
                 ->toArray();
@@ -146,6 +148,7 @@ class NotificationsController extends AppController
                     'created' => $notif->created->toIso8601String(),
                     'actor_avatar' => $actorAvatar,
                     'actor_username' => isset($notif->actor) ? ($notif->actor->username ?? 'Unknown') : 'Unknown',
+                    'actor_full_name' => isset($notif->actor) ? ($notif->actor->full_name ??  'Unknown') : 'Unknown',
                     'actor_id' => $notif->actor_id
                     , 'url' => $url
                 ];
