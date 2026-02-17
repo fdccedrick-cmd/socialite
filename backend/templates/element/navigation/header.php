@@ -277,10 +277,10 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
         // Fetch notifications on load
         this.fetchNotifications();
         
-        // Poll for new notifications every 30 seconds
+        // Poll for new notifications every 1 seconds
         setInterval(() => {
           this.fetchNotifications();
-        }, 30000);
+        }, 1000);
         
         // Initialize Lucide icons
         if (window.lucide) lucide.createIcons();
