@@ -20,7 +20,7 @@
 
 <!-- Comments List (expandable) -->
 <div v-if="post.showComments" class="px-3 sm:px-4 py-2 space-y-2 max-h-[400px] overflow-y-auto">
-  <div v-for="comment in post.comments" :key="comment.id" class="flex gap-2 text-xs sm:text-sm">
+  <div v-for="comment in post.comments" :key="comment.id" :id="'comment-' + comment.id" class="flex gap-2 text-xs sm:text-sm">
     <img 
       :src="comment.user?.profile_photo_path || 'https://i.pravatar.cc/150?img=1'" 
       :alt="comment.user?.full_name" 
@@ -52,6 +52,25 @@
           <span v-if="comment.like_count > 0">({{ comment.like_count }})</span>
         </button>
         <span class="text-[9px] sm:text-[10px] text-gray-500">{{ formatDate(comment.created_at) }}</span>
+          <!-- Comment owner or post owner can delete; comment owner can edit (edit UI not implemented yet) -->
+          <div class="ml-auto flex items-center gap-2">
+              <button
+                v-if="typeof user !== 'undefined' && user && (comment.user && comment.user.id === user.id)"
+                @click="/* edit comment -- not implemented yet */ alert('Edit comment not implemented')"
+                class="text-[9px] sm:text-[10px] text-gray-600 hover:text-gray-800"
+                title="Edit comment"
+              >
+                Edit
+              </button>
+              <button
+                v-if="typeof user !== 'undefined' && user && ((comment.user && comment.user.id === user.id) || (post.user && post.user.id === user.id))"
+                @click.prevent="deleteComment(post.id, comment.id)"
+                class="text-[9px] sm:text-[10px] text-red-600 hover:text-red-700"
+                title="Delete comment"
+              >
+                Delete
+              </button>
+          </div>
       </div>
     </div>
   </div>

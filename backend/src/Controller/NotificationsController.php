@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Cake\ORM\TableRegistry;
+
 /**
  * Notifications Controller
  *
@@ -117,6 +119,23 @@ class NotificationsController extends AppController
                     $actorAvatar = $notif->actor->profile_photo_path;
                 }
                 
+                $url = null;
+                // Build a redirect URL: prefer posts view; for comments, point to post with comment anchor
+                try {
+                    if ($notif->notifiable_type === 'Post') {
+                        $url = '/posts/' . $notif->notifiable_id;
+                    } elseif ($notif->notifiable_type === 'Comment') {
+                        // load comment to get post_id
+                        $commentsTable = TableRegistry::getTableLocator()->get('Comments');
+                        $comment = $commentsTable->get($notif->notifiable_id);
+                        if ($comment) {
+                            $url = '/posts/' . $comment->post_id . '#comment-' . $notif->notifiable_id;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    $url = null;
+                }
+
                 return [
                     'id' => $notif->id,
                     'message' => $notif->message,
@@ -128,6 +147,7 @@ class NotificationsController extends AppController
                     'actor_avatar' => $actorAvatar,
                     'actor_username' => isset($notif->actor) ? ($notif->actor->username ?? 'Unknown') : 'Unknown',
                     'actor_id' => $notif->actor_id
+                    , 'url' => $url
                 ];
             }, $notifications);
             

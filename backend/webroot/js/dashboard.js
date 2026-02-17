@@ -4,6 +4,7 @@ const app = createApp({
     data() {
         return {
             user: {
+                id: window.dashboardData?.user?.id || null,
                 username: window.dashboardData?.user?.username || 'user',
                 avatar: window.dashboardData?.user?.avatar || 'https://i.pravatar.cc/150?img=1'
             },
@@ -482,7 +483,36 @@ const app = createApp({
             if (post && !post.showComments && post.comment_count > 0) {
                 // Optionally auto-show comments when user starts typing
             }
-        }
+        },
+        async deleteComment(postId, commentId) {
+            if (!confirm('Delete this comment?')) return;
+            try {
+                const response = await fetch(`/comments/delete/${commentId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete comment');
+
+                const data = await response.json();
+                // On success, remove comment from local state
+                const post = this.posts.find(p => p.id === postId);
+                if (post) {
+                    const idx = post.comments.findIndex(c => c.id === commentId);
+                    if (idx !== -1) {
+                        post.comments.splice(idx, 1);
+                        post.comment_count = Math.max(0, (post.comment_count || 1) - 1);
+                    }
+                }
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                alert('Failed to delete comment.');
+            }
+        },
         
     },
     mounted() {
@@ -502,8 +532,7 @@ const app = createApp({
                 });
             }
         });        
-        // Close post menu when clicking outside
-        document.addEventListener('click', this.handleClickOutside);
+        // Close post menu when clicking outside (no-op for dashboard)
         // Expose comment opener globally as a fallback for templates
         if (typeof this.openCommentInput === 'function') {
             window.openCommentInput = this.openCommentInput.bind(this);
@@ -514,8 +543,7 @@ const app = createApp({
         }
     },
     beforeUnmount() {
-        // Clean up event listener
-        document.removeEventListener('click', this.handleClickOutside);        
+        // Clean up any listeners added earlier (none for dashboard)
         // Close emoji picker when clicking outside
         document.addEventListener('click', (e) => {
             const emojiButton = e.target.closest('[title="Add emoji"]');

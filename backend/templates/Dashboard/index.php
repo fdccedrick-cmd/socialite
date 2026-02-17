@@ -79,10 +79,11 @@
 <script>
 // Pass data to dashboard.js
 window.dashboardData = {
-    user: {
-        username: <?= json_encode($user['username'] ?? 'user') ?>,
-        avatar: <?= json_encode($user['profile_photo_path'] ?? 'https://i.pravatar.cc/150?img=1') ?>
-    },
+  user: {
+    id: <?= json_encode($user['id'] ?? null) ?>,
+    username: <?= json_encode($user['username'] ?? 'user') ?>,
+    avatar: <?= json_encode($user['profile_photo_path'] ?? 'https://i.pravatar.cc/150?img=1') ?>
+  },
     posts: <?= json_encode($postsArray ?? []) ?>
 };
 </script>

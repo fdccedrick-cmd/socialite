@@ -27,6 +27,8 @@ return static function (RouteBuilder $routes): void {
         
         // Comments routes
         $builder->connect('/comments/add', ['controller' => 'Comments', 'action' => 'add']);
+        // Direct comment link (redirects to post view with anchor)
+        $builder->connect('/comments/{id}', ['controller' => 'Comments', 'action' => 'view'], ['pass' => ['id']]);
         $builder->connect('/comments/edit/{id}', ['controller' => 'Comments', 'action' => 'edit'], ['pass' => ['id']]);
         $builder->connect('/comments/delete/{id}', ['controller' => 'Comments', 'action' => 'delete'], ['pass' => ['id']]);
         $builder->connect('/comments/get-by-post/{postId}', ['controller' => 'Comments', 'action' => 'getByPost'], ['pass' => ['postId']]);

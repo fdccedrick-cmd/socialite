@@ -212,18 +212,65 @@ class CommentsController extends AppController
         $comment = $this->Comments->get($id);
         
         $user = $this->Authentication->getIdentity();
-        if ($comment->user_id !== $user->id) {
+        $allowDelete = false;
+        if ($user) {
+            // Comment owner may delete
+            if ($comment->user_id === $user->id) {
+                $allowDelete = true;
+            } else {
+                // Post owner may also delete comments on their post
+                $post = $this->fetchTable('Posts')->get($comment->post_id);
+                if ($post && $post->user_id === $user->id) {
+                    $allowDelete = true;
+                }
+            }
+        }
+
+        if (!$allowDelete) {
             $this->Flash->error(__('You can only delete your own comments.'));
             return $this->redirect($this->referer());
         }
         
         if ($this->Comments->softDelete((int)$id)) {
+            if ($this->request->is('ajax') || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode(['success' => true]));
+            }
+
             $this->Flash->success(__('Your comment has been deleted.'));
         } else {
+            if ($this->request->is('ajax') || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStatus(500)
+                    ->withStringBody(json_encode(['success' => false, 'message' => 'Unable to delete comment']));
+            }
+
             $this->Flash->error(__('Unable to delete your comment. Please try again.'));
         }
         
         return $this->redirect(['controller' => 'Posts', 'action' => 'view', $comment->post_id]);
+    }
+
+    /**
+     * View method - redirect to the post page for a comment (deep link)
+     *
+     * @param string|null $id Comment id.
+     * @return \
+     */
+    public function view($id = null)
+    {
+        $this->request->allowMethod(['get']);
+
+        $comment = $this->Comments->get($id);
+        if (!$comment) {
+            throw new \Cake\Datasource\Exception\RecordNotFoundException('Comment not found');
+        }
+
+        // Redirect to the post view with an anchor to the comment
+        $url = '/posts/' . $comment->post_id . '#comment-' . $comment->id;
+        return $this->redirect($url);
     }
 
     /**
