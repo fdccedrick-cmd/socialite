@@ -140,6 +140,9 @@ console.log('🔍 Profile Data Debug:', {
 
   <!-- Edit Profile Modal -->
   <?= $this->element('users/edit_profile_modal') ?>
+
+  <!-- Global Confirmation Modal Element -->
+  <?= $this->element('confirmation_modal') ?>
   
   <!-- Image Viewer Modal -->
   <transition name="fade">

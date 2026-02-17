@@ -407,11 +407,13 @@
             }
           } else {
             console.error('Error posting comment:', data.message);
-            alert(data.message || 'Failed to post comment. Please try again.');
+            if (typeof window.showToast === 'function') window.showToast(data.message || 'Failed to post comment. Please try again.', 'error');
+            else alert(data.message || 'Failed to post comment. Please try again.');
           }
         } catch (error) {
           console.error('Error submitting comment:', error);
-          alert('Failed to post comment. Please try again.');
+          if (typeof window.showToast === 'function') window.showToast('Failed to post comment. Please try again.', 'error');
+          else alert('Failed to post comment. Please try again.');
         }
       },
       async toggleCommentLike(postId, commentId) {
@@ -450,12 +452,14 @@
         
         const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
         if (!validTypes.includes(file.type)) {
-          alert('Please upload a valid image file (JPG, PNG, or GIF)');
+          if (typeof window.showToast === 'function') window.showToast('Please upload a valid image file (JPG, PNG, or GIF)', 'error');
+          else alert('Please upload a valid image file (JPG, PNG, or GIF)');
           return;
         }
         
         if (file.size > 10 * 1024 * 1024) {
-          alert('Image must be less than 10MB');
+          if (typeof window.showToast === 'function') window.showToast('Image must be less than 10MB', 'error');
+          else alert('Image must be less than 10MB');
           return;
         }
         
@@ -573,7 +577,8 @@
         // Validate file count
         const totalImages = post.editImages.length + post.newEditImages.length + files.length;
         if (totalImages > 10) {
-          alert('Maximum 10 images per post');
+          if (typeof window.showToast === 'function') window.showToast('Maximum 10 images per post', 'error');
+          else alert('Maximum 10 images per post');
           event.target.value = '';
           return;
         }
@@ -583,13 +588,15 @@
           // Validate file type
           const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
           if (!validTypes.includes(file.type)) {
-            alert('Please upload valid image files (JPG, PNG, or GIF)');
+            if (typeof window.showToast === 'function') window.showToast('Please upload valid image files (JPG, PNG, or GIF)', 'error');
+            else alert('Please upload valid image files (JPG, PNG, or GIF)');
             return;
           }
           
           // Validate file size
           if (file.size > 10 * 1024 * 1024) {
-            alert('Each image must be less than 10MB');
+            if (typeof window.showToast === 'function') window.showToast('Each image must be less than 10MB', 'error');
+            else alert('Each image must be less than 10MB');
             return;
           }
           
@@ -619,7 +626,8 @@
         const hasImages = (post.editImages.length + post.newEditImages.length) > 0;
         
         if (!hasContent && !hasImages) {
-          alert('Post must have either text or images');
+          if (typeof window.showToast === 'function') window.showToast('Post must have either text or images', 'error');
+          else alert('Post must have either text or images');
           return;
         }
         
@@ -670,20 +678,31 @@
               if (window.lucide) lucide.createIcons();
             });
             
-            alert('Post updated successfully!');
+            if (typeof window.showToast === 'function') window.showToast('Post updated successfully!', 'success');
+            else alert('Post updated successfully!');
           } else {
-            alert(data.message || 'Failed to update post. Please try again.');
+            if (typeof window.showToast === 'function') window.showToast(data.message || 'Failed to update post. Please try again.', 'error');
+            else alert(data.message || 'Failed to update post. Please try again.');
           }
         } catch (error) {
           console.error('Error updating post:', error);
-          alert('Failed to update post. Please try again.');
+            if (typeof window.showToast === 'function') window.showToast('Failed to update post. Please try again.', 'error');
+            else alert('Failed to update post. Please try again.');
         }
       },
       async deletePost(postId) {
         const post = this.posts.find(p => p.id === postId);
         if (post) post.showMenu = false;
         
-        if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+        // Use the global modal helper if available, otherwise fallback to window.confirm
+        let confirmed = false;
+        if (typeof window.showConfirmModal === 'function') {
+          confirmed = await window.showConfirmModal('Are you sure you want to delete this post? This action cannot be undone.');
+        } else {
+          confirmed = confirm('Are you sure you want to delete this post? This action cannot be undone.');
+        }
+
+        if (!confirmed) {
           return;
         }
         
@@ -702,13 +721,16 @@
             this.user.stats.posts = this.posts.length;
             
             // Show success message
-            alert('Post deleted successfully!');
+            if (typeof window.showToast === 'function') window.showToast('Post deleted successfully!', 'success');
+            else alert('Post deleted successfully!');
           } else {
-            alert('Failed to delete post. Please try again.');
+            if (typeof window.showToast === 'function') window.showToast('Failed to delete post. Please try again.', 'error');
+            else alert('Failed to delete post. Please try again.');
           }
         } catch (error) {
           console.error('Error deleting post:', error);
-          alert('Failed to delete post. Please try again.');
+          if (typeof window.showToast === 'function') window.showToast('Failed to delete post. Please try again.', 'error');
+          else alert('Failed to delete post. Please try again.');
         }
       },
       handleClickOutside(event) {

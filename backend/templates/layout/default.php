@@ -9,6 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+    <script src="/js/confirmModal.js?v=<?= time() ?>"></script>
+    <script src="/js/toast.js?v=<?= time() ?>"></script>
     
     <style>
         body {
@@ -86,6 +88,7 @@
     <div id="flashContainer" class="flash-container fixed top-16 sm:top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
         <?= $this->Flash->render() ?>
     </div>
+    <?= $this->element('toast_container') ?>
     
     <!-- Mobile Menu Overlay -->
     <div id="mobileMenuOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden" onclick="this.classList.add('hidden')"></div>
