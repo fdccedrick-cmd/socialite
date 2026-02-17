@@ -18,7 +18,7 @@
     <div class="flex items-center justify-center gap-3 mb-5">
         <h2 class="text-gray-600 text-3xl font-base">Login</h2>
     </div>
-    <p class="text-gray-700 text-sm text-right pb-8">Connect with friends and the world around you.</p>
+    <p class="text-gray-700 text-sm text-center pb-8">Connect with friends and the world around you.</p>
     
     <?= $this->Form->create(null, [
         'url' => '/login',
@@ -50,6 +50,7 @@
                     'label' => ['text' => 'Password', 'class' => 'block mb-2 text-gray-600 font-small'],
                     'type' => 'password',
                     'id' => 'login_password',
+                    'placeholder' => '********',
                     'required' => true,
                     'autocomplete' => 'current-password',
                     'templates' => [

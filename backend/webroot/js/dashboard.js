@@ -26,13 +26,7 @@ const app = createApp({
                 error: '',
                 showEmojiPicker: false
             },
-            // Indicates when a file is being dragged over the post input area
-            dragOverPost: false,
-            // Thumbnail-specific drag indicator
-            showThumbnailDrag: false,
-            // Simple toast for brief messages (e.g., invalid file dropped)
-            toastMessage: '',
-            toastTimeoutId: null,
+            // (drag/drop removed)
             imageViewer: {
                 isOpen: false,
                 images: [],
@@ -153,55 +147,7 @@ const app = createApp({
             textarea.style.height = 'auto';
             textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
         },
-        onDragOver(event) {
-            event.dataTransfer.dropEffect = 'copy';
-            this.dragOverPost = true;
-        },
-        onDragLeave(event) {
-            this.dragOverPost = false;
-        },
-        async handleDrop(event) {
-            this.dragOverPost = false;
-            const dt = event.dataTransfer;
-            let files = [];
-            if (dt && dt.files && dt.files.length > 0) {
-                files = Array.from(dt.files);
-            } else if (dt && dt.items) {
-                for (const item of dt.items) {
-                    if (item.kind === 'file') {
-                        const f = item.getAsFile();
-                        if (f) files.push(f);
-                    }
-                }
-            }
-            if (files.length > 0) {
-                this.addImages(files);
-            }
-        },
-        onThumbnailDragOver(event) {
-            event.dataTransfer.dropEffect = 'copy';
-            this.showThumbnailDrag = true;
-        },
-        onThumbnailDragLeave(event) {
-            this.showThumbnailDrag = false;
-        },
-        handleDropOnThumbnails(event) {
-            this.showThumbnailDrag = false;
-            const dt = event.dataTransfer;
-            let files = [];
-            if (dt && dt.files && dt.files.length > 0) {
-                files = Array.from(dt.files);
-            }
-            if (files.length === 0) return;
-            // Reuse addImages but surface errors as a toast for drops
-            const prevError = this.newPost.error;
-            this.addImages(files);
-            if (this.newPost.error) {
-                this.showToast(this.newPost.error);
-                // restore previous error state so the inline error area isn't immediately overwritten
-                this.newPost.error = prevError;
-            }
-        },
+        // drag/drop handlers removed
         toggleEmojiPicker() {
             const picker = document.getElementById('emojiPickerContainer');
             if (picker) {
@@ -278,17 +224,7 @@ const app = createApp({
                 reader.readAsDataURL(file);
             }
         },
-        showToast(message, timeout = 3000) {
-            if (this.toastTimeoutId) {
-                clearTimeout(this.toastTimeoutId);
-                this.toastTimeoutId = null;
-            }
-            this.toastMessage = message;
-            this.toastTimeoutId = setTimeout(() => {
-                this.toastMessage = '';
-                this.toastTimeoutId = null;
-            }, timeout);
-        },
+        // toast removed
         removeImage(index) {
             this.newPost.images.splice(index, 1);
             this.newPost.imagePreview.splice(index, 1);
@@ -615,22 +551,7 @@ const app = createApp({
         if (typeof this.openImageViewer === 'function') {
             window.openImageViewer = this.openImageViewer.bind(this);
         }
-        // Prevent default browser behavior for drag/drop that can open files in a new tab
-        this._onDocumentDragOver = (e) => {
-            e.preventDefault();
-        };
-        this._onDocumentDrop = (e) => {
-            // Always prevent default to stop navigation
-            e.preventDefault();
-            // If drop happened inside the post-create card, route to our drop handler
-            const el = e.target.closest && e.target.closest('.post-create-card');
-            if (el) {
-                // prefer calling component handler so validation/path is consistent
-                this.handleDrop(e);
-            }
-        };
-        document.addEventListener('dragover', this._onDocumentDragOver);
-        document.addEventListener('drop', this._onDocumentDrop);
+        // drag/drop document listeners removed
     },
     beforeUnmount() {
         // Clean up any listeners added earlier (none for dashboard)
@@ -670,11 +591,7 @@ const app = createApp({
         if (window.handleOpenComment && window.handleOpenComment === this.handleOpenComment) {
             try { delete window.handleOpenComment; } catch (e) { window.handleOpenComment = undefined; }
         }
-        // Remove document-level drag/drop listeners
-        try {
-            document.removeEventListener('dragover', this._onDocumentDragOver);
-            document.removeEventListener('drop', this._onDocumentDrop);
-        } catch (e) {}
+        // Removed drag/drop cleanup
     },
     updated() {
         // Re-initialize Lucide icons after DOM updates

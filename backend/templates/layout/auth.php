@@ -16,7 +16,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center">
+<body class="min-h-screen flex items-center justify-center overflow-hidden">
     <div class="w-full max-w-2xl p-5">
         <div id="flashContainer">
             <?= $this->Flash->render() ?>

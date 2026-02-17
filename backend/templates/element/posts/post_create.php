@@ -14,17 +14,7 @@ $fullName = $currentUser['full_name'] ?? $username;
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
   <div
     class="p-3 sm:p-4 relative post-create-card"
-    @dragover.prevent="onDragOver"
-    @dragleave.prevent="onDragLeave"
-    @drop.prevent="handleDrop"
-    :class="{ 'bg-blue-50 border-blue-200': dragOverPost }"
   >
-    <!-- Drop overlay -->
-    <div v-if="dragOverPost" class="absolute inset-0 bg-blue-50 bg-opacity-60 rounded-xl flex items-center justify-center pointer-events-none">
-      <div class="text-sm font-medium text-blue-700">Drop images to upload</div>
-    </div>
-    <!-- Toast -->
-    <div v-if="toastMessage" class="absolute right-3 top-3 bg-gray-900 text-white px-3 py-1.5 rounded-md text-sm shadow-md">{{ toastMessage }}</div>
     <!-- Profile + Input Row -->
     <div class="flex items-start gap-2 sm:gap-3 mb-3">
       <img 
@@ -60,10 +50,6 @@ $fullName = $currentUser['full_name'] ?? $username;
       <div v-if="newPost.imagePreview.length > 0" class="mb-3">
         <div
           class="flex items-center gap-2 overflow-x-auto pb-1"
-          @dragover.prevent="onThumbnailDragOver"
-          @dragleave.prevent="onThumbnailDragLeave"
-          @drop.prevent="handleDropOnThumbnails"
-          :class="{ 'ring-2 ring-blue-300 rounded-lg': showThumbnailDrag }"
         >
           <!-- Image Thumbnails -->
           <div 
@@ -87,9 +73,6 @@ $fullName = $currentUser['full_name'] ?? $username;
           <!-- Add More Photos Button -->
           <label 
             class="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all group"
-            @dragover.prevent="onThumbnailDragOver"
-            @dragleave.prevent="onThumbnailDragLeave"
-            @drop.prevent="handleDropOnThumbnails"
             title="Add more photos"
           >
             <input 
