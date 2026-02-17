@@ -63,6 +63,7 @@
       </button>
     </div>
   </transition>
+  
 </div>
 
 <!-- Emoji Picker (Outside Vue App) -->

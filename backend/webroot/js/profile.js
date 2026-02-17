@@ -55,6 +55,7 @@
           images: [],
           currentIndex: 0
         }
+       
       };
     },
     methods: {
@@ -75,14 +76,20 @@
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       },
       openImageViewer(images, index = 0) {
+        if (!Array.isArray(images)) {
+          images = [images];
+          index = 0;
+        }
+        images = images.map(img => (typeof img === 'string' ? { image_path: img } : img));
         this.imageViewer.images = images;
-        this.imageViewer.currentIndex = index;
+        this.imageViewer.currentIndex = Math.max(0, Math.min(index, images.length - 1));
         this.imageViewer.isOpen = true;
         document.body.style.overflow = 'hidden';
         this.$nextTick(() => {
           if (window.lucide) lucide.createIcons();
         });
       },
+      
       closeImageViewer() {
         this.imageViewer.isOpen = false;
         document.body.style.overflow = '';
@@ -707,6 +714,10 @@
       // Expose global fallback handlers
       window.openCommentInput = this.openCommentInput.bind(this);
       window.handleOpenComment = this.handleOpenComment.bind(this);
+      // Expose main image viewer globally
+      if (typeof this.openImageViewer === 'function') {
+        window.openImageViewer = this.openImageViewer.bind(this);
+      }
       
       // Handle keyboard navigation for image viewer
       document.addEventListener('keydown', (e) => {

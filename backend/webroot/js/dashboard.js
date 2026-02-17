@@ -110,8 +110,14 @@ const app = createApp({
             });
         },
         openImageViewer(images, index = 0) {
+            // Accept single image (string or object) or array and normalize to objects with image_path
+            if (!Array.isArray(images)) {
+                images = [images];
+                index = 0;
+            }
+            images = images.map(img => (typeof img === 'string' ? { image_path: img } : img));
             this.imageViewer.images = images;
-            this.imageViewer.currentIndex = index;
+            this.imageViewer.currentIndex = Math.max(0, Math.min(index, images.length - 1));
             this.imageViewer.isOpen = true;
             document.body.style.overflow = 'hidden';
             this.$nextTick(() => {
@@ -120,6 +126,7 @@ const app = createApp({
                 }
             });
         },
+        
         closeImageViewer() {
             this.imageViewer.isOpen = false;
             document.body.style.overflow = '';
@@ -540,6 +547,10 @@ const app = createApp({
         // Expose the delegator globally so templates outside instance scope still work
         if (typeof this.handleOpenComment === 'function') {
             window.handleOpenComment = this.handleOpenComment.bind(this);
+        }
+        // Expose main image viewer globally so comment images can call it
+        if (typeof this.openImageViewer === 'function') {
+            window.openImageViewer = this.openImageViewer.bind(this);
         }
     },
     beforeUnmount() {

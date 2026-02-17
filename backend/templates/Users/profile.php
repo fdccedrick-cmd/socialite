@@ -44,7 +44,7 @@
       <div class="shrink-0 md:self-start w-full md:w-auto">
         <button @click="openEditModal" class="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 pr-1.5 sm:pr-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full md:w-auto">
           <i data-lucide="settings" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-700"></i>
-          <span class="text-xs sm:text-sm font-medium text-gray-700">Edit Profile</span>
+          <span class="text-xs sm:text-sm font-medium text-gray-700"></span>
         </button>
       </div>
     </div>
@@ -150,6 +150,7 @@
       </button>
     </div>
   </transition>
+  
 </div>
 
 <script>

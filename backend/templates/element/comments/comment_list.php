@@ -36,11 +36,12 @@
          </a>
          <p v-else class="font-semibold text-[10px] sm:text-xs text-gray-900">{{ comment.user?.full_name || 'Unknown User' }}</p>
         <p v-if="comment.content_text" class="text-gray-800 text-[10px] sm:text-xs whitespace-pre-wrap break-words">{{ comment.content_text }}</p>
-        <img v-if="comment.content_image_path" 
+           <img v-if="comment.content_image_path" 
              :src="'/' + comment.content_image_path" 
              alt="Comment image"
+             @click="window.openImageViewer ? window.openImageViewer('/' + comment.content_image_path) : (typeof openImageViewer === 'function' ? openImageViewer('/' + comment.content_image_path) : null)"
              class="mt-1 rounded max-w-[200px] max-h-[200px]"
-        />
+           />
       </div>
       <div class="flex items-center gap-3 mt-1 px-2">
         <button 
