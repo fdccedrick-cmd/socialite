@@ -7,6 +7,7 @@ const app = createApp({
                 username: window.dashboardData?.user?.username || 'user',
                 avatar: window.dashboardData?.user?.avatar || 'https://i.pravatar.cc/150?img=1'
             },
+            // dashboard does not include post editing — do not expose edit helpers here
             posts: (window.dashboardData?.posts || []).map(post => ({
                 ...post,
                 showComments: false,
@@ -49,6 +50,7 @@ const app = createApp({
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         },
         async toggleLike(postId) {
+            console.debug('toggleLike called for', postId);
             try {
                 const response = await fetch(`/likes/toggle-post/${postId}`, {
                     method: 'POST',
@@ -289,6 +291,7 @@ const app = createApp({
             }
         },
         async loadComments(postId) {
+            console.debug('loadComments called for', postId);
             try {
                 const response = await fetch(`/comments/get-by-post/${postId}`, {
                     headers: {
@@ -480,12 +483,14 @@ const app = createApp({
                 // Optionally auto-show comments when user starts typing
             }
         }
+        
     },
     mounted() {
         // Initialize Lucide icons
         if (window.lucide) {
             lucide.createIcons();
         }
+        console.debug('dashboard mounted, posts=', this.posts && this.posts.length);
         
         // Setup emoji picker event listener
         this.$nextTick(() => {

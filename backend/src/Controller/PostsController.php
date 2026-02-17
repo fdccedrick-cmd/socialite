@@ -196,6 +196,87 @@ class PostsController extends AppController
     }
 
     /**
+     * View a single post
+     */
+    public function view($id = null)
+    {
+        try {
+            $post = $this->Posts->get($id, [
+                'contain' => ['Users', 'PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]]
+            ]);
+
+            if (!empty($post->deleted)) {
+                throw new \Cake\Http\Exception\NotFoundException('Post not found');
+            }
+
+            // Build a post array with engagement data matching DashboardService::getPostsWithEngagement
+            $postArray = $post->toArray();
+            if (!empty($postArray['created']) && $postArray['created'] instanceof \DateTimeInterface) {
+                $postArray['created'] = $postArray['created']->format(DATE_ATOM);
+            }
+            if (!empty($postArray['modified']) && $postArray['modified'] instanceof \DateTimeInterface) {
+                $postArray['modified'] = $postArray['modified']->format(DATE_ATOM);
+            }
+
+            $likesTable = $this->getTableLocator()->get('Likes');
+            $commentsTable = $this->getTableLocator()->get('Comments');
+
+            // Determine current user id if available
+            $identity = $this->Authentication->getIdentity();
+            $currentUserId = null;
+            if (is_object($identity)) {
+                if (method_exists($identity, 'getOriginalData')) {
+                    $orig = $identity->getOriginalData();
+                    if (is_object($orig) && isset($orig->id)) {
+                        $currentUserId = $orig->id;
+                    } elseif (is_array($orig) && isset($orig['id'])) {
+                        $currentUserId = $orig['id'];
+                    }
+                } elseif (isset($identity->id)) {
+                    $currentUserId = $identity->id;
+                }
+            } elseif (is_array($identity) && isset($identity['id'])) {
+                $currentUserId = $identity['id'];
+            }
+
+            $postArray['like_count'] = $likesTable->getLikeCount('Post', $post->id);
+            $postArray['is_liked'] = $currentUserId ? $likesTable->isLikedByUser('Post', $post->id, $currentUserId) : false;
+            $postArray['comments'] = $commentsTable->getCommentsForPost($post->id, $currentUserId);
+            $postArray['comment_count'] = count($postArray['comments']);
+
+            $this->set(compact('post', 'postArray'));
+        } catch (\Exception $e) {
+            Log::error('Error loading post view: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Return a rendered post element for embedding (no layout)
+     * Example: GET /posts/get-any/1
+     */
+    public function getAnyPost($id = null)
+    {
+        try {
+            $post = $this->Posts->get($id, [
+                'contain' => ['Users', 'PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]]
+            ]);
+
+            if (!empty($post->deleted)) {
+                throw new \Cake\Http\Exception\NotFoundException('Post not found');
+            }
+
+            $this->viewBuilder()->disableAutoLayout();
+            $this->set(compact('post'));
+            // will render templates/Posts/get_any_post.php which uses the post_card element
+            $this->render('get_any_post');
+        } catch (\Exception $e) {
+            Log::error('Error rendering post element: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
      * Edit/Update a post
      */
     public function edit($id = null)

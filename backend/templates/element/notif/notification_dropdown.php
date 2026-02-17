@@ -17,7 +17,8 @@
       <div 
         v-for="notif in notifications" 
         :key="notif.id"
-        @click="markAsRead(notif.id)"
+        @click="handleNotificationClick(notif.id)"
++       @click="handleNotificationClick(notif)"
         :class="notif.is_read ? 'bg-white' : 'bg-blue-50'"
         class="px-4 py-3 hover:bg-gray-50 border-b last:border-b-0 transition-colors cursor-pointer"
       >
@@ -45,3 +46,4 @@
     </div>
   </div>
 </div>
+

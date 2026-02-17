@@ -169,7 +169,9 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
         },
         async fetchNotifications() {
           try {
-            const response = await fetch('/api/notifications/recent');
+            const response = await fetch('/api/notifications/recent', {
+              credentials: 'same-origin'
+            });
             if (response.ok) {
               const data = await response.json();
               this.notifications = data.notifications || [];
@@ -186,7 +188,8 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
               headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-Token': getCsrfToken()
-              }
+              },
+              credentials: 'same-origin'
             });
             
             const notif = this.notifications.find(n => n.id === notificationId);
@@ -205,7 +208,8 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
               headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-Token': getCsrfToken()
-              }
+              },
+              credentials: 'same-origin'
             });
             
             this.notifications.forEach(n => n.is_read = true);
@@ -214,6 +218,35 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
             console.error('Failed to mark all as read:', error);
           }
         },
+        async handleNotificationClick(notifOrId) {
+          
+          const notif = (typeof notifOrId === 'object') 
+            ? notifOrId 
+            : this.notifications.find(n => n.id === notifOrId);
+          if (!notif) return;
+
+          if (!notif.is_read) {
+            await this.markAsRead(notif.id);
+            notif.is_read = true; // Optimistically update UI
+          }
+
+          const to = (notif.notifiable_type === 'Post') 
+            ? `/posts/${notif.notifiable_id}`
+            : (notif.notifiable_type === 'Comment') 
+              ? `/comments/${notif.notifiable_id}`
+              : (notif.url || null);
+           // Debug log
+          console.log('Notification click ->', { notif, to });
+
+          if (to) {
+            if (this.$router && typeof this.$router.push === 'function') {
+              this.$router.push(to);
+            } else {
+              window.location.href = to;
+            }
+          }
+        },
+     
         formatTime(timestamp) {
           const date = new Date(timestamp);
           const now = new Date();

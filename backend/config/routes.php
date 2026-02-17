@@ -18,6 +18,10 @@ return static function (RouteBuilder $routes): void {
         
         // Posts routes
         $builder->connect('/posts/create', ['controller' => 'Posts', 'action' => 'create']);
+        // View a single post by id
+        $builder->connect('/posts/{id}', ['controller' => 'Posts', 'action' => 'view'], ['pass' => ['id']]);
+        // Render a single post as an element (for AJAX or embedding in other templates)
+        $builder->connect('/posts/get-any/{id}', ['controller' => 'Posts', 'action' => 'getAnyPost'], ['pass' => ['id']]);
         $builder->connect('/posts/edit/{id}', ['controller' => 'Posts', 'action' => 'edit'], ['pass' => ['id']]);
         $builder->connect('/posts/delete/{id}', ['controller' => 'Posts', 'action' => 'delete'], ['pass' => ['id']]);
         

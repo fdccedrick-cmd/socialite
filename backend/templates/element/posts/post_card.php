@@ -28,7 +28,7 @@ $currentUser = $currentUser ?? [];
       </div>
       
       <!-- Post Options Menu (3 dots) - Only show for own posts -->
-      <div v-if="canEditPost && canEditPost(post)" class="relative">
+      <div v-if="(typeof canEditPost !== 'undefined') && canEditPost(post)" class="relative">
         <button 
           @click="togglePostMenu(post.id, $event)"
           data-menu-trigger
