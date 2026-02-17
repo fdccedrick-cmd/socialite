@@ -36,7 +36,7 @@ $currentUserJson = $currentUserArray !== null ? json_encode($currentUserArray, J
 ?>
 
 <div id="profileApp">
-      <div v-for="post in posts" :key="post.id">
+      <div v-for="post in posts" :key="post.id" >
             <?= $this->element('posts/post_card', ['post' => $post, 'currentUser' => $currentUser]) ?>
       </div>
 </div>
