@@ -13,8 +13,29 @@ $fullName = $currentUser['full_name'] ?? $username;
 
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
   <div
-    class="p-3 sm:p-4 relative post-create-card"
+    class="p-3 sm:p-4 relative post-create-card transition-all"
+    @dragenter="handleDragEnter"
+    @dragover="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop="handleDrop"
+    :class="{
+      'bg-blue-50 border-2 border-blue-400 border-dashed ring-4 ring-blue-100': newPost.isDragging
+    }"
   >
+    <!-- Drag & Drop Overlay -->
+    <transition name="fade">
+      <div 
+        v-if="newPost.isDragging" 
+        class="absolute inset-0 bg-blue-500 bg-opacity-10 backdrop-blur-sm rounded-xl flex items-center justify-center pointer-events-none z-10"
+      >
+        <div class="text-center">
+          <i data-lucide="image-plus" class="w-12 h-12 sm:w-16 sm:h-16 text-blue-600 mx-auto mb-2"></i>
+          <p class="text-base sm:text-lg font-semibold text-blue-600">Drop images here</p>
+          <p class="text-xs sm:text-sm text-blue-500 mt-1">Release to upload</p>
+        </div>
+      </div>
+    </transition>
+    
     <!-- Profile + Input Row -->
     <div class="flex items-start gap-2 sm:gap-3 mb-3">
       <img 

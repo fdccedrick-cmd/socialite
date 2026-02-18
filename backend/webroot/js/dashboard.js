@@ -38,7 +38,8 @@ const app = createApp({
                 privacy: 'public',
                 isSubmitting: false,
                 error: '',
-                showEmojiPicker: false
+                showEmojiPicker: false,
+                isDragging: false
             },
            
             imageViewer: {
@@ -537,6 +538,38 @@ const app = createApp({
             this.addImages(files);
             // Clear file input so same file can be re-selected later
             if (event.target) event.target.value = '';
+        },
+        handleDragEnter(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.newPost.isDragging = true;
+        },
+        handleDragOver(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.newPost.isDragging = true;
+        },
+        handleDragLeave(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            // Only set isDragging to false if we're leaving the drop zone entirely
+            if (event.target.classList.contains('post-create-card')) {
+                this.newPost.isDragging = false;
+            }
+        },
+        handleDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.newPost.isDragging = false;
+            
+            const files = Array.from(event.dataTransfer.files || []);
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            
+            if (imageFiles.length > 0) {
+                this.addImages(imageFiles);
+            } else if (files.length > 0) {
+                this.newPost.error = 'Please drop only image files';
+            }
         },
         addImages(files) {
             this.newPost.error = '';
