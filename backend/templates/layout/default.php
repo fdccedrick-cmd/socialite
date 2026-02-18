@@ -147,6 +147,8 @@
     });
     </script>
 
+    <?= $this->element('confirmation_modal') ?>
+
 </body>
 </html>
 
