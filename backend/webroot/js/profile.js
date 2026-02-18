@@ -151,7 +151,6 @@
               };
               this.posts.splice(postIndex, 1, updatedPost);
               
-              // Update the total likes count in stats
               const likeDelta = data.liked ? 1 : -1;
               this.user.stats.likes = Math.max(0, this.user.stats.likes + likeDelta);
             }
@@ -200,7 +199,6 @@
           new_password: '',
           confirm_password: ''
         };
-        // Reset cropped file references
         this.croppedFile = null;
         this.croppedDataURL = null;
         this.errors = {};
@@ -223,7 +221,6 @@
           new_password: '',
           confirm_password: ''
         };
-        // Clear cropped file references
         this.croppedFile = null;
         this.croppedDataURL = null;
         this.errors = {};

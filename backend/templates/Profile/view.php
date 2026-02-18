@@ -118,7 +118,7 @@ console.log('🔍 Profile Data Debug:', {
   </div>
   
   <!-- Tab Content -->
-  <div class="bg-white rounded-b-xl sm:rounded-b-2xl shadow-sm border border-gray-100">
+  <div class="bg-white rounded-b-xl sm:rounded-b-2xl w-full ">
     <!-- Posts Tab -->
     <div v-if="activeTab === 'posts'" class="p-3 sm:p-4 lg:p-6">
       <?= $this->element('posts/post_list', [
