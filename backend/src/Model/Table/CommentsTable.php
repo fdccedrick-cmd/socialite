@@ -55,6 +55,11 @@ class CommentsTable extends Table
             'foreignKey' => 'user_id',
             'joinType' => 'INNER',
         ]);
+
+        $this->belongsTo('PostImages', [
+            'foreignKey' => 'post_image_id',
+            'joinType' => 'LEFT',
+        ]);
     }
 
     /**
@@ -87,6 +92,10 @@ class CommentsTable extends Table
             ->scalar('content_image_path')
             ->maxLength('content_image_path', 255)
             ->allowEmptyString('content_image_path');
+
+        $validator
+            ->integer('post_image_id')
+            ->allowEmptyString('post_image_id');
 
         // At least one of content_text or content_image_path must be present
         $validator
@@ -166,7 +175,8 @@ class CommentsTable extends Table
         $comments = $this->find()
             ->where([
                 'post_id' => $postId,
-                'deleted_at IS' => null
+                'deleted_at IS' => null,
+                'post_image_id IS' => null  // Exclude image-specific comments
             ])
             ->contain(['Users'])
             ->order(['Comments.created_at' => 'ASC'])

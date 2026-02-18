@@ -1,8 +1,15 @@
+console.log('=== dashboard.js LOADED with image comment debugging ===');
 const { createApp } = Vue;
+
+// Ensure dashboardData exists so data() never sees undefined (e.g. script order)
+if (typeof window.dashboardData === 'undefined') {
+    window.dashboardData = { user: null, posts: [] };
+}
 
 const app = createApp({
     data() {
         return {
+            currentUserId: window.dashboardData?.user?.id ?? null,
             user: {
                 id: window.dashboardData?.user?.id || null,
                 username: window.dashboardData?.user?.username || 'user',
@@ -15,7 +22,14 @@ const app = createApp({
                 newComment: '',
                 commentImage: null,
                 commentImagePreview: null,
-                comments: post.comments || []
+                comments: post.comments || [],
+                showMenu: false,
+                isEditing: false,
+                editContent: '',
+                editImages: [],
+                removedImageIds: [],
+                newEditImages: [],
+                newEditImagePreviews: []
             })),
             newPost: {
                 content: '',
@@ -31,10 +45,327 @@ const app = createApp({
                 isOpen: false,
                 images: [],
                 currentIndex: 0
-            }
+            },
+            postDetailView: {
+                isOpen: false,
+                post: null,
+                imageIndex: 0,
+                currentImageId: null,
+                imageComments: [],
+                imageLikeCount: 0,
+                imageIsLiked: false,
+                imageNewComment: '',
+                imageCommentImage: null,
+                imageCommentImagePreview: null
+            },
+            appReady: false
+        }
+    },
+    computed: {
+        window() {
+            return window;
         }
     },
     methods: {
+        canEditPost(post) {
+            return this.currentUserId && post && post.user_id === this.currentUserId;
+        },
+        safeCanEditPost(post) {
+            return typeof this.canEditPost === 'function' && this.canEditPost(post);
+        },
+        safeOpenPostDetailView(post, index) {
+            if (typeof this.openPostDetailView === 'function') this.openPostDetailView(post, index);
+        },
+        togglePostMenu(postId, event) {
+            if (event) event.stopPropagation();
+            const post = this.posts.find(p => p.id === postId);
+            if (post) {
+                this.posts.forEach(p => {
+                    if (p.id !== postId) p.showMenu = false;
+                });
+                post.showMenu = !post.showMenu;
+                this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+            }
+        },
+        editPost(postId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            post.showMenu = false;
+            post.isEditing = true;
+            post.editContent = post.content_text || '';
+            post.editImages = JSON.parse(JSON.stringify(post.post_images || []));
+            post.removedImageIds = [];
+            post.newEditImages = [];
+            post.newEditImagePreviews = [];
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+        },
+        cancelEditPost(postId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            post.isEditing = false;
+            post.editContent = '';
+            post.editImages = [];
+            post.removedImageIds = [];
+            post.newEditImages = [];
+            post.newEditImagePreviews = [];
+            const fileInput = document.getElementById('edit-images-' + postId);
+            if (fileInput) fileInput.value = '';
+        },
+        removeExistingImage(postId, imageId, index) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            post.removedImageIds.push(imageId);
+            post.editImages.splice(index, 1);
+        },
+        removeNewEditImage(postId, index) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            post.newEditImages.splice(index, 1);
+            post.newEditImagePreviews.splice(index, 1);
+        },
+        handleEditImageSelect(event, postId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            const files = Array.from(event.target.files);
+            const totalImages = post.editImages.length + post.newEditImages.length + files.length;
+            if (totalImages > 10) {
+                (typeof window.showFlash === 'function' ? window.showFlash : alert)('Maximum 10 images per post', 'error');
+                event.target.value = '';
+                return;
+            }
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+            files.forEach(file => {
+                if (!validTypes.includes(file.type) || file.size > 10 * 1024 * 1024) return;
+                post.newEditImages.push(file);
+                const reader = new FileReader();
+                reader.onload = (e) => { post.newEditImagePreviews.push(e.target.result); };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = '';
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+        },
+        async saveEditPost(postId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            const hasContent = post.editContent && post.editContent.trim();
+            const hasImages = (post.editImages.length + post.newEditImages.length) > 0;
+            if (!hasContent && !hasImages) {
+                (typeof window.showFlash === 'function' ? window.showFlash : alert)('Post must have either text or images', 'error');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('content_text', post.editContent || '');
+            (post.removedImageIds || []).forEach(id => formData.append('removed_images[]', id));
+            (post.newEditImages || []).forEach(image => formData.append('new_images[]', image));
+            try {
+                const response = await fetch(`/posts/edit/${postId}`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    post.content_text = data.post.content_text;
+                    post.post_images = data.post.post_images || [];
+                    post.modified = data.post.modified;
+                    post.isEditing = false;
+                    post.editContent = '';
+                    post.editImages = [];
+                    post.removedImageIds = [];
+                    post.newEditImages = [];
+                    post.newEditImagePreviews = [];
+                    this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                    (typeof window.showFlash === 'function' ? window.showFlash : alert)('Post updated successfully!', 'success');
+                } else {
+                    (typeof window.showFlash === 'function' ? window.showFlash : alert)(data.message || 'Failed to update post.', 'error');
+                }
+            } catch (err) {
+                console.error('Error updating post:', err);
+                (typeof window.showFlash === 'function' ? window.showFlash : alert)('Failed to update post.', 'error');
+            }
+        },
+        async deletePost(postId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (post) post.showMenu = false;
+            const confirmed = typeof window.showConfirmModal === 'function'
+                ? await window.showConfirmModal('Are you sure you want to delete this post? This action cannot be undone.')
+                : confirm('Are you sure you want to delete this post? This action cannot be undone.');
+            if (!confirmed) return;
+            try {
+                const response = await fetch(`/posts/delete/${postId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (response.ok) {
+                    this.posts = this.posts.filter(p => p.id !== postId);
+                    if (this.postDetailView.post && this.postDetailView.post.id === postId) {
+                        this.postDetailView.isOpen = false;
+                        this.postDetailView.post = null;
+                    }
+                    (typeof window.showFlash === 'function' ? window.showFlash : alert)('Post deleted successfully!', 'success');
+                } else {
+                    (typeof window.showFlash === 'function' ? window.showFlash : alert)('Failed to delete post.', 'error');
+                }
+            } catch (err) {
+                console.error('Error deleting post:', err);
+                (typeof window.showFlash === 'function' ? window.showFlash : alert)('Failed to delete post.', 'error');
+            }
+        },
+        handleClickOutside(event) {
+            const target = event.target;
+            if (!target.closest('[data-post-menu]') && !target.closest('button[data-menu-trigger]')) {
+                this.posts.forEach(post => { if (post.showMenu) post.showMenu = false; });
+            }
+        },
+        openPostDetailView(post, imageIndex = 0) {
+            const p = typeof post === 'object' && post && post.id ? post : this.posts.find(ps => ps.id === post);
+            if (!p) return;
+            this.postDetailView.post = p;
+            this.postDetailView.imageIndex = Math.max(0, Math.min(imageIndex, (p.post_images && p.post_images.length) ? p.post_images.length - 1 : 0));
+            this.postDetailView.isOpen = true;
+            if (!p.showComments && (p.comment_count > 0 || p.post_images?.length)) {
+                p.showComments = true;
+                if (p.comments.length === 0) this.loadComments(p.id);
+            }
+            this.postDetailView.imageComments = [];
+            this.postDetailView.imageLikeCount = 0;
+            this.postDetailView.imageIsLiked = false;
+            this.postDetailView.currentImageId = null;
+            this.postDetailView.imageNewComment = '';
+            this.postDetailView.imageCommentImage = null;
+            this.postDetailView.imageCommentImagePreview = null;
+            // Facebook-style: only use per-image likes/comments when post has 2+ images; single image = use post-level
+            const img = p.post_images && p.post_images[this.postDetailView.imageIndex];
+            if (p.post_images && p.post_images.length >= 2 && img && img.id) {
+                this.postDetailView.currentImageId = img.id;
+                this.loadImageComments(img.id);
+                this.loadImageLikeStatus(img.id);
+            }
+            document.body.style.overflow = 'hidden';
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+        },
+        closePostDetailView() {
+            this.postDetailView.isOpen = false;
+            this.postDetailView.post = null;
+            this.postDetailView.imageIndex = 0;
+            this.postDetailView.currentImageId = null;
+            this.postDetailView.imageComments = [];
+            document.body.style.overflow = '';
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+        },
+        async loadImageComments(postImageId) {
+            try {
+                const response = await fetch(`/comments/get-by-post-image/${postImageId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!response.ok) return;
+                const data = await response.json();
+                this.postDetailView.imageComments = (data.comments || data || []).map(c => ({ ...c, is_liked: false, like_count: 0 }));
+                for (let i = 0; i < this.postDetailView.imageComments.length; i++) {
+                    const c = this.postDetailView.imageComments[i];
+                    const likeRes = await fetch(`/likes/comment/${c.id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    if (likeRes.ok) {
+                        const likeData = await likeRes.json();
+                        this.postDetailView.imageComments[i].like_count = likeData.count || 0;
+                        this.postDetailView.imageComments[i].is_liked = likeData.is_liked || false;
+                    }
+                }
+            } catch (e) { console.error('Error loading image comments:', e); }
+        },
+        async loadImageLikeStatus(postImageId) {
+            try {
+                const response = await fetch(`/likes/post-image/${postImageId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!response.ok) return;
+                const data = await response.json();
+                this.postDetailView.imageLikeCount = data.count ?? 0;
+                this.postDetailView.imageIsLiked = data.is_liked ?? false;
+            } catch (e) { console.error('Error loading image like status:', e); }
+        },
+        async toggleImageLike() {
+            if (!this.postDetailView.currentImageId) return;
+            try {
+                const response = await fetch(`/likes/toggle-post-image/${this.postDetailView.currentImageId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                if (data.success) {
+                    this.postDetailView.imageLikeCount = data.likeCount ?? this.postDetailView.imageLikeCount;
+                    this.postDetailView.imageIsLiked = data.liked ?? false;
+                }
+            } catch (e) { console.error('Error toggling image like:', e); }
+        },
+        async submitImageComment() {
+            const v = this.postDetailView;
+            if (!v.post || !v.currentImageId) return;
+            const text = (v.imageNewComment || '').trim();
+            if (!text && !v.imageCommentImage) return;
+            const formData = new FormData();
+            formData.append('post_id', v.post.id);
+            formData.append('post_image_id', v.currentImageId);
+            if (text) formData.append('content_text', text);
+            if (v.imageCommentImage) formData.append('content_image', v.imageCommentImage);
+            
+            // Log all FormData entries
+            console.log('FormData contents:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`  ${key}:`, value);
+            }
+            
+            try {
+                const response = await fetch('/comments/add', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData });
+                const data = await response.json();
+                console.log('submitImageComment response:', { ok: response.ok, data });
+                if (response.ok && data.success) {
+                    v.imageNewComment = '';
+                    v.imageCommentImage = null;
+                    v.imageCommentImagePreview = null;
+                    const newComment = { ...data.comment, is_liked: false, like_count: 0 };
+                    console.log('Adding comment to imageComments:', newComment);
+                    v.imageComments.push(newComment);
+                    const fileInput = document.getElementById('comment-image-postimage-' + v.currentImageId);
+                    if (fileInput) fileInput.value = '';
+                } else {
+                    console.error('Failed to submit image comment:', data);
+                }
+            } catch (e) { console.error('Error submitting image comment:', e); }
+        },
+        postDetailPrevImage() {
+            if (!this.postDetailView.post || !this.postDetailView.post.post_images?.length) return;
+            if (this.postDetailView.imageIndex > 0) {
+                this.postDetailView.imageIndex--;
+                const imgs = this.postDetailView.post.post_images;
+                const img = imgs[this.postDetailView.imageIndex];
+                console.log('postDetailPrevImage - switching to index:', this.postDetailView.imageIndex, 'img:', img);
+                if (imgs.length >= 2 && img && img.id) {
+                    this.postDetailView.currentImageId = img.id;
+                    console.log('postDetailPrevImage - set currentImageId to:', img.id);
+                    this.loadImageComments(img.id);
+                    this.loadImageLikeStatus(img.id);
+                } else {
+                    this.postDetailView.currentImageId = null;
+                    console.log('postDetailPrevImage - cleared currentImageId');
+                }
+            }
+        },
+        postDetailNextImage() {
+            if (!this.postDetailView.post || !this.postDetailView.post.post_images?.length) return;
+            if (this.postDetailView.imageIndex < this.postDetailView.post.post_images.length - 1) {
+                this.postDetailView.imageIndex++;
+                const imgs = this.postDetailView.post.post_images;
+                const img = imgs[this.postDetailView.imageIndex];
+                console.log('postDetailNextImage - switching to index:', this.postDetailView.imageIndex, 'img:', img);
+                if (imgs.length >= 2 && img && img.id) {
+                    this.postDetailView.currentImageId = img.id;
+                    console.log('postDetailNextImage - set currentImageId to:', img.id);
+                    this.loadImageComments(img.id);
+                    this.loadImageLikeStatus(img.id);
+                } else {
+                    this.postDetailView.currentImageId = null;
+                }
+            }
+        },
+        noop() {},
         formatDate(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);
@@ -536,11 +867,17 @@ const app = createApp({
                 });
             }
         });        
-        // Close post menu when clicking outside (no-op for dashboard)
+        document.addEventListener('click', this.handleClickOutside);
         // Expose comment opener globally as a fallback for templates
         if (typeof this.openCommentInput === 'function') {
             window.openCommentInput = this.openCommentInput.bind(this);
         }
+        if (typeof this.openPostDetailView === 'function') {
+            window.openPostDetailView = this.openPostDetailView.bind(this);
+        }
+        window.__appCanEditPost = typeof this.canEditPost === 'function' ? this.canEditPost.bind(this) : null;
+        window.__appOpenPostDetailView = typeof this.openPostDetailView === 'function' ? this.openPostDetailView.bind(this) : null;
+        this.appReady = true;
         // Expose the delegator globally so templates outside instance scope still work
         if (typeof this.handleOpenComment === 'function') {
             window.handleOpenComment = this.handleOpenComment.bind(this);
@@ -552,7 +889,10 @@ const app = createApp({
         // drag/drop document listeners removed
     },
     beforeUnmount() {
-        // Clean up any listeners added earlier (none for dashboard)
+        document.removeEventListener('click', this.handleClickOutside);
+        if (this._keydownHandler) {
+            document.removeEventListener('keydown', this._keydownHandler);
+        }
         // Close emoji picker when clicking outside
         document.addEventListener('click', (e) => {
             const emojiButton = e.target.closest('[title="Add emoji"]');
@@ -570,9 +910,19 @@ const app = createApp({
             }
         });
         
-        // Handle keyboard navigation for image viewer
-        document.addEventListener('keydown', (e) => {
-            if (this.imageViewer.isOpen) {
+        // Handle keyboard navigation for image viewer and post detail view
+        this._keydownHandler = (e) => {
+            if (this.postDetailView && this.postDetailView.isOpen) {
+                if (e.key === 'Escape') {
+                    this.closePostDetailView();
+                } else if (e.key === 'ArrowLeft') {
+                    this.postDetailPrevImage();
+                } else if (e.key === 'ArrowRight') {
+                    this.postDetailNextImage();
+                }
+                return;
+            }
+            if (this.imageViewer && this.imageViewer.isOpen) {
                 if (e.key === 'Escape') {
                     this.closeImageViewer();
                 } else if (e.key === 'ArrowLeft') {
@@ -581,7 +931,8 @@ const app = createApp({
                     this.nextImage();
                 }
             }
-        });
+        };
+        document.addEventListener('keydown', this._keydownHandler);
         // Remove global fallback
         if (window.openCommentInput && window.openCommentInput === this.openCommentInput) {
             try { delete window.openCommentInput; } catch (e) { window.openCommentInput = undefined; }
@@ -610,4 +961,7 @@ const app = createApp({
     }
 });
 
-app.mount('#dashboardApp');
+const dashboardEl = document.getElementById('dashboardApp');
+if (dashboardEl) {
+    app.mount('#dashboardApp');
+}

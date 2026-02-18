@@ -385,4 +385,117 @@ class LikesController extends AppController
                 'is_liked' => $isLiked
             ]));
     }
+
+    /**
+     * Toggle like on a post image
+     *
+     * @param int|null $id Post image ID
+     * @return \Cake\Http\Response|null JSON response
+     */
+    public function togglePostImage($id = null)
+    {
+        $this->request->allowMethod(['post']);
+        $identity = $this->Authentication->getIdentity();
+        if (!$identity) {
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(401)
+                ->withStringBody(json_encode(['success' => false, 'message' => 'Unauthorized']));
+        }
+        $userId = $identity->id ?? ($identity['id'] ?? null);
+        if (!$userId) {
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(401)
+                ->withStringBody(json_encode(['success' => false, 'message' => 'User ID not found']));
+        }
+        $id = (int)$id;
+        try {
+            $existingLike = $this->Likes->find()
+                ->where([
+                    'user_id' => $userId,
+                    'target_type' => 'PostImage',
+                    'target_id' => $id
+                ])
+                ->first();
+            if ($existingLike) {
+                $this->Likes->delete($existingLike);
+                $likeCount = $this->Likes->find()
+                    ->where(['target_type' => 'PostImage', 'target_id' => $id])
+                    ->count();
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([
+                        'success' => true,
+                        'liked' => false,
+                        'likeCount' => $likeCount
+                    ]));
+            }
+            $like = $this->Likes->newEntity([
+                'user_id' => $userId,
+                'target_type' => 'PostImage',
+                'target_id' => $id
+            ]);
+            if ($this->Likes->save($like)) {
+                $likeCount = $this->Likes->find()
+                    ->where(['target_type' => 'PostImage', 'target_id' => $id])
+                    ->count();
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([
+                        'success' => true,
+                        'liked' => true,
+                        'likeCount' => $likeCount
+                    ]));
+            }
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(400)
+                ->withStringBody(json_encode(['success' => false, 'message' => 'Failed to save like']));
+        } catch (\Exception $e) {
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(500)
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'Server error: ' . $e->getMessage()
+                ]));
+        }
+    }
+
+    /**
+     * Get like info for a post image
+     *
+     * @param int|null $id Post image ID
+     * @return \Cake\Http\Response|null JSON response
+     */
+    public function getPostImageLikes($id = null)
+    {
+        $this->request->allowMethod(['get']);
+        $id = (int)$id;
+        $likeCount = $this->Likes->find()
+            ->where(['target_type' => 'PostImage', 'target_id' => $id])
+            ->count();
+        $isLiked = false;
+        $identity = $this->Authentication->getIdentity();
+        if ($identity) {
+            $userId = $identity->id ?? ($identity['id'] ?? null);
+            if ($userId) {
+                $isLiked = $this->Likes->find()
+                    ->where([
+                        'target_type' => 'PostImage',
+                        'target_id' => $id,
+                        'user_id' => $userId
+                    ])
+                    ->count() > 0;
+            }
+        }
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode([
+                'success' => true,
+                'count' => $likeCount,
+                'is_liked' => $isLiked
+            ]));
+    }
 }

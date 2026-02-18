@@ -32,9 +32,12 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/comments/edit/{id}', ['controller' => 'Comments', 'action' => 'edit'], ['pass' => ['id']]);
         $builder->connect('/comments/delete/{id}', ['controller' => 'Comments', 'action' => 'delete'], ['pass' => ['id']]);
         $builder->connect('/comments/get-by-post/{postId}', ['controller' => 'Comments', 'action' => 'getByPost'], ['pass' => ['postId']]);
-        
+        $builder->connect('/comments/get-by-post-image/{postImageId}', ['controller' => 'Comments', 'action' => 'getByPostImage'], ['pass' => ['postImageId']]);
+
         // Likes routes
         $builder->connect('/likes/toggle-post/{id}', ['controller' => 'Likes', 'action' => 'togglePost'], ['pass' => ['id']]);
+        $builder->connect('/likes/toggle-post-image/{id}', ['controller' => 'Likes', 'action' => 'togglePostImage'], ['pass' => ['id']]);
+        $builder->connect('/likes/post-image/{id}', ['controller' => 'Likes', 'action' => 'getPostImageLikes'], ['pass' => ['id']]);
         $builder->connect('/likes/toggle-comment/{id}', ['controller' => 'Likes', 'action' => 'toggleComment'], ['pass' => ['id']]);
         $builder->connect('/likes/post/{id}', ['controller' => 'Likes', 'action' => 'getPostLikes'], ['pass' => ['id']]);
         $builder->connect('/likes/comment/{id}', ['controller' => 'Likes', 'action' => 'getCommentLikes'], ['pass' => ['id']]);

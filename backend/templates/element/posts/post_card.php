@@ -28,7 +28,7 @@ $currentUser = $currentUser ?? [];
       </div>
       
       <!-- Post Options Menu (3 dots) - Only show for own posts -->
-      <div v-if="(typeof canEditPost !== 'undefined') && canEditPost(post)" class="relative">
+      <div v-if="typeof safeCanEditPost === 'function' && safeCanEditPost(post)" class="relative">
         <button 
           @click="togglePostMenu(post.id, $event)"
           data-menu-trigger
@@ -134,22 +134,23 @@ $currentUser = $currentUser ?? [];
     
     <!-- Normal View Mode -->
     <div v-else>
-      <!-- Post Content -->
+      <!-- Post Content (click opens Facebook-style detail view) -->
       <div 
         v-if="post.content_text" 
-        class="text-gray-800 text-xs sm:text-sm whitespace-pre-wrap" 
+        class="text-gray-800 text-xs sm:text-sm whitespace-pre-wrap cursor-pointer hover:bg-gray-50 -mx-1 px-1 rounded" 
         :class="{'mb-2 sm:mb-3': post.post_images && post.post_images.length > 0}"
+        @click="safeOpenPostDetailView(post, 0)"
       >{{ post.content_text }}</div>
     </div>
   </div>
   
-  <!-- Post Images (only show when not editing) -->
+  <!-- Post Images (only show when not editing); click opens detail view with photo left, caption/comments/likes right -->
   <div v-if="!post.isEditing && post.post_images && post.post_images.length > 0" class="w-full bg-gray-100">
     <!-- Single Image -->
     <div 
       v-if="post.post_images.length === 1"
       class="w-full max-h-[500px] overflow-hidden cursor-pointer"
-      @click="openImageViewer(post.post_images, 0)"
+      @click="safeOpenPostDetailView(post, 0)"
     >
       <img 
         :src="post.post_images[0].image_path" 
@@ -165,7 +166,7 @@ $currentUser = $currentUser ?? [];
         :key="index"
         :src="image.image_path" 
         :alt="'Post image ' + (index + 1)" 
-        @click="openImageViewer(post.post_images, index)"
+        @click="safeOpenPostDetailView(post, index)"
         class="w-full h-[250px] sm:h-[350px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
       />
     </div>
@@ -175,20 +176,20 @@ $currentUser = $currentUser ?? [];
       <img 
         :src="post.post_images[0].image_path" 
         alt="Post image 1" 
-        @click="openImageViewer(post.post_images, 0)"
+        @click="safeOpenPostDetailView(post, 0)"
         class="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
       />
       <div class="grid grid-rows-2 gap-0.5 h-full">
         <img 
           :src="post.post_images[1].image_path" 
           alt="Post image 2" 
-          @click="openImageViewer(post.post_images, 1)"
+          @click="safeOpenPostDetailView(post, 1)"
           class="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
         />
         <img 
           :src="post.post_images[2].image_path" 
           alt="Post image 3" 
-          @click="openImageViewer(post.post_images, 2)"
+          @click="safeOpenPostDetailView(post, 2)"
           class="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
         />
       </div>
@@ -201,7 +202,7 @@ $currentUser = $currentUser ?? [];
         <div 
           v-if="index < 3 || post.post_images.length === 4"
           class="relative w-full h-[175px] sm:h-[250px] overflow-hidden cursor-pointer"
-          @click="openImageViewer(post.post_images, index)"
+          @click="safeOpenPostDetailView(post, index)"
         >
           <img 
             :src="image.image_path" 
@@ -214,7 +215,7 @@ $currentUser = $currentUser ?? [];
         <div 
           v-else-if="index === 3 && post.post_images.length > 4"
           class="relative w-full h-[175px] sm:h-[250px] overflow-hidden cursor-pointer group"
-          @click="openImageViewer(post.post_images, index)"
+          @click="safeOpenPostDetailView(post, index)"
         >
           <img 
             :src="image.image_path" 

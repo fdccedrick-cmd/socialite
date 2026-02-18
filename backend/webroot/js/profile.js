@@ -1,5 +1,5 @@
 (function () {
-  console.log('=== profile.js v2.0 LOADED (with crop fix) ===');
+  console.log('=== profile.js v2.1 LOADED (with image comment debugging) ===');
   try { console.log('profile.js loaded - window.profileData:', window.profileData); } catch(e){}
   const el = document.getElementById('profileApp');
   if (!el) return;
@@ -63,11 +63,164 @@
           isOpen: false,
           images: [],
           currentIndex: 0
-        }
-       
+        },
+        postDetailView: {
+          isOpen: false,
+          post: null,
+          imageIndex: 0,
+          currentImageId: null,
+          imageComments: [],
+          imageLikeCount: 0,
+          imageIsLiked: false,
+          imageNewComment: ''
+        },
+        appReady: false
       };
     },
+    computed: {
+      window() {
+        return window;
+      }
+    },
     methods: {
+        openPostDetailView(post, imageIndex = 0) {
+          const p = typeof post === 'object' && post && post.id ? post : this.posts.find(ps => ps.id === post);
+          if (!p) return;
+          this.postDetailView.post = p;
+          this.postDetailView.imageIndex = Math.max(0, Math.min(imageIndex, (p.post_images && p.post_images.length) ? p.post_images.length - 1 : 0));
+          this.postDetailView.isOpen = true;
+          if (!p.showComments && (p.comment_count > 0 || p.post_images?.length)) {
+            p.showComments = true;
+            if (p.comments.length === 0) this.loadComments(p.id);
+          }
+          this.postDetailView.imageComments = [];
+          this.postDetailView.imageLikeCount = 0;
+          this.postDetailView.imageIsLiked = false;
+          this.postDetailView.currentImageId = null;
+          this.postDetailView.imageNewComment = '';
+          const img = p.post_images && p.post_images[this.postDetailView.imageIndex];
+          if (p.post_images && p.post_images.length >= 2 && img && img.id) {
+            this.postDetailView.currentImageId = img.id;
+            this.loadImageComments(img.id);
+            this.loadImageLikeStatus(img.id);
+          }
+          document.body.style.overflow = 'hidden';
+          this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+        },
+        closePostDetailView() {
+          this.postDetailView.isOpen = false;
+          this.postDetailView.post = null;
+          this.postDetailView.imageIndex = 0;
+          this.postDetailView.currentImageId = null;
+          this.postDetailView.imageComments = [];
+          document.body.style.overflow = '';
+          this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+        },
+        async loadImageComments(postImageId) {
+          try {
+            const response = await fetch(`/comments/get-by-post-image/${postImageId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!response.ok) return;
+            const data = await response.json();
+            this.postDetailView.imageComments = (data.comments || data || []).map(c => ({ ...c, is_liked: false, like_count: 0 }));
+            for (let i = 0; i < this.postDetailView.imageComments.length; i++) {
+              const c = this.postDetailView.imageComments[i];
+              const likeRes = await fetch(`/likes/comment/${c.id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+              if (likeRes.ok) {
+                const likeData = await likeRes.json();
+                this.postDetailView.imageComments[i].like_count = likeData.count || 0;
+                this.postDetailView.imageComments[i].is_liked = likeData.is_liked || false;
+              }
+            }
+          } catch (e) { console.error('Error loading image comments:', e); }
+        },
+        async loadImageLikeStatus(postImageId) {
+          try {
+            const response = await fetch(`/likes/post-image/${postImageId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!response.ok) return;
+            const data = await response.json();
+            this.postDetailView.imageLikeCount = data.count ?? 0;
+            this.postDetailView.imageIsLiked = data.is_liked ?? false;
+          } catch (e) { console.error('Error loading image like status:', e); }
+        },
+        async toggleImageLike() {
+          if (!this.postDetailView.currentImageId) return;
+          try {
+            const response = await fetch(`/likes/toggle-post-image/${this.postDetailView.currentImageId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+              credentials: 'same-origin'
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            if (data.success) {
+              this.postDetailView.imageLikeCount = data.likeCount ?? this.postDetailView.imageLikeCount;
+              this.postDetailView.imageIsLiked = data.liked ?? false;
+            }
+          } catch (e) { console.error('Error toggling image like:', e); }
+        },
+        async submitImageComment() {
+          const v = this.postDetailView;
+          if (!v.post || !v.currentImageId) return;
+          const text = (v.imageNewComment || '').trim();
+          if (!text) return;
+          const formData = new FormData();
+          formData.append('post_id', v.post.id);
+          formData.append('post_image_id', v.currentImageId);
+          formData.append('content_text', text);
+          
+          // Log all FormData entries
+          console.log('FormData contents:');
+          for (let [key, value] of formData.entries()) {
+            console.log(`  ${key}:`, value);
+          }
+          
+          try {
+            const response = await fetch('/comments/add', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData });
+            const data = await response.json();
+            console.log('submitImageComment response:', { ok: response.ok, data });
+            if (response.ok && data.success) {
+              v.imageNewComment = '';
+              v.imageComments.push({ ...data.comment, is_liked: false, like_count: 0 });
+            } else {
+              console.error('Failed to submit image comment:', data);
+            }
+          } catch (e) { console.error('Error submitting image comment:', e); }
+        },
+        postDetailPrevImage() {
+          if (!this.postDetailView.post || !this.postDetailView.post.post_images?.length) return;
+          if (this.postDetailView.imageIndex > 0) {
+            this.postDetailView.imageIndex--;
+            const imgs = this.postDetailView.post.post_images;
+            const img = imgs[this.postDetailView.imageIndex];
+            console.log('postDetailPrevImage - switching to index:', this.postDetailView.imageIndex, 'img:', img);
+            if (imgs.length >= 2 && img && img.id) {
+              this.postDetailView.currentImageId = img.id;
+              console.log('postDetailPrevImage - set currentImageId to:', img.id);
+              this.loadImageComments(img.id);
+              this.loadImageLikeStatus(img.id);
+            } else {
+              this.postDetailView.currentImageId = null;
+              console.log('postDetailPrevImage - cleared currentImageId');
+            }
+          }
+        },
+        postDetailNextImage() {
+          if (!this.postDetailView.post || !this.postDetailView.post.post_images?.length) return;
+          if (this.postDetailView.imageIndex < this.postDetailView.post.post_images.length - 1) {
+            this.postDetailView.imageIndex++;
+            const imgs = this.postDetailView.post.post_images;
+            const img = imgs[this.postDetailView.imageIndex];
+            console.log('postDetailNextImage - switching to index:', this.postDetailView.imageIndex, 'img:', img);
+            if (imgs.length >= 2 && img && img.id) {
+              this.postDetailView.currentImageId = img.id;
+              console.log('postDetailNextImage - set currentImageId to:', img.id);
+              this.loadImageComments(img.id);
+              this.loadImageLikeStatus(img.id);
+            } else {
+              this.postDetailView.currentImageId = null;
+            }
+          }
+        },
       ensureCropperLoaded() {
         if (window.Cropper) return Promise.resolve();
         const cssHref = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css';
@@ -107,6 +260,7 @@
           document.head.appendChild(script);
         });
       },
+      noop() {},
       formatDate(dateString) {
         if (!dateString) return '';
         const date = new Date(dateString);
@@ -712,7 +866,13 @@
         }
       },
       canEditPost(post) {
-        return this.currentUserId && post.user_id === this.currentUserId;
+        return this.currentUserId && post && post.user_id === this.currentUserId;
+      },
+      safeCanEditPost(post) {
+        return typeof this.canEditPost === 'function' && this.canEditPost(post);
+      },
+      safeOpenPostDetailView(post, index) {
+        if (typeof this.openPostDetailView === 'function') this.openPostDetailView(post, index);
       },
       togglePostMenu(postId, event) {
         // Stop event propagation to prevent immediate click-outside
@@ -986,18 +1146,26 @@
         window.openImageViewer = this.openImageViewer.bind(this);
       }
       
-      // Handle keyboard navigation for image viewer
+      // Handle keyboard navigation for image viewer and post detail view
       document.addEventListener('keydown', (e) => {
-        if (this.imageViewer.isOpen) {
-          if (e.key === 'Escape') {
-            this.closeImageViewer();
-          } else if (e.key === 'ArrowLeft') {
-            this.prevImage();
-          } else if (e.key === 'ArrowRight') {
-            this.nextImage();
-          }
+        if (this.postDetailView && this.postDetailView.isOpen) {
+          if (e.key === 'Escape') this.closePostDetailView();
+          else if (e.key === 'ArrowLeft') this.postDetailPrevImage();
+          else if (e.key === 'ArrowRight') this.postDetailNextImage();
+          return;
+        }
+        if (this.imageViewer && this.imageViewer.isOpen) {
+          if (e.key === 'Escape') this.closeImageViewer();
+          else if (e.key === 'ArrowLeft') this.prevImage();
+          else if (e.key === 'ArrowRight') this.nextImage();
         }
       });
+      if (typeof this.openPostDetailView === 'function') {
+        window.openPostDetailView = this.openPostDetailView.bind(this);
+      }
+      window.__appCanEditPost = typeof this.canEditPost === 'function' ? this.canEditPost.bind(this) : null;
+      window.__appOpenPostDetailView = typeof this.openPostDetailView === 'function' ? this.openPostDetailView.bind(this) : null;
+      this.appReady = true;
     },
     beforeUnmount() {
       // Clean up event listener

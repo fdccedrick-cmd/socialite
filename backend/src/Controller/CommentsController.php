@@ -43,6 +43,18 @@ class CommentsController extends AppController
             
             $data['user_id'] = $user->id;
             $data['created_at'] = new \DateTime();
+
+            // Debug: Log incoming data
+            error_log('Comment add - Raw POST data: ' . json_encode($this->request->getData()));
+
+            // Optional: comment on a specific post image (for posts with 2+ images)
+            if (isset($data['post_image_id']) && $data['post_image_id'] !== '' && $data['post_image_id'] !== null) {
+                $data['post_image_id'] = (int)$data['post_image_id'];
+                error_log('Comment add - Set post_image_id to: ' . $data['post_image_id']);
+            } else {
+                $data['post_image_id'] = null;
+                error_log('Comment add - Set post_image_id to NULL');
+            }
             
             // image upload
             if (!empty($data['content_image'])) {
@@ -64,7 +76,76 @@ class CommentsController extends AppController
             
             $comment = $this->Comments->patchEntity($comment, $data);
             
-            if ($this->Comments->save($comment)) {
+            // Explicitly set post_image_id if it exists (workaround for CakePHP stripping it)
+            if (isset($data['post_image_id']) && $data['post_image_id'] !== null) {
+                $comment->set('post_image_id', $data['post_image_id']);
+                $comment->setDirty('post_image_id', true);
+            }
+            
+            // Debug: Log entity state before save
+            error_log('Comment add - Data array being patched: ' . json_encode($data));
+            error_log('Comment add - Entity after patch: ' . json_encode($comment->toArray()));
+            error_log('Comment add - Entity post_image_id specifically: ' . var_export($comment->post_image_id, true));
+            error_log('Comment add - Entity dirty fields: ' . json_encode($comment->getDirty()));
+            error_log('Comment add - Validation errors before save: ' . json_encode($comment->getErrors()));
+            
+            // Try using raw SQL as a last resort
+            if (isset($data['post_image_id']) && $data['post_image_id'] !== null) {
+                error_log('Comment add - Using raw INSERT for image comment');
+                
+                try {
+                    $connection = $this->Comments->getConnection();
+                    
+                    $insertData = [
+                        'post_id' => (int)$data['post_id'],
+                        'user_id' => (int)$data['user_id'],
+                        'content_text' => $data['content_text'] ?? null,
+                        'content_image_path' => $data['content_image_path'] ?? null,
+                        'post_image_id' => (int)$data['post_image_id'],
+                        'created_at' => (new \DateTime())->format('Y-m-d H:i:s')
+                    ];
+                    
+                    error_log('Comment add - INSERT data: ' . json_encode($insertData));
+                    
+                    $statement = $connection->execute(
+                        'INSERT INTO comments (post_id, user_id, content_text, content_image_path, post_image_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+                        array_values($insertData)
+                    );
+                    
+                    $rowCount = $statement->rowCount();
+                    if ($rowCount > 0) {
+                        $insertedId = (int)$connection->getDriver()->lastInsertId();
+                        error_log('Comment add - INSERT succeeded with ID: ' . $insertedId);
+                        
+                        // Set all fields on the entity so it can be used later
+                        $comment->id = $insertedId;
+                        $comment->post_id = (int)$data['post_id'];
+                        $comment->user_id = (int)$data['user_id'];
+                        $comment->content_text = $data['content_text'] ?? null;
+                        $comment->content_image_path = $data['content_image_path'] ?? null;
+                        $comment->post_image_id = (int)$data['post_image_id'];
+                        $comment->created_at = $data['created_at']; // Already a DateTime object
+                        
+                        $saveResult = $comment;
+                    } else {
+                        error_log('Comment add - INSERT failed: No rows affected');
+                        $saveResult = false;
+                    }
+                } catch (\Exception $insertException) {
+                    error_log('Comment add - INSERT exception: ' . $insertException->getMessage());
+                    error_log('Comment add - INSERT trace: ' . $insertException->getTraceAsString());
+                    $saveResult = false;
+                }
+            } else {
+                $saveResult = $this->Comments->save($comment, ['checkRules' => false]);
+            }
+            
+            error_log('Comment add - save() result type: ' . gettype($saveResult));
+            error_log('Comment add - Validation errors after save: ' . json_encode($comment->getErrors()));
+            
+            if ($saveResult) {
+                error_log('Comment add - Save succeeded');
+                
                 // Send notification to post owner
                 try {
                     $postsTable = $this->fetchTable('Posts');
@@ -86,16 +167,34 @@ class CommentsController extends AppController
                 }
                 
                 if ($this->request->is('ajax') || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
-                    $savedComment = $this->Comments->get($comment->id, [
-                        'contain' => ['Users']
-                    ]);
+                    error_log('Comment add - Preparing AJAX response');
+                    
+                    // Build response from the entity data directly
+                    $commentArray = [
+                        'id' => $comment->id,
+                        'post_id' => $comment->post_id,
+                        'post_image_id' => $comment->post_image_id ?? null,
+                        'user_id' => $comment->user_id,
+                        'content_text' => $comment->content_text,
+                        'content_image_path' => $comment->content_image_path ?? null,
+                        'created_at' => $comment->created_at instanceof \DateTimeInterface
+                            ? $comment->created_at->format('c') : (string)$comment->created_at,
+                        'user' => [
+                            'id' => $user->id,
+                            'full_name' => $user->full_name,
+                            'username' => $user->username,
+                            'profile_photo_path' => $user->profile_photo_path ?? null
+                        ]
+                    ];
+                    
+                    error_log('Comment add - Returning success response');
                     
                     return $this->response
                         ->withType('application/json')
                         ->withStringBody(json_encode([
                             'success' => true,
                             'message' => 'Comment posted successfully',
-                            'comment' => $savedComment
+                            'comment' => $commentArray
                         ]));
                 }
                 
@@ -285,11 +384,36 @@ class CommentsController extends AppController
         $this->viewBuilder()->setClassName('Json');
         
         $comments = $this->Comments->find('active')
-            ->where(['post_id' => $postId])
+            ->where([
+                'post_id' => $postId,
+                'post_image_id IS' => null,
+            ])
             ->contain(['Users'])
             ->order(['Comments.created_at' => 'ASC'])
             ->all();
-        
+
+        $this->set('comments', $comments);
+        $this->viewBuilder()->setOption('serialize', ['comments']);
+    }
+
+    /**
+     * Get comments for a specific post image (AJAX)
+     *
+     * @param string|null $postImageId Post image id.
+     * @return \Cake\Http\Response|null|void JSON response
+     */
+    public function getByPostImage($postImageId = null)
+    {
+        $this->request->allowMethod(['get']);
+        $this->viewBuilder()->setClassName('Json');
+        $postImageId = (int)$postImageId;
+
+        $comments = $this->Comments->find('active')
+            ->where(['post_image_id' => $postImageId])
+            ->contain(['Users'])
+            ->order(['Comments.created_at' => 'ASC'])
+            ->all();
+
         $this->set('comments', $comments);
         $this->viewBuilder()->setOption('serialize', ['comments']);
     }

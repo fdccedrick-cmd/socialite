@@ -16,9 +16,11 @@ use Cake\ORM\Entity;
  * @property \Cake\I18n\FrozenTime $created_at
  * @property \Cake\I18n\FrozenTime|null $updated_at
  * @property \Cake\I18n\FrozenTime|null $deleted_at
+ * @property int|null $post_image_id
  *
  * @property \App\Model\Entity\Post $post
  * @property \App\Model\Entity\User $user
+ * @property \App\Model\Entity\PostImage|null $post_image
  */
 class Comment extends Entity
 {
@@ -33,6 +35,7 @@ class Comment extends Entity
      */
     protected array $_accessible = [
         'post_id' => true,
+        'post_image_id' => true,
         'user_id' => true,
         'content_text' => true,
         'content_image_path' => true,
@@ -41,6 +44,7 @@ class Comment extends Entity
         'deleted_at' => true,
         'post' => true,
         'user' => true,
+        'post_image' => true,
     ];
 
     /**
