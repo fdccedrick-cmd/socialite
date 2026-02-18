@@ -33,7 +33,6 @@
           stats: {
             posts: window.profileData?.postCount || 0,
             friends: '0',
-            // Use server-provided likes value (total likes across all user's posts)
             likes: (window.profileData && typeof window.profileData.likes === 'number') 
               ? window.profileData.likes 
               : 0
@@ -74,7 +73,7 @@
         const cssHref = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css';
         const jsSrc = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js';
 
-        // Inject CSS if not present
+       
         if (![...document.styleSheets].some(s => s.href && s.href.indexOf('cropperjs') !== -1)) {
           const link = document.createElement('link');
           link.rel = 'stylesheet';
@@ -82,10 +81,10 @@
           document.head.appendChild(link);
         }
 
-        // Inject JS and return promise when loaded
+        
         return new Promise((resolve, reject) => {
           if (window.Cropper) return resolve();
-          // avoid adding twice
+        
           if (document.querySelector('script[data-cropperjs]')) {
             const checkInterval = setInterval(() => {
               if (window.Cropper) {

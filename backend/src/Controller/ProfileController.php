@@ -317,7 +317,7 @@ class ProfileController extends AppController
             // ignore logging errors
         }
 
-        // Preserve old profile path to detect changes
+        
         $oldProfilePath = $user->profile_photo_path;
         $user = $usersTable->patchEntity($user, $data);
 
@@ -332,7 +332,7 @@ class ProfileController extends AppController
             error_log('Profile update - save result: ' . ($saveResult ? 'true' : 'false'));
 
             if ($saveResult) {
-                // Re-fetch fresh record from DB to confirm persisted values
+                
                 try {
                     $fresh = $usersTable->get($userId);
                     error_log('Profile update - fresh from DB after save: ' . json_encode($fresh->toArray()));
