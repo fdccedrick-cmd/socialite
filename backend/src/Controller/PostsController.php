@@ -5,6 +5,7 @@ namespace App\Controller;
 
 use Cake\Log\Log;
 use Cake\ORM\Locator\LocatorAwareTrait;
+use App\Utility\WebSocketClient;
 
 class PostsController extends AppController
 {
@@ -90,6 +91,18 @@ class PostsController extends AppController
                         'message' => 'Failed to create post',
                         'errors' => $errors
                     ]));
+            }
+            
+            // Broadcast new post via WebSocket
+            try {
+                $usersTable = $this->getTableLocator()->get('Users');
+                $user = $usersTable->get($userId);
+                $userName = $user->full_name ?? $user->username ?? 'User';
+                
+                $ws = WebSocketClient::getInstance();
+                $ws->notifyNewPost($post->id, $userId, $userName);
+            } catch (\Exception $e) {
+                Log::error('WebSocket broadcast failed: ' . $e->getMessage());
             }
 
             if (!empty($uploadedFiles)) {

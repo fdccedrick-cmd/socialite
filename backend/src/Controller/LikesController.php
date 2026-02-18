@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Utility\NotificationHelper;
+use App\Utility\WebSocketClient;
 
 /**
  * Likes Controller
@@ -22,6 +23,13 @@ class LikesController extends AppController
         $this->viewBuilder()->disableAutoLayout();
         // Load the Likes table
         $this->Likes = $this->fetchTable('Likes');
+    }
+    
+    public function beforeRender(\Cake\Event\EventInterface $event)
+    {
+        // Don't call parent::beforeRender - skip the friends/suggestions logic for API endpoints
+        // Just render the JSON response directly
+        return;
     }
 
     /**
@@ -84,6 +92,35 @@ class LikesController extends AppController
                             'post_image_id IS' => null
                         ])
                         ->count();
+                    
+                    // Delete the like notification
+                    try {
+                        $postsTable = $this->fetchTable('Posts');
+                        $post = $postsTable->find()
+                            ->select(['id', 'user_id'])
+                            ->where(['id' => $id])
+                            ->first();
+                        
+                        if ($post && $post->user_id !== $userId) {
+                            NotificationHelper::deleteLike(
+                                (int)$post->user_id,
+                                (int)$userId,
+                                (int)$id,
+                                null
+                            );
+                        }
+                    } catch (\Exception $notifError) {
+                        error_log('Delete notification error: ' . $notifError->getMessage());
+                    }
+                    
+                    // Broadcast unlike via WebSocket
+                    try {
+                        $ws = WebSocketClient::getInstance();
+                        $ws->notifyUnlike('Post', (int)$id, (int)$userId);
+                    } catch (\Exception $e) {
+                        error_log('WebSocket unlike broadcast error: ' . $e->getMessage());
+                        // Log but don't fail
+                    }
 
                     return $this->response
                         ->withType('application/json')
@@ -148,6 +185,21 @@ class LikesController extends AppController
                                     (int)$id,
                                     (string)($user->full_name ?? $user->username)
                                 );
+                                
+                                // Broadcast like via WebSocket
+                                try {
+                                    $ws = WebSocketClient::getInstance();
+                                    $ws->notifyLike(
+                                        'Post',
+                                        (int)$id,
+                                        (int)$userId,
+                                        $user->full_name ?? $user->username,
+                                        (int)$post->user_id
+                                    );
+                                } catch (\Exception $e) {
+                                    error_log('WebSocket like broadcast error: ' . $e->getMessage());
+                                    // Log but don't fail
+                                }
                             }
                         }
                     } catch (\Exception $notifError) {
@@ -241,6 +293,25 @@ class LikesController extends AppController
                     $likeCount = $this->Likes->find()
                         ->where(['target_type' => 'Comment', 'target_id' => $id])
                         ->count();
+                    
+                    // Delete the comment like notification
+                    try {
+                        $commentsTable = $this->fetchTable('Comments');
+                        $comment = $commentsTable->find()
+                            ->select(['id', 'user_id'])
+                            ->where(['id' => $id])
+                            ->first();
+                        
+                        if ($comment && $comment->user_id !== $userId) {
+                            NotificationHelper::deleteCommentLike(
+                                (int)$comment->user_id,
+                                (int)$userId,
+                                (int)$id
+                            );
+                        }
+                    } catch (\Exception $notifError) {
+                        error_log('Delete comment like notification error: ' . $notifError->getMessage());
+                    }
 
                     return $this->response
                         ->withType('application/json')
@@ -408,43 +479,84 @@ class LikesController extends AppController
      */
     public function togglePostImage($id = null)
     {
-        $this->request->allowMethod(['post']);
+        error_log("========== togglePostImage START ==========");
+        error_log("Image ID received: " . var_export($id, true));
+        
+        try {
+            $this->request->allowMethod(['post']);
+            error_log("Method check passed");
+        } catch (\Exception $e) {
+            error_log("Method check failed: " . $e->getMessage());
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(405)
+                ->withStringBody(json_encode(['success' => false, 'message' => 'Method not allowed']));
+        }
+        
         $identity = $this->Authentication->getIdentity();
+        error_log("Identity retrieved: " . var_export($identity !== null, true));
+        
         if (!$identity) {
+            error_log("ERROR: No identity");
             return $this->response
                 ->withType('application/json')
                 ->withStatus(401)
                 ->withStringBody(json_encode(['success' => false, 'message' => 'Unauthorized']));
         }
-        $userId = $identity->id ?? ($identity['id'] ?? null);
+
+        $userId = null;
+        if (is_object($identity)) {
+            if (method_exists($identity, 'getOriginalData')) {
+                $orig = $identity->getOriginalData();
+                if (is_object($orig) && isset($orig->id)) {
+                    $userId = $orig->id;
+                } elseif (is_array($orig) && isset($orig['id'])) {
+                    $userId = $orig['id'];
+                }
+            } elseif (isset($identity->id)) {
+                $userId = $identity->id;
+            }
+        } elseif (is_array($identity) && isset($identity['id'])) {
+            $userId = $identity['id'];
+        }
+        
+        error_log("User ID extracted: " . var_export($userId, true));
+
         if (!$userId) {
+            error_log("ERROR: No user ID");
             return $this->response
                 ->withType('application/json')
                 ->withStatus(401)
                 ->withStringBody(json_encode(['success' => false, 'message' => 'User ID not found']));
         }
-        $id = (int)$id;
-        
-        error_log("togglePostImage - image_id: $id, user_id: $userId");
-        
+
         try {
-            // First, get the post_id from post_images table
+            $id = (int)$id;
+            error_log("Processing image like - imageId: $id, userId: $userId");
+            
+            // Get the post_id from post_images table
+            error_log("Fetching PostImages table...");
             $postImagesTable = $this->fetchTable('PostImages');
+            
+            error_log("Querying for post image with id: $id");
             $postImage = $postImagesTable->find()
                 ->select(['post_id'])
                 ->where(['id' => $id])
                 ->first();
+            
+            error_log("Post image query result: " . var_export($postImage !== null, true));
                 
             if (!$postImage) {
-                error_log("togglePostImage - image not found: $id");
+                error_log("ERROR: Post image not found");
                 return $this->response
                     ->withType('application/json')
                     ->withStatus(404)
                     ->withStringBody(json_encode(['success' => false, 'message' => 'Post image not found']));
             }
             
-            error_log("togglePostImage - found post_id: " . $postImage->post_id);
+            error_log("Post image found - post_id: " . $postImage->post_id);
             
+            error_log("Checking for existing like...");
             $existingLike = $this->Likes->find()
                 ->where([
                     'user_id' => $userId,
@@ -453,72 +565,184 @@ class LikesController extends AppController
                     'post_image_id' => $id
                 ])
                 ->first();
+            
+            error_log("Existing like found: " . var_export($existingLike !== null, true));
                 
             if ($existingLike) {
-                error_log("togglePostImage - deleting existing like");
-                $this->Likes->delete($existingLike);
-                $likeCount = $this->Likes->find()
-                    ->where([
-                        'target_type' => 'Post',
-                        'target_id' => $postImage->post_id,
-                        'post_image_id' => $id
-                    ])
-                    ->count();
-                error_log("togglePostImage - deleted, new count: $likeCount");
-                return $this->response
-                    ->withType('application/json')
-                    ->withStringBody(json_encode([
-                        'success' => true,
-                        'liked' => false,
-                        'likeCount' => $likeCount
-                    ]));
+                error_log("Deleting existing like...");
+                if ($this->Likes->delete($existingLike)) {
+                    error_log("Like deleted successfully");
+                    $likeCount = $this->Likes->find()
+                        ->where([
+                            'target_type' => 'Post',
+                            'target_id' => $postImage->post_id,
+                            'post_image_id' => $id
+                        ])
+                        ->count();
+                    
+                    error_log("New like count: $likeCount");
+                    
+                    // Delete the post image like notification
+                    try {
+                        $postsTable = $this->fetchTable('Posts');
+                        $post = $postsTable->find()
+                            ->select(['id', 'user_id'])
+                            ->where(['id' => $postImage->post_id])
+                            ->first();
+                        
+                        if ($post && $post->user_id !== $userId) {
+                            NotificationHelper::deleteLike(
+                                (int)$post->user_id,
+                                (int)$userId,
+                                (int)$postImage->post_id,
+                                (int)$id
+                            );
+                        }
+                    } catch (\Exception $notifError) {
+                        error_log('Delete post image notification error: ' . $notifError->getMessage());
+                    }
+                    
+                    try {
+                        $ws = WebSocketClient::getInstance();
+                        $ws->broadcast([
+                            'type' => 'like_removed',
+                            'target_type' => 'PostImage',
+                            'target_id' => $postImage->post_id,
+                            'post_image_id' => (int)$id,
+                            'user_id' => (int)$userId,
+                            'timestamp' => time()
+                        ]);
+                    } catch (\Exception $e) {
+                        error_log('WebSocket image unlike broadcast error: ' . $e->getMessage());
+                    }
+                    
+                    error_log("Returning unlike success response");
+                    return $this->response
+                        ->withType('application/json')
+                        ->withStringBody(json_encode([
+                            'success' => true,
+                            'liked' => false,
+                            'likeCount' => $likeCount
+                        ]));
+                }
+            } else {
+                error_log("Creating new like...");
+                $like = $this->Likes->newEntity([
+                    'user_id' => $userId,
+                    'target_type' => 'Post',
+                    'target_id' => $postImage->post_id,
+                    'post_image_id' => $id
+                ]);
+                
+                error_log("Like entity created: " . json_encode($like->toArray()));
+
+                if ($this->Likes->save($like)) {
+                    error_log("Like saved successfully");
+                    $likeCount = $this->Likes->find()
+                        ->where([
+                            'target_type' => 'Post',
+                            'target_id' => $postImage->post_id,
+                            'post_image_id' => $id
+                        ])
+                        ->count();
+
+                    error_log("New like count: $likeCount");
+
+                    $response = $this->response
+                        ->withType('application/json')
+                        ->withStringBody(json_encode([
+                            'success' => true,
+                            'liked' => true,
+                            'likeCount' => $likeCount
+                        ]));
+
+                    // Create notification for the post owner
+                    try {
+                        $postsTable = $this->fetchTable('Posts');
+                        $post = $postsTable->find()
+                            ->select(['id', 'user_id'])
+                            ->where(['id' => $postImage->post_id])
+                            ->first();
+
+                        if ($post && $post->user_id !== $userId) {
+                            $usersTable = $this->fetchTable('Users');
+                            $user = $usersTable->find()
+                                ->select(['id', 'username', 'full_name'])
+                                ->where(['id' => $userId])
+                                ->first();
+                            
+                            if ($user) {
+                                NotificationHelper::likePostImage(
+                                    (int)$post->user_id,
+                                    (int)$userId,
+                                    (int)$postImage->post_id,
+                                    (int)$id,
+                                    (string)($user->full_name ?? $user->username)
+                                );
+                                
+                                // Broadcast like notification via WebSocket
+                                try {
+                                    $ws = WebSocketClient::getInstance();
+                                    $ws->notifyLike(
+                                        'Post',
+                                        (int)$postImage->post_id,
+                                        (int)$userId,
+                                        $user->full_name ?? $user->username,
+                                        (int)$post->user_id
+                                    );
+                                } catch (\Exception $e) {
+                                    error_log('WebSocket like notification error: ' . $e->getMessage());
+                                }
+                            }
+                        }
+                    } catch (\Exception $notifError) {
+                        error_log('Notification error: ' . $notifError->getMessage());
+                    }
+
+                    // Also broadcast the like event for UI updates
+                    try {
+                        $ws = WebSocketClient::getInstance();
+                        $ws->broadcast([
+                            'type' => 'like_added',
+                            'target_type' => 'PostImage',
+                            'target_id' => $postImage->post_id,
+                            'post_image_id' => (int)$id,
+                            'user_id' => (int)$userId,
+                            'timestamp' => time()
+                        ]);
+                    } catch (\Exception $e) {
+                        error_log('WebSocket image like broadcast error: ' . $e->getMessage());
+                    }
+                    
+                    error_log("Returning like success response");
+                    return $response;
+                } else {
+                    $errors = $like->getErrors();
+                    error_log("ERROR: Failed to save like - " . json_encode($errors));
+                    return $this->response
+                        ->withType('application/json')
+                        ->withStatus(400)
+                        ->withStringBody(json_encode([
+                            'success' => false, 
+                            'message' => 'Failed to save like',
+                            'errors' => $errors
+                        ]));
+                }
             }
-            
-            error_log("togglePostImage - creating new like");
-            $like = $this->Likes->newEntity([
-                'user_id' => $userId,
-                'target_type' => 'Post',
-                'target_id' => $postImage->post_id,
-                'post_image_id' => $id
-            ]);
-            
-            error_log("togglePostImage - like entity: " . json_encode($like->toArray()));
-            
-            if ($this->Likes->save($like)) {
-                $likeCount = $this->Likes->find()
-                    ->where([
-                        'target_type' => 'Post',
-                        'target_id' => $postImage->post_id,
-                        'post_image_id' => $id
-                    ])
-                    ->count();
-                error_log("togglePostImage - saved, new count: $likeCount");
-                return $this->response
-                    ->withType('application/json')
-                    ->withStringBody(json_encode([
-                        'success' => true,
-                        'liked' => true,
-                        'likeCount' => $likeCount
-                    ]));
-            }
-            
-            $errors = $like->getErrors();
-            error_log("togglePostImage - save failed: " . json_encode($errors));
+
+            error_log("ERROR: Reached end without return");
             return $this->response
                 ->withType('application/json')
                 ->withStatus(400)
-                ->withStringBody(json_encode([
-                    'success' => false, 
-                    'message' => 'Failed to save like',
-                    'errors' => $errors
-                ]));
+                ->withStringBody(json_encode(['success' => false, 'message' => 'Failed to toggle like']));
         } catch (\Exception $e) {
-            error_log("togglePostImage - exception: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            error_log("EXCEPTION in togglePostImage: " . $e->getMessage());
+            error_log("Exception trace: " . $e->getTraceAsString());
             return $this->response
                 ->withType('application/json')
                 ->withStatus(500)
                 ->withStringBody(json_encode([
-                    'success' => false,
+                    'success' => false, 
                     'message' => 'Server error: ' . $e->getMessage()
                 ]));
         }
@@ -564,7 +788,23 @@ class LikesController extends AppController
         $isLiked = false;
         $identity = $this->Authentication->getIdentity();
         if ($identity) {
-            $userId = $identity->id ?? ($identity['id'] ?? null);
+            // Robust user ID extraction
+            $userId = null;
+            if (is_object($identity)) {
+                if (method_exists($identity, 'getOriginalData')) {
+                    $orig = $identity->getOriginalData();
+                    if (is_object($orig) && isset($orig->id)) {
+                        $userId = $orig->id;
+                    } elseif (is_array($orig) && isset($orig['id'])) {
+                        $userId = $orig['id'];
+                    }
+                } elseif (isset($identity->id)) {
+                    $userId = $identity->id;
+                }
+            } elseif (is_array($identity) && isset($identity['id'])) {
+                $userId = $identity['id'];
+            }
+            
             if ($userId) {
                 $isLiked = $this->Likes->find()
                     ->where([

@@ -228,4 +228,6 @@ window.dashboardData = {
 };
 </script>
 
+<!-- WebSocket Manager for real-time updates -->
+<script src="/js/websocket-manager.js?v=<?= time() ?>"></script>
 <script src="/js/dashboard.js?v=<?= time() ?>"></script>

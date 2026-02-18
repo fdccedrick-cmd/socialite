@@ -23,6 +23,8 @@ services:
         volumes:
             - ./backend:/var/www/html
             - ./php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+        ports:
+            - "8081:8081"
         environment:
             - DB_HOST=db
             - DB_PORT=3306
@@ -30,7 +32,7 @@ services:
             - DB_USER=user
             - DB_PASSWORD=admin123
             - DEBUG=1
-        command: sh -c "touch /var/www/html/logs/error.log && php-fpm -D && tail -f /var/www/html/logs/error.log"
+        command: sh -c "touch /var/www/html/logs/error.log && php-fpm -D && php /var/www/html/bin/websocket-server.php > /var/www/html/logs/websocket.log 2>&1 &  tail -f /var/www/html/logs/error.log /var/www/html/logs/websocket.log"
         depends_on:
             - db
         networks:

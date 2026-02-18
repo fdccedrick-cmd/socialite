@@ -117,14 +117,24 @@ console.log('🔍 Profile Data Debug:', {
             <span>Add Friend</span>
           </button>
 
-          <!-- Request Sent (Pending - Current User Sent) -->
+          <!-- Request Sent (temporarily shown for 2 seconds) -->
           <button 
-            v-if="friendshipStatus === 'pending' && isSender"
-            @click="cancelFriendRequest"
-            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors w-full md:w-auto font-medium text-xs sm:text-sm"
+            v-if="friendshipStatus === 'pending' && isSender && showRequestSent"
+            disabled
+            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-200 text-gray-700 rounded-lg cursor-default w-full md:w-auto font-medium text-xs sm:text-sm"
           >
             <i data-lucide="clock" class="w-4 h-4"></i>
             <span>Request Sent</span>
+          </button>
+
+          <!-- Cancel Request Button (shown after 2 seconds) -->
+          <button 
+            v-if="friendshipStatus === 'pending' && isSender && !showRequestSent"
+            @click="cancelFriendRequest"
+            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors w-full md:w-auto font-medium text-xs sm:text-sm"
+          >
+            <i data-lucide="x-circle" class="w-4 h-4"></i>
+            <span>Cancel Request</span>
           </button>
 
           <!-- Accept/Reject Buttons (Pending - Other User Sent) -->
@@ -388,4 +398,6 @@ console.log('🔍 Profile Data Debug:', {
   
 </div>
 
+<!-- WebSocket Manager for real-time updates -->
+<script src="/js/websocket-manager.js?v=<?= time() ?>"></script>
 <script src="/js/profile.js?v=<?= time() ?>"></script>

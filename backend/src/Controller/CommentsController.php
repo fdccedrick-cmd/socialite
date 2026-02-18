@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Utility\NotificationHelper;
+use App\Utility\WebSocketClient;
 
 /**
  * Comments Controller
@@ -161,6 +162,21 @@ class CommentsController extends AppController
                             (int)$data['post_id'],
                             (string)$user->full_name
                         );
+                    }
+                    
+                    // Broadcast comment via WebSocket
+                    try {
+                        $ws = WebSocketClient::getInstance();
+                        $ws->notifyComment(
+                            (int)$data['post_id'],
+                            $comment->id,
+                            (int)$user->id,
+                            (string)$user->full_name,
+                            (int)$post->user_id,
+                            $comment->post_image_id ?? null
+                        );
+                    } catch (\Exception $wsException) {
+                        error_log('WebSocket broadcast error: ' . $wsException->getMessage());
                     }
                 } catch (\Exception $e) {
                     error_log('Comment notification error: ' . $e->getMessage());

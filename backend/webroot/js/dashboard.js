@@ -8,10 +8,11 @@ if (typeof window.dashboardData === 'undefined') {
 
 const app = createApp({
     data() {
+        const userId = window.dashboardData?.user?.id ?? null;
         return {
-            currentUserId: window.dashboardData?.user?.id ?? null,
+            currentUserId: userId ? parseInt(userId, 10) : null,
             user: {
-                id: window.dashboardData?.user?.id || null,
+                id: userId ? parseInt(userId, 10) : null,
                 username: window.dashboardData?.user?.username || 'user',
                 avatar: window.dashboardData?.user?.avatar || 'https://i.pravatar.cc/150?img=1'
             },
@@ -60,6 +61,8 @@ const app = createApp({
                 imageCommentImage: null,
                 imageCommentImagePreview: null
             },
+            wsManager: null,
+            wsConnected: false,
             appReady: false
         }
     },
@@ -77,6 +80,184 @@ const app = createApp({
         },
         safeOpenPostDetailView(post, index) {
             if (typeof this.openPostDetailView === 'function') this.openPostDetailView(post, index);
+        },
+        initWebSocket() {
+            console.log('[Dashboard] Initializing WebSocket...');
+            this.wsManager = new WebSocketManager(this.currentUserId);
+            
+            // Add message handler
+            this.wsManager.addMessageHandler((data) => {
+                this.handleWebSocketMessage(data);
+            });
+            
+            // Connect
+            this.wsManager.connect();
+        },
+        handleWebSocketMessage(data) {
+            console.log('[Dashboard] WebSocket message:', data);
+            
+            switch(data.type) {
+                case 'connection':
+                    this.wsConnected = data.status === 'connected';
+                    if (this.wsConnected) {
+                        this.showToast('Real-time updates enabled', 'success');
+                    }
+                    break;
+                    
+                case 'like_added':
+                    this.handleLikeAdded(data);
+                    break;
+                    
+                case 'like_removed':
+                    this.handleLikeRemoved(data);
+                    break;
+                    
+                case 'comment_added':
+                    this.handleCommentAdded(data);
+                    break;
+                    
+                case 'new_post':
+                    this.handleNewPost(data);
+                    break;
+                    
+                case 'notification':
+                    this.handleNotification(data);
+                    break;
+            }
+        },
+        handleLikeAdded(data) {
+            console.log('[WS] handleLikeAdded FIRED');
+            console.log('[WS]   data.user_id:', data.user_id, 'type:', typeof data.user_id);
+            console.log('[WS]   this.currentUserId:', this.currentUserId, 'type:', typeof this.currentUserId);
+            console.log('[WS]   Loose comparison (==):', data.user_id == this.currentUserId);
+            console.log('[WS]   Strict comparison (===):', data.user_id === this.currentUserId);
+            
+            // Handle post image likes
+            if (data.target_type === 'PostImage' && data.post_image_id) {
+                // Skip if current user triggered this
+                if (data.user_id && this.currentUserId && Number(data.user_id) === Number(this.currentUserId)) {
+                    console.log('[WS] ✓ Skipping image like refresh - current user action');
+                    return;
+                }
+                
+                // Refresh image like if viewing this image
+                if (this.postDetailView.isOpen && this.postDetailView.currentImageId === data.post_image_id) {
+                    console.log('[WS] Refreshing image like for image:', data.post_image_id);
+                    this.loadImageLikeStatus(data.post_image_id);
+                }
+                return;
+            }
+            
+            // Handle regular post likes
+            // Skip if current user triggered this (already updated optimistically)
+            if (data.user_id && this.currentUserId && Number(data.user_id) === Number(this.currentUserId)) {
+                console.log('[WS] ✓ Skipping refresh - current user action');
+                return;
+            }
+            
+            console.log('[WS] × Will refresh - different user');
+            const post = this.posts.find(p => p.id === data.target_id);
+            if (post && data.target_type === 'Post') {
+                console.log('[WS] Refreshing post likes for post:', data.target_id);
+                // Refresh like count for other users
+                this.refreshPostLikes(post.id);
+            }
+        },
+        handleLikeRemoved(data) {
+            console.log('[WS] handleLikeRemoved FIRED');
+            console.log('[WS]   data.user_id:', data.user_id, 'type:', typeof data.user_id);
+            console.log('[WS]   this.currentUserId:', this.currentUserId, 'type:', typeof this.currentUserId);
+            
+            // Handle post image unlikes
+            if (data.target_type === 'PostImage' && data.post_image_id) {
+                // Skip if current user triggered this
+                if (data.user_id && this.currentUserId && Number(data.user_id) === Number(this.currentUserId)) {
+                    console.log('[WS] ✓ Skipping image unlike refresh - current user action');
+                    return;
+                }
+                
+                // Refresh image like if viewing this image
+                if (this.postDetailView.isOpen && this.postDetailView.currentImageId === data.post_image_id) {
+                    console.log('[WS] Refreshing image unlike for image:', data.post_image_id);
+                    this.loadImageLikeStatus(data.post_image_id);
+                }
+                return;
+            }
+            
+            // Handle regular post unlikes
+            // Skip if current user triggered this (already updated optimistically)
+            if (data.user_id && this.currentUserId && Number(data.user_id) === Number(this.currentUserId)) {
+                console.log('[WS] ✓ Skipping refresh - current user action');
+                return;
+            }
+            
+            console.log('[WS] × Will refresh - different user');
+            const post = this.posts.find(p => p.id === data.target_id);
+            if (post && data.target_type === 'Post') {
+                console.log('[WS] Refreshing post likes for post:', data.target_id);
+                // Refresh like count for other users
+                this.refreshPostLikes(post.id);
+            }
+        },
+        handleCommentAdded(data) {
+            const post = this.posts.find(p => p.id === data.post_id);
+            if (post) {
+                // Handle image comments
+                if (data.post_image_id && this.postDetailView.isOpen && 
+                    this.postDetailView.currentImageId === data.post_image_id) {
+                    console.log('[WS] Refreshing image comments for image:', data.post_image_id);
+                    this.loadImageComments(data.post_image_id);
+                } else if (!data.post_image_id) {
+                    // Handle regular post comments
+                    // Reload comments for this post
+                    if (post.showComments) {
+                        this.loadComments(post.id);
+                    } else {
+                        post.comment_count = (post.comment_count || 0) + 1;
+                    }
+                }
+            }
+        },
+        handleNewPost(data) {
+            // Show notification about new post
+            if (data.user_id !== this.currentUserId) {
+                this.showToast(`${data.user_name} created a new post`, 'info');
+                // Optionally reload feed
+            }
+        },
+        handleNotification(data) {
+            // Show notification
+            this.showToast(data.message, 'info');
+            
+            // Update notification badge if exists
+            if (typeof window.updateNotificationBadge === 'function') {
+                window.updateNotificationBadge();
+            }
+        },
+        async refreshPostLikes(postId) {
+            console.log('[Refresh] Fetching likes for post:', postId);
+            try {
+                const response = await fetch(`/likes/get-post-likes/${postId}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('[Refresh] Got data:', data);
+                    const post = this.posts.find(p => p.id === postId);
+                    if (post) {
+                        console.log('[Refresh] Updating post - old:', post.like_count, '/', post.is_liked, 'new:', data.like_count, '/', data.is_liked);
+                        post.like_count = data.like_count;
+                        post.is_liked = data.is_liked;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to refresh likes:', error);
+            }
+        },
+        showToast(message, type = 'info') {
+            if (typeof window.showFlash === 'function') {
+                window.showFlash(message, type);
+            }
         },
         togglePostMenu(postId, event) {
             if (event) event.stopPropagation();
@@ -243,9 +424,9 @@ const app = createApp({
             // Facebook-style: only use per-image likes/comments when post has 2+ images; single image = use post-level
             const img = p.post_images && p.post_images[this.postDetailView.imageIndex];
             if (p.post_images && p.post_images.length >= 2 && img && img.id) {
-                this.postDetailView.currentImageId = img.id;
-                this.loadImageComments(img.id);
-                this.loadImageLikeStatus(img.id);
+                this.postDetailView.currentImageId = parseInt(img.id, 10);
+                this.loadImageComments(this.postDetailView.currentImageId);
+                this.loadImageLikeStatus(this.postDetailView.currentImageId);
             }
             document.body.style.overflow = 'hidden';
             this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
@@ -260,8 +441,9 @@ const app = createApp({
             this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
         },
         async loadImageComments(postImageId) {
+            const imageId = parseInt(postImageId, 10);
             try {
-                const response = await fetch(`/comments/get-by-post-image/${postImageId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                const response = await fetch(`/comments/get-by-post-image/${imageId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
                 if (!response.ok) return;
                 const data = await response.json();
                 this.postDetailView.imageComments = (data.comments || data || []).map(c => ({ ...c, is_liked: false, like_count: 0 }));
@@ -277,8 +459,9 @@ const app = createApp({
             } catch (e) { console.error('Error loading image comments:', e); }
         },
         async loadImageLikeStatus(postImageId) {
+            const imageId = parseInt(postImageId, 10);
             try {
-                const response = await fetch(`/likes/post-image/${postImageId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                const response = await fetch(`/likes/post-image/${imageId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
                 if (!response.ok) return;
                 const data = await response.json();
                 this.postDetailView.imageLikeCount = data.count ?? 0;
@@ -287,28 +470,72 @@ const app = createApp({
         },
         async toggleImageLike() {
             if (!this.postDetailView.currentImageId) return;
+            
+            // Ensure ID is a plain number (not a reactive proxy)
+            const imageId = parseInt(this.postDetailView.currentImageId, 10);
+            if (isNaN(imageId)) {
+                console.error('[Image-Like] Invalid image ID:', this.postDetailView.currentImageId);
+                return;
+            }
+            
+            // Optimistic update - update UI immediately
+            const wasLiked = this.postDetailView.imageIsLiked;
+            const oldLikeCount = this.postDetailView.imageLikeCount || 0;
+            
+            this.postDetailView.imageIsLiked = !wasLiked;
+            this.postDetailView.imageLikeCount = wasLiked ? oldLikeCount - 1 : oldLikeCount + 1;
+            
+            console.log('[Image-Like] Optimistic update - imageId:', imageId, 'liked:', this.postDetailView.imageIsLiked, 'count:', this.postDetailView.imageLikeCount);
+            
             try {
-                const response = await fetch(`/likes/toggle-post-image/${this.postDetailView.currentImageId}`, {
+                const response = await fetch(`/likes/toggle-post-image/${imageId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     credentials: 'same-origin'
                 });
-                if (!response.ok) return;
-                const data = await response.json();
-                if (data.success) {
-                    this.postDetailView.imageLikeCount = data.likeCount ?? this.postDetailView.imageLikeCount;
-                    this.postDetailView.imageIsLiked = data.liked ?? false;
+                
+                console.log('[Image-Like] Response status:', response.status);
+                console.log('[Image-Like] Response headers:', [...response.headers]);
+                
+                const responseText = await response.text();
+                console.log('[Image-Like] Response body:', responseText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-            } catch (e) { console.error('Error toggling image like:', e); }
+                
+                const data = JSON.parse(responseText);
+                console.log('[Image-Like] Server response:', data);
+                
+                if (data.success) {
+                    this.postDetailView.imageLikeCount = data.likeCount;
+                    this.postDetailView.imageIsLiked = data.liked;
+                    console.log('[Image-Like] Updated - liked:', this.postDetailView.imageIsLiked, 'count:', this.postDetailView.imageLikeCount);
+                } else {
+                    // Revert on failure
+                    this.postDetailView.imageIsLiked = wasLiked;
+                    this.postDetailView.imageLikeCount = oldLikeCount;
+                }
+            } catch (e) {
+                console.error('Error toggling image like:', e);
+                // Revert optimistic update
+                this.postDetailView.imageIsLiked = wasLiked;
+                this.postDetailView.imageLikeCount = oldLikeCount;
+            }
         },
         async submitImageComment() {
             const v = this.postDetailView;
             if (!v.post || !v.currentImageId) return;
             const text = (v.imageNewComment || '').trim();
             if (!text && !v.imageCommentImage) return;
+            
+            // Ensure IDs are plain integers
+            const postId = parseInt(v.post.id, 10);
+            const imageId = parseInt(v.currentImageId, 10);
+            
             const formData = new FormData();
-            formData.append('post_id', v.post.id);
-            formData.append('post_image_id', v.currentImageId);
+            formData.append('post_id', postId);
+            formData.append('post_image_id', imageId);
             if (text) formData.append('content_text', text);
             if (v.imageCommentImage) formData.append('content_image', v.imageCommentImage);
             
@@ -353,9 +580,9 @@ const app = createApp({
             const img = imgs[this.postDetailView.imageIndex];
             
             if (totalImages >= 2 && img && img.id) {
-                this.postDetailView.currentImageId = img.id;
-                this.loadImageComments(img.id);
-                this.loadImageLikeStatus(img.id);
+                this.postDetailView.currentImageId = parseInt(img.id, 10);
+                this.loadImageComments(this.postDetailView.currentImageId);
+                this.loadImageLikeStatus(this.postDetailView.currentImageId);
             } else {
                 this.postDetailView.currentImageId = null;
             }
@@ -379,9 +606,9 @@ const app = createApp({
             const img = imgs[this.postDetailView.imageIndex];
             
             if (totalImages >= 2 && img && img.id) {
-                this.postDetailView.currentImageId = img.id;
-                this.loadImageComments(img.id);
-                this.loadImageLikeStatus(img.id);
+                this.postDetailView.currentImageId = parseInt(img.id, 10);
+                this.loadImageComments(this.postDetailView.currentImageId);
+                this.loadImageLikeStatus(this.postDetailView.currentImageId);
             } else {
                 this.postDetailView.currentImageId = null;
             }
@@ -407,6 +634,20 @@ const app = createApp({
         },
         async toggleLike(postId) {
             console.debug('toggleLike called for', postId);
+            
+            // Find the post
+            const postIndex = this.posts.findIndex(p => p.id === postId);
+            if (postIndex === -1) return;
+            
+            const post = this.posts[postIndex];
+            
+            // Optimistic update - update UI immediately
+            const wasLiked = post.is_liked;
+            const oldLikeCount = post.like_count || 0;
+            
+            post.is_liked = !wasLiked;
+            post.like_count = wasLiked ? oldLikeCount - 1 : oldLikeCount + 1;
+            
             try {
                 const response = await fetch(`/likes/toggle-post/${postId}`, {
                     method: 'POST',
@@ -422,20 +663,23 @@ const app = createApp({
                 }
 
                 const data = await response.json();
+                console.log('[Like] Server response:', data);
 
                 if (data.success) {
-                    const postIndex = this.posts.findIndex(p => p.id === postId);
-                    if (postIndex !== -1) {
-                        const updatedPost = {
-                            ...this.posts[postIndex],
-                            is_liked: data.liked,
-                            like_count: data.likeCount
-                        };
-                        this.posts.splice(postIndex, 1, updatedPost);
-                    }
+                    // Update with server response to ensure accuracy
+                    post.is_liked = data.liked;
+                    post.like_count = data.likeCount;
+                    console.log('[Like] Updated - liked:', post.is_liked, 'count:', post.like_count);
+                } else {
+                    // Revert on failure
+                    post.is_liked = wasLiked;
+                    post.like_count = oldLikeCount;
                 }
             } catch (error) {
                 console.error('Error toggling like:', error);
+                // Revert optimistic update
+                post.is_liked = wasLiked;
+                post.like_count = oldLikeCount;
             }
         },
         handleOpenComment(postId) {
@@ -904,8 +1148,175 @@ const app = createApp({
             }
         },
         
+        // WebSocket Methods
+        initWebSocket() {
+            console.log('[Dashboard] Initializing WebSocket...');
+            this.wsManager = new WebSocketManager(this.currentUserId);
+            
+            // Add message handler
+            this.wsManager.addMessageHandler((data) => {
+                this.handleWebSocketMessage(data);
+            });
+            
+            // Connect
+            this.wsManager.connect();
+        },
+        handleWebSocketMessage(data) {
+            console.log('[Dashboard] WebSocket message:', data);
+            
+            switch(data.type) {
+                case 'connection':
+                    this.wsConnected = data.status === 'connected';
+                    break;
+                    
+                case 'like_added':
+                    this.handleLikeAdded(data);
+                    break;
+                    
+                case 'like_removed':
+                    this.handleLikeRemoved(data);
+                    break;
+                    
+                case 'comment_added':
+                    this.handleCommentAdded(data);
+                    break;
+                    
+                case 'new_post':
+                    this.handleNewPost(data);
+                    break;
+                    
+                case 'notification':
+                    this.handleNotification(data);
+                    break;
+            }
+        },
+        handleLikeAdded(data) {
+            console.log('[WS-App2] handleLikeAdded FIRED');
+            console.log('[WS-App2]   data.user_id:', data.user_id, 'type:', typeof data.user_id);
+            console.log('[WS-App2]   this.currentUserId:', this.currentUserId, 'type:', typeof this.currentUserId);
+            
+            // Handle post image likes
+            if (data.target_type === 'PostImage' && data.post_image_id) {
+                // Skip if current user triggered this
+                if (data.user_id && this.currentUserId && Number(data.user_id) === Number(this.currentUserId)) {
+                    console.log('[WS-App2] ✓ Skipping image like refresh - current user action');
+                    return;
+                }
+                
+                // Refresh image like if viewing this image
+                if (this.postDetailView.isOpen && this.postDetailView.currentImageId === data.post_image_id) {
+                    console.log('[WS-App2] Refreshing image like for image:', data.post_image_id);
+                    this.loadImageLikeStatus(data.post_image_id);
+                }
+                return;
+            }
+            
+            // Handle regular post likes
+            // Skip if current user triggered this (already updated optimistically)
+            if (data.user_id && this.currentUserId && Number(data.user_id) === Number(this.currentUserId)) {
+                console.log('[WS-App2] ✓ Skipping refresh - current user action');
+                return;
+            }
+            
+            console.log('[WS-App2] × Will refresh - different user');
+            const post = this.posts.find(p => p.id === data.target_id);
+            if (post && data.target_type === 'Post') {
+                console.log('[WS-App2] Refreshing post likes for post:', data.target_id);
+                this.refreshPostLikes(post.id);
+            }
+        },
+        handleLikeRemoved(data) {
+            console.log('[WS-App2] handleLikeRemoved FIRED');
+            console.log('[WS-App2]   data.user_id:', data.user_id, 'type:', typeof data.user_id);
+            console.log('[WS-App2]   this.currentUserId:', this.currentUserId, 'type:', typeof this.currentUserId);
+            
+            // Handle post image unlikes
+            if (data.target_type === 'PostImage' && data.post_image_id) {
+                // Skip if current user triggered this
+                if (data.user_id && this.currentUserId && Number(data.user_id) === Number(this.currentUserId)) {
+                    console.log('[WS-App2] ✓ Skipping image unlike refresh - current user action');
+                    return;
+                }
+                
+                // Refresh image like if viewing this image
+                if (this.postDetailView.isOpen && this.postDetailView.currentImageId === data.post_image_id) {
+                    console.log('[WS-App2] Refreshing image unlike for image:', data.post_image_id);
+                    this.loadImageLikeStatus(data.post_image_id);
+                }
+                return;
+            }
+            
+            // Handle regular post unlikes
+            // Skip if current user triggered this (already updated optimistically)
+            if (data.user_id && this.currentUserId && Number(data.user_id) === Number(this.currentUserId)) {
+                console.log('[WS-App2] ✓ Skipping refresh - current user action');
+                return;
+            }
+            
+            console.log('[WS-App2] × Will refresh - different user');
+            const post = this.posts.find(p => p.id === data.target_id);
+            if (post && data.target_type === 'Post') {
+                console.log('[WS-App2] Refreshing post likes for post:', data.target_id);
+                this.refreshPostLikes(post.id);
+            }
+        },
+        handleCommentAdded(data) {
+            const post = this.posts.find(p => p.id === data.post_id);
+            if (post) {
+                // Handle image comments
+                if (data.post_image_id && this.postDetailView.isOpen && 
+                    this.postDetailView.currentImageId === data.post_image_id) {
+                    console.log('[WS-App2] Refreshing image comments for image:', data.post_image_id);
+                    this.loadImageComments(data.post_image_id);
+                } else if (!data.post_image_id) {
+                    // Handle regular post comments
+                    if (post.showComments) {
+                        this.loadComments(post.id);
+                    } else {
+                        post.comment_count = (post.comment_count || 0) + 1;
+                    }
+                }
+            }
+        },
+        handleNewPost(data) {
+            if (data.user_id !== this.currentUserId) {
+                if (typeof window.showFlash === 'function') {
+                    window.showFlash(`${data.user_name} created a new post`, 'info');
+                }
+            }
+        },
+        handleNotification(data) {
+            if (typeof window.showFlash === 'function') {
+                window.showFlash(data.message, 'info');
+            }
+        },
+        async refreshPostLikes(postId) {
+            try {
+                const response = await fetch(`/likes/get-post-likes/${postId}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const post = this.posts.find(p => p.id === postId);
+                    if (post) {
+                        post.like_count = data.like_count;
+                        post.is_liked = data.is_liked;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to refresh likes:', error);
+            }
+        }
+        
     },
     mounted() {
+        console.log('Dashboard mounted');
+        
+        // Initialize WebSocket for real-time updates
+        if (typeof WebSocketManager !== 'undefined' && this.currentUserId) {
+            this.initWebSocket();
+        }
+        
         // Initialize Lucide icons
         if (window.lucide) {
             lucide.createIcons();

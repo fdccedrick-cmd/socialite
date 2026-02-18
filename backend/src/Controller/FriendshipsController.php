@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Utility\NotificationHelper;
+use App\Utility\WebSocketClient;
 
 /**
  * Friendships Controller
@@ -269,6 +270,14 @@ class FriendshipsController extends AppController
             // Create notification
             NotificationHelper::createFriendRequestNotification($friendId, $userId);
 
+            // Send WebSocket notification
+            try {
+                $ws = WebSocketClient::getInstance();
+                $ws->broadcastFriendshipChange('added', $userId, $friendId, $friendship->id);
+            } catch (\Exception $e) {
+                error_log('WebSocket notification failed: ' . $e->getMessage());
+            }
+
             return $this->response
                 ->withType('application/json')
                 ->withStringBody(json_encode([
@@ -334,6 +343,14 @@ class FriendshipsController extends AppController
             // Create notification
             NotificationHelper::createFriendAcceptNotification($friendship->user_id, $userId);
 
+            // Send WebSocket notification
+            try {
+                $ws = WebSocketClient::getInstance();
+                $ws->broadcastFriendshipChange('accepted', $userId, $friendship->user_id, $friendship->id);
+            } catch (\Exception $e) {
+                error_log('WebSocket notification failed: ' . $e->getMessage());
+            }
+
             return $this->response
                 ->withType('application/json')
                 ->withStringBody(json_encode([
@@ -392,6 +409,14 @@ class FriendshipsController extends AppController
 
         // Update status to rejected (or delete it)
         if ($this->Friendships->delete($friendship)) {
+            // Send WebSocket notification
+            try {
+                $ws = WebSocketClient::getInstance();
+                $ws->notifyFriendRequestRejected($friendship->user_id, $userId);
+            } catch (\Exception $e) {
+                error_log('WebSocket notification failed: ' . $e->getMessage());
+            }
+
             return $this->response
                 ->withType('application/json')
                 ->withStringBody(json_encode([
@@ -435,7 +460,8 @@ class FriendshipsController extends AppController
                 ->withStringBody(json_encode(['success' => false, 'message' => 'Friend ID is required']));
         }
 
-        // Find the friendship
+        // Find the friendship - can be accepted (unfriend) or pending (cancel request)
+        // For pending requests, only allow the sender to cancel
         $friendship = $this->Friendships->find()
             ->where([
                 'OR' => [
@@ -446,9 +472,9 @@ class FriendshipsController extends AppController
                     [
                         'user_id' => $friendId,
                         'friend_id' => $userId,
+                        'status' => 'accepted' // Allow unfriending from either side
                     ],
                 ],
-                'status' => 'accepted' // Only remove accepted friendships
             ])
             ->first();
 
@@ -460,11 +486,23 @@ class FriendshipsController extends AppController
         }
 
         if ($this->Friendships->delete($friendship)) {
+            $message = $friendship->status === 'pending' ? 'Friend request cancelled' : 'Friend removed';
+            
+            // Send WebSocket notification
+            try {
+                $ws = WebSocketClient::getInstance();
+                $action = $friendship->status === 'pending' ? 'cancelled' : 'removed';
+                $otherUserId = ($friendship->user_id == $userId) ? $friendship->friend_id : $friendship->user_id;
+                $ws->broadcastFriendshipChange($action, $userId, $otherUserId);
+            } catch (\Exception $e) {
+                error_log('WebSocket notification failed: ' . $e->getMessage());
+            }
+
             return $this->response
                 ->withType('application/json')
                 ->withStringBody(json_encode([
                     'success' => true,
-                    'message' => 'Friend removed',
+                    'message' => $message,
                 ]));
         } else {
             return $this->response
