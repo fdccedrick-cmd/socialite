@@ -29,16 +29,50 @@ try { console.log('confirmModal.js loaded'); } catch(e){}
 
   function show(message, opts){
     opts = opts || {};
+    
+    // Support object-based API: show({title, message, confirmText, confirmClass})
+    if (typeof message === 'object' && message !== null) {
+      opts = message;
+      message = opts.message || 'Are you sure?';
+    }
+    
     const modal = ensureModalInBody() || getModal();
     if (!modal) {
       // Fallback to window.confirm if element not present
       return Promise.resolve(window.confirm(message));
     }
 
+    const titleEl = modal.querySelector('#confirm-modal-title');
     const msgEl = modal.querySelector('#confirm-modal-message');
     const okBtn = modal.querySelector('[data-confirm-ok]');
     const cancelBtn = modal.querySelector('[data-confirm-cancel]');
+    
+    // Set title if provided
+    if (titleEl && opts.title) {
+      titleEl.textContent = opts.title;
+    }
+    
     msgEl.textContent = message || 'Are you sure?';
+    
+    // Set confirm button text and class
+    if (okBtn) {
+      okBtn.textContent = opts.confirmText || 'Confirm';
+      
+      // Reset button classes
+      okBtn.className = 'px-3 py-2 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2';
+      
+      // Apply custom class or default
+      if (opts.confirmClass) {
+        okBtn.className += ' ' + opts.confirmClass;
+      } else {
+        okBtn.className += ' bg-red-600 hover:bg-red-700 focus:ring-red-300';
+      }
+    }
+    
+    // Set cancel button text
+    if (cancelBtn && opts.cancelText) {
+      cancelBtn.textContent = opts.cancelText;
+    }
 
     // Save previously focused element to restore focus later
     const previousFocus = document.activeElement;
@@ -95,6 +129,15 @@ try { console.log('confirmModal.js loaded'); } catch(e){}
           cancelBtn.removeEventListener('click', onCancel);
           modal.removeEventListener('click', onBackdrop);
           document.removeEventListener('keydown', onKey);
+          
+          // Reset to defaults
+          if (titleEl) titleEl.textContent = 'Confirm action';
+          if (msgEl) msgEl.textContent = 'Are you sure?';
+          if (okBtn) {
+            okBtn.textContent = 'Delete';
+            okBtn.className = 'px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300';
+          }
+          if (cancelBtn) cancelBtn.textContent = 'Cancel';
         }, 50);
       }
 
@@ -115,4 +158,9 @@ try { console.log('confirmModal.js loaded'); } catch(e){}
 
   // Expose globally
   window.showConfirmModal = show;
+  
+  // Also expose as an object with show method for consistency
+  window.confirmModal = {
+    show: show
+  };
 })();

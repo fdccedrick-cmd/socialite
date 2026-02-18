@@ -185,4 +185,42 @@ class NotificationHelper
             htmlspecialchars($followerName) . " started following you"
         );
     }
+
+    /**
+     * Create a "friend request" notification
+     *
+     * @param int $recipientId User receiving the friend request
+     * @param int $senderId User who sent the friend request
+     * @return bool
+     */
+    public static function createFriendRequestNotification(int $recipientId, int $senderId): bool
+    {
+        return self::create(
+            $recipientId,
+            $senderId,
+            'friend_request',
+            'User',
+            $senderId,
+            " sent you a friend request"
+        );
+    }
+
+    /**
+     * Create a "friend request accepted" notification
+     *
+     * @param int $requesterId User who sent the original friend request
+     * @param int $accepterId User who accepted the friend request
+     * @return bool
+     */
+    public static function createFriendAcceptNotification(int $requesterId, int $accepterId): bool
+    {
+        return self::create(
+            $requesterId,
+            $accepterId,
+            'friend_accept',
+            'User',
+            $accepterId,
+            " accepted your friend request"
+        );
+    }
 }

@@ -4,6 +4,13 @@
 ?>
 window.profileData = {
     currentUserId: <?= json_encode($currentUserId ?? null) ?>,
+    profileUserId: <?= json_encode($user['id'] ?? null) ?>,
+    isOwnProfile: <?= json_encode($isOwnProfile ?? true) ?>,
+    friendshipStatus: <?= json_encode($friendshipStatus ?? null) ?>,
+    friendshipId: <?= json_encode($friendshipId ?? null) ?>,
+    isSender: <?= json_encode($isSender ?? false) ?>,
+    mutualFriendsCount: <?= json_encode($mutualFriendsCount ?? 0) ?>,
+    friendsCount: <?= json_encode($friendsCount ?? 0) ?>,
     posts: <?= json_encode($postsArray ?? []) ?>,
     user: {
         full_name: <?= json_encode(!empty($user['full_name']) ? $user['full_name'] : (!empty($user['username']) ? $user['username'] : 'User')) ?>,
@@ -86,12 +93,94 @@ console.log('🔍 Profile Data Debug:', {
         
       </div>
       
-      <!-- Edit Profile Button -->
+      <!-- Action Buttons -->
       <div class="shrink-0 md:self-start w-full md:w-auto">
-        <button @click="openEditModal" class="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 pr-1.5 sm:pr-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full md:w-auto">
+        <!-- Edit Profile Button (Own Profile) -->
+        <button 
+          v-if="isOwnProfile"
+          @click="openEditModal" 
+          class="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 pr-1.5 sm:pr-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full md:w-auto"
+        >
           <i data-lucide="settings" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-700"></i>
-          <span class="text-xs sm:text-sm font-medium text-gray-700"></span>
+          <span class="text-xs sm:text-sm font-medium text-gray-700">Edit Profile</span>
         </button>
+
+        <!-- Friend Action Buttons (Other's Profile) -->
+        <div v-if="!isOwnProfile" class="flex gap-2">
+          <!-- Add Friend Button -->
+          <button 
+            v-if="friendshipStatus === null"
+            @click="sendFriendRequest"
+            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors w-full md:w-auto font-medium text-xs sm:text-sm"
+          >
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Add Friend</span>
+          </button>
+
+          <!-- Request Sent (Pending - Current User Sent) -->
+          <button 
+            v-if="friendshipStatus === 'pending' && isSender"
+            @click="cancelFriendRequest"
+            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors w-full md:w-auto font-medium text-xs sm:text-sm"
+          >
+            <i data-lucide="clock" class="w-4 h-4"></i>
+            <span>Request Sent</span>
+          </button>
+
+          <!-- Accept/Reject Buttons (Pending - Other User Sent) -->
+          <template v-if="friendshipStatus === 'pending' && !isSender">
+            <button 
+              @click="acceptFriendRequest"
+              class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-xs sm:text-sm"
+            >
+              <i data-lucide="check" class="w-4 h-4"></i>
+              <span>Accept</span>
+            </button>
+            <button 
+              @click="rejectFriendRequest"
+              class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors font-medium text-xs sm:text-sm"
+            >
+              <i data-lucide="x" class="w-4 h-4"></i>
+              <span>Reject</span>
+            </button>
+          </template>
+
+          <!-- Friends Button with Dropdown -->
+          <div v-if="friendshipStatus === 'accepted'" class="relative">
+            <button 
+              @click.stop="showFriendsMenu = !showFriendsMenu"
+              class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors w-full md:w-auto font-medium text-xs sm:text-sm"
+            >
+              <i data-lucide="user-check" class="w-4 h-4"></i>
+              <span>Friends</span>
+              <i data-lucide="chevron-down" class="w-3 h-3"></i>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div 
+              v-if="showFriendsMenu"
+              v-click-outside="closeFriendsMenu"
+              class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10"
+            >
+              <button 
+                @click.stop="unfriend"
+                class="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <i data-lucide="user-minus" class="w-4 h-4"></i>
+                <span>Unfriend</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Message Button (optional) -->
+          <button 
+            v-if="friendshipStatus === 'accepted'"
+            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors font-medium text-xs sm:text-sm"
+          >
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Message</span>
+          </button>
+        </div>
     </div>
   </div>
   

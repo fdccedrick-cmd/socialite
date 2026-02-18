@@ -51,6 +51,17 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/api/notifications/mark-read/{id}', ['controller' => 'Notifications', 'action' => 'markAsRead'], ['pass' => ['id']]);
         $builder->connect('/api/notifications/mark-all-read', ['controller' => 'Notifications', 'action' => 'markAllAsRead']);
         
+        // Friendships routes
+        $builder->connect('/friendships', ['controller' => 'Friendships', 'action' => 'index']);
+        $builder->connect('/friendships/index', ['controller' => 'Friendships', 'action' => 'index']);
+        $builder->connect('/friendships/requests', ['controller' => 'Friendships', 'action' => 'requests']);
+        $builder->connect('/friendships/suggestions', ['controller' => 'Friendships', 'action' => 'suggestions']);
+        $builder->connect('/friendships/add', ['controller' => 'Friendships', 'action' => 'add']);
+        $builder->connect('/friendships/accept/{id}', ['controller' => 'Friendships', 'action' => 'accept'], ['pass' => ['id']]);
+        $builder->connect('/friendships/reject/{id}', ['controller' => 'Friendships', 'action' => 'reject'], ['pass' => ['id']]);
+        $builder->connect('/friendships/remove', ['controller' => 'Friendships', 'action' => 'remove']);
+        $builder->connect('/friendships/status/{id}', ['controller' => 'Friendships', 'action' => 'status'], ['pass' => ['id']]);
+        
         // Settings routes
         $builder->connect('/settings/account', ['controller' => 'Settings', 'action' => 'account']);
         $builder->connect('/settings/update-password', ['controller' => 'Settings', 'action' => 'updatePassword']);

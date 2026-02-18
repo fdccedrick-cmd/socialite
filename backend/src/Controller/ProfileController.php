@@ -56,6 +56,31 @@ class ProfileController extends AppController
         }
         
         
+        // Check friendship status if viewing another user's profile
+        $friendshipStatus = null;
+        $friendshipId = null;
+        $isOwnProfile = ($userId == $currentUserId);
+        $friendshipsTable = $this->getTableLocator()->get('Friendships');
+        
+        // Get friends count for the profile user
+        $friendsCount = count($friendshipsTable->getFriends($userId));
+        
+        if (!$isOwnProfile) {
+            $friendship = $friendshipsTable->getFriendshipStatus($currentUserId, $userId);
+            
+            if ($friendship) {
+                $friendshipStatus = $friendship->status;
+                $friendshipId = $friendship->id;
+                // Check if current user is the sender or receiver
+                $isSender = $friendship->user_id == $currentUserId;
+                $this->set('isSender', $isSender);
+            }
+            
+            // Get mutual friends count
+            $mutualFriendsCount = $friendshipsTable->getMutualFriendsCount($currentUserId, $userId);
+            $this->set('mutualFriendsCount', $mutualFriendsCount);
+        }
+        
         $postsTable = $this->getTableLocator()->get('Posts');
         $likesTable = $this->getTableLocator()->get('Likes');
         
@@ -132,7 +157,7 @@ class ProfileController extends AppController
         
         $postCount = count($postsArray);
 
-        $this->set(compact('user', 'postsArray', 'postCount', 'currentUserId', 'userLikeCount', 'postIds'));
+        $this->set(compact('user', 'postsArray', 'postCount', 'currentUserId', 'userLikeCount', 'postIds', 'isOwnProfile', 'friendshipStatus', 'friendshipId', 'friendsCount'));
     }
 
     public function update()

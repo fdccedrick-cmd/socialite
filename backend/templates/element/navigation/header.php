@@ -245,12 +245,26 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
             notif.is_read = true; // Optimistically update UI
           }
 
-          const to = (notif.notifiable_type === 'Post') 
-            ? `/posts/${notif.notifiable_id}`
-            : (notif.notifiable_type === 'Comment') 
-              ? `/comments/${notif.notifiable_id}`
-              : (notif.url || null);
-           // Debug log
+          // Use the URL from the notification or build one based on type
+          let to = notif.url;
+          
+          if (!to) {
+            if (notif.notifiable_type === 'Post') {
+              to = `/posts/${notif.notifiable_id}`;
+            } else if (notif.notifiable_type === 'Comment') {
+              to = `/comments/${notif.notifiable_id}`;
+            } else if (notif.notifiable_type === 'User') {
+              if (notif.type === 'friend_request') {
+                to = '/friendships/requests';
+              } else if (notif.type === 'friend_accept') {
+                to = `/profile/${notif.actor_id}`;
+              } else {
+                to = `/profile/${notif.notifiable_id}`;
+              }
+            }
+          }
+          
+          // Debug log
           console.log('Notification click ->', { notif, to });
 
           if (to) {

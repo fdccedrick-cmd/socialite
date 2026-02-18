@@ -9,6 +9,14 @@
       return {
         activeTab: 'posts',
         currentUserId: window.profileData?.currentUserId || null,
+        profileUserId: window.profileData?.profileUserId || null,
+        isOwnProfile: window.profileData?.isOwnProfile ?? true,
+        friendshipStatus: window.profileData?.friendshipStatus || null,
+        friendshipId: window.profileData?.friendshipId || null,
+        isSender: window.profileData?.isSender || false,
+        mutualFriendsCount: window.profileData?.mutualFriendsCount || 0,
+        friendsCount: window.profileData?.friendsCount || 0,
+        showFriendsMenu: false,
         posts: (window.profileData?.posts || []).map(post => ({
           ...post,
           showComments: false,
@@ -32,7 +40,7 @@
           bio: window.profileData?.user?.bio || null,
           stats: {
             posts: window.profileData?.postCount || 0,
-            friends: '0',
+            friends: window.profileData?.friendsCount || 0,
             likes: (window.profileData && typeof window.profileData.likes === 'number') 
               ? window.profileData.likes 
               : 0
@@ -80,6 +88,15 @@
     computed: {
       window() {
         return window;
+      }
+    },
+    watch: {
+      showFriendsMenu(newVal) {
+        if (newVal) {
+          this.$nextTick(() => {
+            if (window.lucide) lucide.createIcons();
+          });
+        }
       }
     },
     methods: {
@@ -398,6 +415,182 @@
         this.uploadError = '';
         console.log('[TRACK] closeEditModal - form cleared');
       },
+      
+      // Friendship methods
+      closeFriendsMenu() {
+        this.showFriendsMenu = false;
+      },
+      async sendFriendRequest() {
+        try {
+          const response = await fetch('/friendships/add', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify({ friend_id: this.profileUserId })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            this.friendshipStatus = 'pending';
+            this.friendshipId = data.friendship_id || null;
+            this.isSender = true;
+            window.toast.show('Friend request sent', 'success');
+          } else {
+            window.toast.show(data.message || 'Failed to send friend request', 'error');
+          }
+        } catch (error) {
+          console.error('Error sending friend request:', error);
+          window.toast.show('An error occurred', 'error');
+        }
+      },
+      async cancelFriendRequest() {
+        const confirmed = await window.confirmModal.show({
+          title: 'Cancel Friend Request',
+          message: 'Are you sure you want to cancel this friend request?',
+          confirmText: 'Cancel Request',
+          confirmClass: 'bg-red-600 hover:bg-red-700'
+        });
+        
+        if (!confirmed) return;
+        
+        try {
+          const response = await fetch('/friendships/remove', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify({ friend_id: this.profileUserId })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            this.friendshipStatus = null;
+            this.isSender = false;
+            this.friendshipId = null;
+            window.toast.show('Friend request cancelled', 'success');
+          } else {
+            window.toast.show(data.message || 'Failed to cancel request', 'error');
+          }
+        } catch (error) {
+          console.error('Error cancelling request:', error);
+          window.toast.show('An error occurred', 'error');
+        }
+      },
+      async acceptFriendRequest() {
+        try {
+          console.log('Accepting friend request, friendshipId:', this.friendshipId);
+          const response = await fetch('/friendships/accept/' + this.friendshipId, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            }
+          });
+          
+          const data = await response.json();
+          console.log('Accept response:', data);
+          
+          if (data.success) {
+            this.friendshipStatus = 'accepted';
+            this.isSender = false;
+            this.user.stats.friends += 1;
+            this.$forceUpdate();
+            console.log('Friendship status updated to:', this.friendshipStatus);
+            window.toast.show('Friend request accepted', 'success');
+          } else {
+            window.toast.show(data.message || 'Failed to accept request', 'error');
+          }
+        } catch (error) {
+          console.error('Error accepting request:', error);
+          window.toast.show('An error occurred', 'error');
+        }
+      },
+      async rejectFriendRequest() {
+        const confirmed = await window.confirmModal.show({
+          title: 'Reject Friend Request',
+          message: 'Are you sure you want to reject this friend request?',
+          confirmText: 'Reject',
+          confirmClass: 'bg-red-600 hover:bg-red-700'
+        });
+        
+        if (!confirmed) return;
+        
+        try {
+          const response = await fetch('/friendships/reject/' + this.friendshipId, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            this.friendshipStatus = null;
+            this.friendshipId = null;
+            window.toast.show('Friend request rejected', 'success');
+          } else {
+            window.toast.show(data.message || 'Failed to reject request', 'error');
+          }
+        } catch (error) {
+          console.error('Error rejecting request:', error);
+          window.toast.show('An error occurred', 'error');
+        }
+      },
+      async unfriend() {
+        this.showFriendsMenu = false;
+        
+        const confirmed = await window.confirmModal.show({
+          title: 'Unfriend',
+          message: 'Are you sure you want to remove this friend?',
+          confirmText: 'Unfriend',
+          confirmClass: 'bg-red-600 hover:bg-red-700'
+        });
+        
+        if (!confirmed) return;
+        
+        try {
+          console.log('Unfriending user:', this.profileUserId);
+          const response = await fetch('/friendships/remove', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify({ friend_id: this.profileUserId })
+          });
+          
+          console.log('Unfriend response status:', response.status);
+          const data = await response.json();
+          console.log('Unfriend response data:', data);
+          
+          if (data.success) {
+            // Update friendship status to show Add Friend button
+            this.friendshipStatus = null;
+            this.friendshipId = null;
+            this.isSender = false;
+            this.user.stats.friends = Math.max(0, this.user.stats.friends - 1);
+            
+            // Force re-render
+            this.$forceUpdate();
+            
+            console.log('Friendship status updated to:', this.friendshipStatus);
+            window.toast.show('Friend removed', 'success');
+          } else {
+            window.toast.show(data.message || 'Failed to remove friend', 'error');
+          }
+        } catch (error) {
+          console.error('Error removing friend:', error);
+          window.toast.show('An error occurred', 'error');
+        }
+      },
+      
       async handleFileChange(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -1199,6 +1392,22 @@
       if (window.lucide) {
         lucide.createIcons();
       }
+    }
+  });
+  
+  // Add click-outside directive for dropdown menus
+  app.directive('click-outside', {
+    mounted(el, binding) {
+      el._clickOutsideHandler = (event) => {
+        if (!(el === event.target || el.contains(event.target))) {
+          binding.value(event);
+        }
+      };
+      document.addEventListener('click', el._clickOutsideHandler);
+    },
+    unmounted(el) {
+      document.removeEventListener('click', el._clickOutsideHandler);
+      delete el._clickOutsideHandler;
     }
   });
   

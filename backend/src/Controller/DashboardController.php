@@ -24,6 +24,7 @@ class DashboardController extends AppController
         $postsTable = $this->getTableLocator()->get('Posts');
         $postsArray = $postsTable->getPostsWithEngagement($userId);
 
+        // Friends and suggestions are now provided by AppController's beforeRender
         $this->set(compact('user', 'postsArray'));
     }
 

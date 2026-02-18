@@ -133,6 +133,15 @@ class NotificationsController extends AppController
                         if ($comment) {
                             $url = '/posts/' . $comment->post_id . '#comment-' . $notif->notifiable_id;
                         }
+                    } elseif ($notif->notifiable_type === 'User') {
+                        // For friend requests and friend accept, redirect to appropriate page
+                        if ($notif->type === 'friend_request') {
+                            $url = '/friendships/requests';
+                        } elseif ($notif->type === 'friend_accept') {
+                            $url = '/profile/' . $notif->actor_id;
+                        } else {
+                            $url = '/profile/' . $notif->notifiable_id;
+                        }
                     }
                 } catch (\Exception $e) {
                     $url = null;

@@ -24,65 +24,70 @@
         </div>
       <?php else: ?>
         <?php foreach ($notifications as $notification): ?>
-          <div class="px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors <?= $notification->is_read ? 'opacity-60' : 'bg-blue-50' ?>">
-            <div class="flex items-start gap-3">
-              <!-- Actor Avatar -->
-              <?php 
-                $actorAvatar = 'https://i.pravatar.cc/150?img=' . ($notification->actor_id % 70 + 1);
-                if (isset($notification->actor) && !empty($notification->actor->profile_photo_path)) {
-                    $actorAvatar = $notification->actor->profile_photo_path;
+          <?php 
+            // Build notification URL
+            $notifUrl = '#';
+            if ($notification->notifiable_type === 'Post') {
+                $notifUrl = '/posts/' . $notification->notifiable_id;
+            } elseif ($notification->notifiable_type === 'Comment') {
+                $notifUrl = '/comments/' . $notification->notifiable_id;
+            } elseif ($notification->notifiable_type === 'User') {
+                if ($notification->type === 'friend_request') {
+                    $notifUrl = '/friendships/requests';
+                } elseif ($notification->type === 'friend_accept') {
+                    $notifUrl = '/profile/' . $notification->actor_id;
+                } else {
+                    $notifUrl = '/profile/' . $notification->notifiable_id;
                 }
-              ?>
-              <img 
-                src="<?= h($actorAvatar) ?>" 
-                alt="<?= h($notification->actor->full_name ?? $notification->actor->username ?? 'User') ?>"
-                class="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-gray-100 flex-shrink-0"
-                onerror="this.src='https://i.pravatar.cc/150?img=1'"
-              />
-              
-              <!-- Notification Content -->
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center space-x-1">
-                  <p class="text-sm text-gray-900 font-bold">
-                    <?= h($notification->actor->full_name ?? $notification->actor->username ?? 'Unknown') ?>
-                  </p>
+            }
+          ?>
+          <div class="relative group">
+            <a href="<?= h($notifUrl) ?>" class="block px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors <?= $notification->is_read ? '' : 'bg-blue-50' ?>">
+              <div class="flex gap-3">
+                <!-- Actor Avatar -->
+                <?php 
+                  $actorAvatar = 'https://i.pravatar.cc/150?img=' . ($notification->actor_id % 70 + 1);
+                  if (isset($notification->actor) && !empty($notification->actor->profile_photo_path)) {
+                      $actorAvatar = $notification->actor->profile_photo_path;
+                  }
+                ?>
+                <img 
+                  src="<?= h($actorAvatar) ?>" 
+                  alt="<?= h($notification->actor->full_name ?? $notification->actor->username ?? 'User') ?>"
+                  class="w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                  onerror="this.src='https://i.pravatar.cc/150?img=1'"
+                />
+                
+                <!-- Notification Content -->
+                <div class="flex-1 min-w-0">
                   <p class="text-sm text-gray-900">
-                    <?= h($notification->message) ?>
+                    <span class="font-semibold"><?= h($notification->actor->full_name ?? $notification->actor->username ?? 'Unknown') ?></span><?= h($notification->message) ?>
+                  </p>
+                  <p class="text-xs text-gray-500 mt-1">
+                    <?= $notification->created->timeAgoInWords() ?>
                   </p>
                 </div>
-                <p class="text-xs text-gray-500">
-                  <?= $notification->created->timeAgoInWords() ?>
-                </p>
-              </div>
 
-              <!-- Type Icon -->
-              <div class="flex-shrink-0">
-                <?php 
-                  $iconMap = [
-                    'like' => ['icon' => 'heart', 'color' => 'text-red-500'],
-                    'comment' => ['icon' => 'message-circle', 'color' => 'text-blue-500'],
-                    'reply' => ['icon' => 'corner-down-right', 'color' => 'text-green-500'],
-                    'follow' => ['icon' => 'user-plus', 'color' => 'text-purple-500'],
-                    'mention' => ['icon' => 'at-sign', 'color' => 'text-yellow-500'],
-                    'share' => ['icon' => 'share-2', 'color' => 'text-indigo-500'],
-                  ];
-                  $icon = $iconMap[$notification->type] ?? ['icon' => 'bell', 'color' => 'text-gray-500'];
-                ?>
-                <i data-lucide="<?= $icon['icon'] ?>" class="w-5 h-5 <?= $icon['color'] ?>"></i>
+                <!-- Unread indicator -->
+                <?php if (!$notification->is_read): ?>
+                  <div class="flex-shrink-0">
+                    <span class="h-2 w-2 bg-blue-600 rounded-full block mt-2"></span>
+                  </div>
+                <?php endif; ?>
               </div>
-
-              <!-- Delete Button -->
-              <div class="flex-shrink-0">
-                <?= $this->Form->postLink(
-                  '<i data-lucide="x" class="w-4 h-4"></i>',
-                  ['action' => 'delete', $notification->id],
-                  [
-                    'confirm' => 'Delete this notification?',
-                    'escape' => false,
-                    'class' => 'text-gray-400 hover:text-red-500 transition-colors'
-                  ]
-                ) ?>
-              </div>
+            </a>
+            
+            <!-- Delete Button (shows on hover) -->
+            <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <?= $this->Form->postLink(
+                '<i data-lucide="x" class="w-4 h-4"></i>',
+                ['action' => 'delete', $notification->id],
+                [
+                  'confirm' => 'Delete this notification?',
+                  'escape' => false,
+                  'class' => 'text-gray-400 hover:text-red-500 transition-colors p-1 bg-white rounded-full shadow-sm'
+                ]
+              ) ?>
             </div>
           </div>
         <?php endforeach; ?>

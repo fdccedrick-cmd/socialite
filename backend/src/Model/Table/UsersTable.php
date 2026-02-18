@@ -47,6 +47,19 @@ class UsersTable extends Table
             'foreignKey' => 'user_id',
             'dependent' => true,
         ]);
+
+        // User has many friendships (as initiator)
+        $this->hasMany('Friendships', [
+            'foreignKey' => 'user_id',
+            'dependent' => true,
+        ]);
+
+        // User has many friendships (as receiver)
+        $this->hasMany('ReceivedFriendships', [
+            'className' => 'Friendships',
+            'foreignKey' => 'friend_id',
+            'dependent' => true,
+        ]);
     }
 
     public function validationDefault(Validator $validator): Validator
