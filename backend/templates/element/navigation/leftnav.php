@@ -8,11 +8,11 @@ $currentPath = $this->request->getPath();
 
 <div class="w-full bg-white lg:rounded-xl lg:shadow-sm lg:border lg:border-gray-100 p-3 lg:p-4 lg:sticky lg:top-20 h-full lg:h-fit">
   <!-- Profile Section (Desktop Only) -->
-  <div class="hidden lg:block text-center mb-3 lg:mb-4 pb-3 lg:pb-4 border-b border-gray-100">
+  <div class="hidden lg:block text-center mb-3 lg:mb-4 pb-3 lg:pb-4 border-b border-gray-100 box-shadow-sm">
     <img 
       src="<?= h($avatar) ?>" 
       alt="<?= h($username) ?>" 
-      class="w-14 h-14 lg:w-16 lg:h-16 rounded-full object-cover border-2 border-gray-100 mx-auto mb-2"
+      class="w-14 h-14 lg:w-16 lg:h-16 rounded-full object-cover border-2 border-blue-300 mx-auto mb-2 "
     />
     <h3 class="font-semibold text-gray-900 text-sm truncate px-2"><?= h($username) ?></h3>
     <p class="text-gray-500 text-xs truncate px-2">@<?= h($user->username ?? '') ?></p>

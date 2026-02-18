@@ -61,9 +61,9 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
         <a href="/explore" class="px-3 py-2 rounded-md hover:bg-gray-100 text-gray-700" title="Explore">
           <i data-lucide="compass" class="h-6 w-6"></i>
         </a>
-        <a href="/posts/new" class="px-3 py-2 rounded-md hover:bg-gray-100 text-gray-700" title="Create">
+        <button @click="focusPostCreate" class="px-3 py-2 rounded-md hover:bg-gray-100 text-gray-700" title="Create">
           <i data-lucide="plus" class="h-6 w-6"></i>
-        </a>
+        </button>
       </div>
         <!-- Notifications -->
         <div class="relative">
@@ -166,6 +166,21 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
         focusSearch() {
           const s = document.getElementById('header-search');
           if (s) { s.focus(); } else { /* fallback: open a quick search modal later */ }
+        },
+        focusPostCreate() {
+          // Try to find the post creation textarea
+          const postField = document.getElementById('post_create') || 
+                           document.querySelector('textarea[placeholder*="What\'s on your mind"]') ||
+                           document.querySelector('textarea[name="content_text"]') ||
+                           document.querySelector('#postContent');
+          
+          if (postField) {
+            postField.focus();
+            postField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            // If not on dashboard, navigate to dashboard
+            window.location.href = '/dashboard';
+          }
         },
         async fetchNotifications() {
           try {

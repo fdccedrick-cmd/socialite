@@ -206,7 +206,8 @@ class PostsController extends AppController
             ]);
 
             if (!empty($post->deleted)) {
-                throw new \Cake\Http\Exception\NotFoundException('Post not found');
+                $this->render('not_found');
+                return;
             }
 
             // Build a post array with engagement data matching DashboardService::getPostsWithEngagement
@@ -245,9 +246,16 @@ class PostsController extends AppController
             $postArray['comment_count'] = count($postArray['comments']);
 
             $this->set(compact('post', 'postArray'));
+        } catch (\Cake\Datasource\Exception\RecordNotFoundException $e) {
+            // Post doesn't exist - show not found page
+            Log::info('Post not found: ' . $id);
+            $this->render('not_found');
+            return;
         } catch (\Exception $e) {
             Log::error('Error loading post view: ' . $e->getMessage());
-            throw $e;
+            // For other errors, also show not found page to avoid exposing system errors
+            $this->render('not_found');
+            return;
         }
     }
 
@@ -263,16 +271,25 @@ class PostsController extends AppController
             ]);
 
             if (!empty($post->deleted)) {
-                throw new \Cake\Http\Exception\NotFoundException('Post not found');
+                $this->viewBuilder()->disableAutoLayout();
+                $this->render('not_found');
+                return;
             }
 
             $this->viewBuilder()->disableAutoLayout();
             $this->set(compact('post'));
             // will render templates/Posts/get_any_post.php which uses the post_card element
             $this->render('get_any_post');
+        } catch (\Cake\Datasource\Exception\RecordNotFoundException $e) {
+            Log::info('Post not found in getAnyPost: ' . $id);
+            $this->viewBuilder()->disableAutoLayout();
+            $this->render('not_found');
+            return;
         } catch (\Exception $e) {
             Log::error('Error rendering post element: ' . $e->getMessage());
-            throw $e;
+            $this->viewBuilder()->disableAutoLayout();
+            $this->render('not_found');
+            return;
         }
     }
 
