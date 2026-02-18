@@ -8,7 +8,7 @@ const app = createApp({
                 username: window.dashboardData?.user?.username || 'user',
                 avatar: window.dashboardData?.user?.avatar || 'https://i.pravatar.cc/150?img=1'
             },
-            // dashboard does not include post editing — do not expose edit helpers here
+            
             posts: (window.dashboardData?.posts || []).map(post => ({
                 ...post,
                 showComments: false,
@@ -26,7 +26,7 @@ const app = createApp({
                 error: '',
                 showEmojiPicker: false
             },
-            // (drag/drop removed)
+           
             imageViewer: {
                 isOpen: false,
                 images: [],
@@ -84,19 +84,17 @@ const app = createApp({
                 console.error('Error toggling like:', error);
             }
         },
-                handleOpenComment(postId) {
-                    if (typeof this.openCommentInput === 'function') return this.openCommentInput(postId);
-                    if (typeof window.openCommentInput === 'function') return window.openCommentInput(postId);
-                    console.warn('openCommentInput not available');
-                },
+        handleOpenComment(postId) {
+            if (typeof this.openCommentInput === 'function') return this.openCommentInput(postId);
+            if (typeof window.openCommentInput === 'function') return window.openCommentInput(postId);
+                console.warn('openCommentInput not available');
+        },
         async openCommentInput(postId) {
             const post = this.posts.find(p => p.id === postId);
             if (!post) return;
 
-            // Ensure comments section is visible
             post.showComments = true;
 
-            // Load comments if not already loaded
             if (post.comments.length === 0) {
                 try {
                     await this.loadComments(postId);

@@ -14,7 +14,6 @@ try { console.log('flashClient.js loaded'); } catch(e){}
     const el = document.createElement('div');
     el.className = 'flash-message';
 
-    // Use Tailwind-like classes for quick visual styling based on type
     const colorClass = (type === 'success') ? 'bg-green-50 text-green-800' : (type === 'error' ? 'bg-red-50 text-red-800' : 'bg-blue-50 text-blue-800');
 
     el.innerHTML = `<div class="px-4 py-2 rounded ${colorClass}">${message}</div>`;
