@@ -140,20 +140,8 @@ $fullName = $currentUser['full_name'] ?? $username;
           <span class="text-xs sm:text-sm font-medium hidden sm:inline">Photo</span>
         </label>
         
-        <!-- Emoji Button -->
-        <!-- <button 
-          @click="toggleEmojiPicker"
-          type="button"
-          class="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 text-gray-700 hover:bg-gray-50 rounded-lg transition-all group"
-          :class="{'bg-gray-100': newPost.showEmojiPicker}"
-          title="Add emoji"
-        >
-          <i data-lucide="smile" class="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500"></i>
-          <span class="text-xs sm:text-sm font-medium hidden sm:inline">Emoji</span>
-        </button>
-         -->
         <!-- Privacy Selector -->
-        <!-- <div class="relative ml-1">
+        <div class="relative ml-1">
           <select 
             v-model="newPost.privacy" 
             class="appearance-none pl-2 pr-7 py-1.5 text-xs sm:text-sm font-medium border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
@@ -163,7 +151,7 @@ $fullName = $currentUser['full_name'] ?? $username;
             <option value="private">🔒 Private</option>
           </select>
           <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-        </div> -->
+        </div>
       </div>
       
       <!-- Post Button -->

@@ -356,6 +356,7 @@ class PostsController extends AppController
             }
             
             $contentText = $this->request->getData('content_text');
+            $privacy = $this->request->getData('privacy');
             $removedImageIds = $this->request->getData('removed_images', []);
             $newImages = $this->request->getData('new_images');
             
@@ -378,6 +379,9 @@ class PostsController extends AppController
             
             
             $post->content_text = $contentText;
+            if ($privacy && in_array($privacy, ['public', 'friends', 'private'])) {
+                $post->privacy = $privacy;
+            }
             $post->modified = new \DateTime();
             
             if (!$this->Posts->save($post)) {

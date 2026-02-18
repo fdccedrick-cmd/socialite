@@ -26,6 +26,7 @@ const app = createApp({
                 showMenu: false,
                 isEditing: false,
                 editContent: '',
+                editPrivacy: 'public',
                 editImages: [],
                 removedImageIds: [],
                 newEditImages: [],
@@ -94,6 +95,7 @@ const app = createApp({
             post.showMenu = false;
             post.isEditing = true;
             post.editContent = post.content_text || '';
+            post.editPrivacy = post.privacy || 'public';
             post.editImages = JSON.parse(JSON.stringify(post.post_images || []));
             post.removedImageIds = [];
             post.newEditImages = [];
@@ -156,6 +158,7 @@ const app = createApp({
             }
             const formData = new FormData();
             formData.append('content_text', post.editContent || '');
+            formData.append('privacy', post.editPrivacy || 'public');
             (post.removedImageIds || []).forEach(id => formData.append('removed_images[]', id));
             (post.newEditImages || []).forEach(image => formData.append('new_images[]', image));
             try {
@@ -167,10 +170,12 @@ const app = createApp({
                 const data = await response.json();
                 if (response.ok && data.success) {
                     post.content_text = data.post.content_text;
+                    post.privacy = data.post.privacy || 'public';
                     post.post_images = data.post.post_images || [];
                     post.modified = data.post.modified;
                     post.isEditing = false;
                     post.editContent = '';
+                    post.editPrivacy = 'public';
                     post.editImages = [];
                     post.removedImageIds = [];
                     post.newEditImages = [];

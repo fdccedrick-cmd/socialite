@@ -51,6 +51,10 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/api/notifications/mark-read/{id}', ['controller' => 'Notifications', 'action' => 'markAsRead'], ['pass' => ['id']]);
         $builder->connect('/api/notifications/mark-all-read', ['controller' => 'Notifications', 'action' => 'markAllAsRead']);
         
+        // Search route
+        $builder->connect('/search', ['controller' => 'Search', 'action' => 'index']);
+        $builder->connect('/search/quick', ['controller' => 'Search', 'action' => 'quick']);
+        
         // Friendships routes
         $builder->connect('/friendships', ['controller' => 'Friendships', 'action' => 'index']);
         $builder->connect('/friendships/index', ['controller' => 'Friendships', 'action' => 'index']);

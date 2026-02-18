@@ -30,7 +30,30 @@ class ProfileController extends AppController
             $currentUserId = $identity['id'];
         }
         
-        $userId = $id ? (int)$id : $currentUserId;
+        // Handle both username and user ID
+        $userId = null;
+        if ($id) {
+            // Check if $id is numeric (user ID) or string (username)
+            if (is_numeric($id)) {
+                $userId = (int)$id;
+            } else {
+                // It's a username, fetch the user by username
+                $usersTable = $this->getTableLocator()->get('Users');
+                $userByUsername = $usersTable->find()
+                    ->where(['username' => $id])
+                    ->first();
+                
+                if ($userByUsername) {
+                    $userId = $userByUsername->id;
+                } else {
+                    // User not found
+                    $this->Flash->error('User not found.');
+                    return $this->redirect('/dashboard');
+                }
+            }
+        } else {
+            $userId = $currentUserId;
+        }
         
        
         if ($this->request->getQuery('error') === 'network') {
@@ -84,6 +107,21 @@ class ProfileController extends AppController
         $postsTable = $this->getTableLocator()->get('Posts');
         $likesTable = $this->getTableLocator()->get('Likes');
         
+        // Check if current user is a friend of the profile user
+        $isFriend = false;
+        if (!$isOwnProfile) {
+            $friendship = $friendshipsTable->find()
+                ->where([
+                    'status' => 'accepted',
+                    'OR' => [
+                        ['user_id' => $currentUserId, 'friend_id' => $userId],
+                        ['user_id' => $userId, 'friend_id' => $currentUserId]
+                    ]
+                ])
+                ->first();
+            $isFriend = !empty($friendship);
+        }
+        
         $posts = $postsTable->find()
             ->where([
                 'Posts.user_id' => $userId,
@@ -120,6 +158,23 @@ class ProfileController extends AppController
         }
 
         foreach ($posts as $post) {
+            // Apply privacy filtering
+            $canView = false;
+            if ($isOwnProfile) {
+                $canView = true; // Show all posts on own profile
+            } else {
+                if ($post->privacy === 'public') {
+                    $canView = true;
+                } elseif ($post->privacy === 'friends' && $isFriend) {
+                    $canView = true;
+                }
+                // private posts are never shown on other people's profiles
+            }
+            
+            if (!$canView) {
+                continue;
+            }
+            
             $postData = $post->toArray();
             if (!empty($postData['created']) && $postData['created'] instanceof \DateTimeInterface) {
                 $postData['created'] = $postData['created']->format(DATE_ATOM);

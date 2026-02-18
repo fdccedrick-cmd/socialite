@@ -24,7 +24,15 @@ $currentUser = $currentUser ?? [];
             {{ post.user.full_name }}
         </a>
         <!-- <h3 class="font-semibold text-gray-900 text-xs sm:text-sm truncate">{{ post.user.full_name }}</h3> -->
-        <p class="text-[10px] sm:text-xs text-gray-500">{{ formatDate(post.created) }}</p>
+        <div class="flex items-center gap-1 text-[10px] sm:text-xs text-gray-500">
+          <span>{{ formatDate(post.created) }}</span>
+          <span>•</span>
+          <i 
+            :data-lucide="post.privacy === 'public' ? 'globe' : (post.privacy === 'friends' ? 'users' : 'lock')" 
+            class="w-3 h-3"
+            :title="post.privacy === 'public' ? 'Public' : (post.privacy === 'friends' ? 'Friends Only' : 'Private')"
+          ></i>
+        </div>
       </div>
       
       <!-- Post Options Menu (3 dots) - Only show for own posts -->
@@ -69,6 +77,19 @@ $currentUser = $currentUser ?? [];
         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
         rows="3"
       ></textarea>
+      
+      <!-- Edit Privacy -->
+      <div class="flex items-center gap-2">
+        <label class="text-xs sm:text-sm font-medium text-gray-700">Privacy:</label>
+        <select 
+          v-model="post.editPrivacy"
+          class="appearance-none pl-3 pr-8 py-1.5 text-xs sm:text-sm font-medium border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+        >
+          <option value="public">🌍 Public</option>
+          <option value="friends">👥 Friends</option>
+          <option value="private">🔒 Private</option>
+        </select>
+      </div>
       
       <!-- Existing Images in Edit Mode -->
       <div v-if="post.editImages && post.editImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2">

@@ -27,6 +27,7 @@
           showMenu: false,
           isEditing: false,
           editContent: '',
+          editPrivacy: 'public',
           editImages: [],
           removedImageIds: [],
           newEditImages: [],
@@ -37,7 +38,7 @@
           username: window.profileData?.user?.username || 'user',
           avatar: window.profileData?.user?.avatar || 'https://i.pravatar.cc/150?img=1',
           joinedDate: window.profileData?.user?.joinedDate || 'Joined recently',
-          bio: window.profileData?.user?.bio || null,
+          bio: window.profileData?.user?.bio || 'No bio yet',
           stats: {
             posts: window.profileData?.postCount || 0,
             friends: window.profileData?.friendsCount || 0,
@@ -1116,6 +1117,7 @@
         // Enter edit mode
         post.isEditing = true;
         post.editContent = post.content_text || '';
+        post.editPrivacy = post.privacy || 'public';
         post.editImages = JSON.parse(JSON.stringify(post.post_images || [])); // Deep copy
         post.removedImageIds = [];
         post.newEditImages = [];
@@ -1225,6 +1227,7 @@
         // Create FormData
         const formData = new FormData();
         formData.append('content_text', post.editContent || '');
+        formData.append('privacy', post.editPrivacy || 'public');
         
         // Add removed image IDs
         if (post.removedImageIds.length > 0) {
@@ -1254,12 +1257,14 @@
           if (response.ok && data.success) {
             // Update post with new data
             post.content_text = data.post.content_text;
+            post.privacy = data.post.privacy || 'public';
             post.post_images = data.post.post_images || [];
             post.modified = data.post.modified;
             
             // Exit edit mode
             post.isEditing = false;
             post.editContent = '';
+            post.editPrivacy = 'public';
             post.editImages = [];
             post.removedImageIds = [];
             post.newEditImages = [];

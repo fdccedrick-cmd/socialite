@@ -7,6 +7,21 @@ if (is_array($user)) {
 $username = $user->full_name ?? $user->username ?? 'Guest';
 $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
 ?>
+<style>
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>
 <div id="headerApp" class="fixed top-0 left-0 w-full bg-white border-b z-50 shadow-sm" v-cloak>
   <div class="max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
     <div class="flex items-center justify-between h-14 sm:h-16">
@@ -26,23 +41,97 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
   </a>
 
   <!-- Search -->
-  <div class="flex-1 hidden md:flex max-w-md lg:max-w-lg">
-    <?= $this->Form->create(null, [
-        'type' => 'get',
-        'url' => '/search',
-        'class' => 'w-full'
-    ]) ?>
-        <div class="relative">
-        <i data-lucide="search" class="w-4 h-4 lg:w-5 lg:h-5 text-gray-400 absolute left-3 lg:left-4 top-1/2 -translate-y-1/2"></i>
-        <?= $this->Form->control('q', [
-          'label' => false,
-          'id' => 'header-search',
-          'type' => 'search',
-          'placeholder' => 'Search people, posts, groups',
-          'class' => 'pl-10 lg:pl-12 pr-4 py-1.5 lg:py-2 rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-700 shadow-sm w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white'
-        ]) ?>
+  <div class="flex-1 hidden md:flex max-w-md lg:max-w-lg relative">
+    <div class="relative w-full">
+      <i data-lucide="search" class="w-4 h-4 lg:w-5 lg:h-5 text-gray-400 absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10"></i>
+      <input 
+        v-model="searchQuery"
+        @input="onSearchInput"
+        @focus="showSearchResults = true"
+        @keydown.enter.prevent="goToFullSearch"
+        @keydown.esc="closeSearch"
+        type="search"
+        placeholder="Search people, posts..."
+        class="pl-10 lg:pl-12 pr-4 py-1.5 lg:py-2 rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-700 shadow-sm w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+      />
+      
+      <!-- Search Results Dropdown -->
+      <div 
+        v-if="showSearchResults && searchQuery.length > 0"
+        v-click-outside="closeSearch"
+        class="absolute top-full mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-[80vh] overflow-y-auto z-50"
+      >
+        <!-- Loading -->
+        <div v-if="searchLoading" class="p-4 text-center text-gray-500">
+          <i data-lucide="loader-2" class="w-5 h-5 animate-spin inline-block"></i>
+          <span class="ml-2">Searching...</span>
+        </div>
+        
+        <!-- Results -->
+        <div v-else-if="searchResults.users.length > 0 || searchResults.posts.length > 0">
+          <!-- Users Section -->
+          <div v-if="searchResults.users.length > 0" class="border-b border-gray-100">
+            <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">People</div>
+            <a 
+              v-for="user in searchResults.users"
+              :key="'user-' + user.id"
+              :href="'/profile/' + user.username"
+              class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+            >
+              <img 
+                :src="user.profile_photo_path || 'https://i.pravatar.cc/150?img=1'" 
+                :alt="user.full_name"
+                class="w-10 h-10 rounded-full object-cover border"
+              />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-gray-900 text-sm truncate">{{ user.full_name }}</span>
+                  <span v-if="user.is_friend" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 shrink-0">
+                    <i data-lucide="check" class="w-3 h-3"></i>
+                  </span>
+                </div>
+                <p class="text-xs text-gray-500 truncate">@{{ user.username }}</p>
+              </div>
+            </a>
+          </div>
+          
+          <!-- Posts Section -->
+          <div v-if="searchResults.posts.length > 0">
+            <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Posts</div>
+            <a 
+              v-for="post in searchResults.posts"
+              :key="'post-' + post.id"
+              :href="'/posts/' + post.id"
+              class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+            >
+              <img 
+                :src="post.user.profile_photo_path || 'https://i.pravatar.cc/150?img=1'" 
+                :alt="post.user.full_name"
+                class="w-8 h-8 rounded-full object-cover"
+              />
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-sm text-gray-900">{{ post.user.full_name }}</p>
+                <p class="text-xs text-gray-600 line-clamp-2 mt-0.5">{{ post.content }}</p>
+              </div>
+            </a>
+          </div>
+          
+          <!-- See All Results Link -->
+          <a 
+            :href="'/search?q=' + encodeURIComponent(searchQuery)"
+            class="block px-4 py-3 text-center text-sm font-medium text-indigo-600 hover:bg-indigo-50 border-t border-gray-100"
+          >
+            See all results for "{{ searchQuery }}"
+          </a>
+        </div>
+        
+        <!-- No Results -->
+        <div v-else class="p-6 text-center text-gray-500">
+          <i data-lucide="search" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+          <p class="text-sm">No results found for "{{ searchQuery }}"</p>
+        </div>
       </div>
-    <?= $this->Form->end() ?>
+    </div>
   </div>
         <button @click="focusSearch" class="md:hidden p-1.5 rounded hover:bg-gray-100" title="Search">
           <i data-lucide="search" class="h-4 w-4 sm:h-5 sm:w-5 text-gray-700"></i>
@@ -141,7 +230,12 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
           avatar: <?= json_encode($avatar) ?>,
           notificationCount: 0,
           messageCount: 0,
-          notifications: []
+          notifications: [],
+          searchQuery: '',
+          searchResults: { users: [], posts: [] },
+          showSearchResults: false,
+          searchLoading: false,
+          searchTimeout: null
         };
       },
       methods: {
@@ -164,8 +258,67 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
           this.notificationsOpen = false;
         },
         focusSearch() {
-          const s = document.getElementById('header-search');
-          if (s) { s.focus(); } else { /* fallback: open a quick search modal later */ }
+          const s = document.querySelector('input[type="search"]');
+          if (s) { 
+            s.focus();
+            this.showSearchResults = true;
+          }
+        },
+        onSearchInput() {
+          // Clear previous timeout
+          if (this.searchTimeout) {
+            clearTimeout(this.searchTimeout);
+          }
+          
+          // If query is empty, clear results
+          if (this.searchQuery.trim().length === 0) {
+            this.searchResults = { users: [], posts: [] };
+            this.showSearchResults = false;
+            return;
+          }
+          
+          // Debounce search
+          this.searchLoading = true;
+          this.searchTimeout = setTimeout(() => {
+            this.performSearch();
+          }, 300);
+        },
+        async performSearch() {
+          if (!this.searchQuery || this.searchQuery.trim().length === 0) {
+            this.searchLoading = false;
+            return;
+          }
+          
+          try {
+            const response = await fetch(`/search/quick?q=${encodeURIComponent(this.searchQuery)}`, {
+              credentials: 'same-origin'
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              this.searchResults = {
+                users: data.users || [],
+                posts: data.posts || []
+              };
+              this.showSearchResults = true;
+            }
+          } catch (error) {
+            console.error('Search error:', error);
+          } finally {
+            this.searchLoading = false;
+            // Re-initialize lucide icons for new elements
+            this.$nextTick(() => {
+              if (window.lucide) lucide.createIcons();
+            });
+          }
+        },
+        closeSearch() {
+          this.showSearchResults = false;
+        },
+        goToFullSearch() {
+          if (this.searchQuery.trim()) {
+            window.location.href = `/search?q=${encodeURIComponent(this.searchQuery)}`;
+          }
         },
         focusPostCreate() {
           // Try to find the post creation textarea
@@ -323,6 +476,23 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
         }
       }
     });
+    
+    // Add click-outside directive for search dropdown
+    app.directive('click-outside', {
+      mounted(el, binding) {
+        el._clickOutsideHandler = (event) => {
+          if (!(el === event.target || el.contains(event.target))) {
+            binding.value(event);
+          }
+        };
+        document.addEventListener('click', el._clickOutsideHandler);
+      },
+      unmounted(el) {
+        document.removeEventListener('click', el._clickOutsideHandler);
+        delete el._clickOutsideHandler;
+      }
+    });
+    
     app.mount(el);
   })();
 </script>

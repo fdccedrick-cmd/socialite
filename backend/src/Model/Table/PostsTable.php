@@ -87,6 +87,21 @@ class PostsTable extends Table
     {
         $likesTable = TableRegistry::getTableLocator()->get('Likes');
         $commentsTable = TableRegistry::getTableLocator()->get('Comments');
+        $friendshipsTable = TableRegistry::getTableLocator()->get('Friendships');
+        
+        // Get user's friend IDs
+        $friendIds = $friendshipsTable->find()
+            ->where([
+                'OR' => [
+                    ['user_id' => $userId, 'status' => 'accepted'],
+                    ['friend_id' => $userId, 'status' => 'accepted']
+                ]
+            ])
+            ->all()
+            ->map(function($friendship) use ($userId) {
+                return $friendship->user_id === $userId ? $friendship->friend_id : $friendship->user_id;
+            })
+            ->toArray();
         
         $posts = $this->find()
             ->where(['Posts.deleted IS' => null])
@@ -99,6 +114,22 @@ class PostsTable extends Table
         
         $postsArray = [];
         foreach ($posts as $post) {
+            // Apply privacy filtering
+            $canView = false;
+            if ($post->privacy === 'public') {
+                $canView = true; // Everyone can see public posts
+            } elseif ($post->privacy === 'friends') {
+                // Only friends of the post owner or the owner can see
+                $canView = ($post->user_id === $userId) || in_array($post->user_id, $friendIds);
+            } elseif ($post->privacy === 'private') {
+                // Only the owner can see private posts
+                $canView = ($post->user_id === $userId);
+            }
+            
+            if (!$canView) {
+                continue; // Skip this post
+            }
+            
             $postData = $post->toArray();
             
             // Format dates

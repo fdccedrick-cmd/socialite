@@ -33,7 +33,7 @@ window.profileData = {
           }
           echo json_encode($joinedDate);
         ?>,
-        bio: <?= json_encode(!empty($user['bio']) ? $user['bio'] : null) ?>
+        bio: <?= json_encode(!empty($user['bio']) ? $user['bio'] : 'No bio yet') ?>
     },
     postCount: <?= json_encode($postCount ?? 0) ?>,
     likes: <?= json_encode($userLikeCount ?? 0) ?>
