@@ -11,6 +11,7 @@
     </div>
 
     <!-- Modal Body -->
+    <!-- Cropper assets are loaded dynamically from profile.js -->
     <form @submit.prevent="handleSubmit" class="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <!-- Profile Picture Upload -->
       <div class="space-y-2 sm:space-y-3">
@@ -41,6 +42,30 @@
             </label>
             <p class="text-[10px] sm:text-xs text-gray-500 mt-1 sm:mt-2">JPG, PNG or GIF (MAX. 5MB)</p>
             <p v-if="uploadError" class="text-[10px] sm:text-xs text-red-600 mt-1">{{ uploadError }}</p>
+          </div>
+        </div>
+
+        <!-- Cropper modal -->
+        <div v-if="showCropper" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[10000]">
+          <div class="bg-white rounded-lg max-w-3xl w-full p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Crop Photo</h3>
+              <button type="button" @click="cancelCrop" class="text-gray-500 hover:text-gray-700">Close</button>
+            </div>
+            <div class="w-full flex flex-col sm:flex-row gap-4">
+              <div class="w-full sm:w-3/4 flex items-center justify-center">
+                <div style="max-width:600px; width:100%;">
+                  <img id="cropperImage" :src="cropperImageSrc" alt="Crop preview" class="w-full max-h-[60vh] object-contain" />
+                </div>
+              </div>
+              <div class="w-full sm:w-1/4 flex flex-col gap-3 items-center">
+                <div class="w-40 h-40 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center bg-gray-100">
+                  <img :src="cropPreviewSrc" alt="Circle preview" class="w-full h-full object-cover" />
+                </div>
+                <button type="button" @click="cropAndUse" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Crop & Use</button>
+                <button type="button" @click="cancelCrop" class="px-4 py-2 border border-gray-300 rounded-lg">Cancel</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

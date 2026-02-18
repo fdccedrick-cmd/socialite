@@ -130,6 +130,7 @@ class ProfileController extends AppController
     {
         $this->request->allowMethod(['post']);
         $this->viewBuilder()->disableAutoLayout();
+        error_log('Profile update - update() called');
         
         $result = $this->Authentication->getResult();
         if (!($result && $result->isValid())) {
@@ -137,7 +138,8 @@ class ProfileController extends AppController
                 ->withType('application/json')
                 ->withStringBody(json_encode([
                     'success' => false,
-                    'message' => 'Unauthorized access'
+                    'message' => 'Unauthorized access',
+                    'reached_controller' => true
                 ]));
         }
 
@@ -164,7 +166,8 @@ class ProfileController extends AppController
                 ->withType('application/json')
                 ->withStringBody(json_encode([
                     'success' => false,
-                    'message' => 'User not found'
+                    'message' => 'User not found',
+                    'reached_controller' => true
                 ]));
         }
 
@@ -172,6 +175,12 @@ class ProfileController extends AppController
         $user = $usersTable->get($userId);
         $data = [];
         $errors = [];
+        // Debug raw PHP files array
+        try {
+            error_log('Profile update - _FILES: ' . json_encode($_FILES));
+        } catch (\Throwable $e) {
+            // ignore
+        }
 
         $bio = $this->request->getData('bio');
         if (!empty($bio)) {
@@ -186,6 +195,13 @@ class ProfileController extends AppController
         }
 
         $uploadedFile = $this->request->getData('profile_picture');
+        // Log uploaded file info for debugging
+        try {
+            error_log('Profile update - uploadedFile raw: ' . json_encode(is_object($uploadedFile) ? get_class($uploadedFile) : $uploadedFile));
+        } catch (\Throwable $e) {
+            // ignore logging errors
+        }
+
         if ($uploadedFile && is_object($uploadedFile) && method_exists($uploadedFile, 'getError') && $uploadedFile->getError() === UPLOAD_ERR_OK) {
             $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
             $fileType = $uploadedFile->getClientMediaType();
@@ -203,6 +219,7 @@ class ProfileController extends AppController
                     $uploadPath = WWW_ROOT . 'img' . DS . 'profile_uploads' . DS . $filename;
                     
                     try {
+                        if (!is_dir(dirname($uploadPath))) @mkdir(dirname($uploadPath), 0755, true);
                         $uploadedFile->moveTo($uploadPath);
                         $data['profile_photo_path'] = '/img/profile_uploads/' . $filename;
                         
@@ -216,6 +233,34 @@ class ProfileController extends AppController
                         $errors['profile_picture'] = 'Failed to upload file.';
                     }
                 }
+            }
+        }
+        // Fallback: sometimes uploaded file may be provided as array (from PHP native $_FILES)
+        elseif (is_array($uploadedFile) && isset($uploadedFile['tmp_name']) && isset($uploadedFile['error'])) {
+            try {
+                error_log('Profile update - handling array-style upload: ' . json_encode([$uploadedFile['name'] ?? null, $uploadedFile['error'] ?? null]));
+                if ($uploadedFile['error'] === UPLOAD_ERR_OK && is_uploaded_file($uploadedFile['tmp_name'])) {
+                    $extension = pathinfo($uploadedFile['name'], PATHINFO_EXTENSION);
+                    $filename = 'profile_' . $userId . '_' . time() . '.' . $extension;
+                    $uploadPath = WWW_ROOT . 'img' . DS . 'profile_uploads' . DS . $filename;
+                    if (!is_dir(dirname($uploadPath))) @mkdir(dirname($uploadPath), 0755, true);
+                    if (move_uploaded_file($uploadedFile['tmp_name'], $uploadPath)) {
+                        $data['profile_photo_path'] = '/img/profile_uploads/' . $filename;
+                        if (!empty($user->profile_photo_path) && $user->profile_photo_path !== '/img/profile_uploads/' . $filename) {
+                            $oldPath = WWW_ROOT . ltrim($user->profile_photo_path, '/');
+                            if (file_exists($oldPath) && is_file($oldPath)) {
+                                @unlink($oldPath);
+                            }
+                        }
+                    } else {
+                        $errors['profile_picture'] = 'Failed to move uploaded file.';
+                    }
+                } else {
+                    $errors['profile_picture'] = 'No valid uploaded file found.';
+                }
+            } catch (\Throwable $e) {
+                error_log('Profile update - array upload fallback error: ' . $e->getMessage());
+                $errors['profile_picture'] = 'Failed to process uploaded file.';
             }
         }
 
@@ -272,6 +317,8 @@ class ProfileController extends AppController
             // ignore logging errors
         }
 
+        // Preserve old profile path to detect changes
+        $oldProfilePath = $user->profile_photo_path;
         $user = $usersTable->patchEntity($user, $data);
 
         try {
@@ -303,11 +350,32 @@ class ProfileController extends AppController
                     'profile_photo_path' => $user->profile_photo_path
                 ];
 
+                // If profile photo changed, create a post announcing the new profile picture
+                try {
+                    if (!empty($data['profile_photo_path']) && $data['profile_photo_path'] !== $oldProfilePath) {
+                        $postsTable = $this->getTableLocator()->get('Posts');
+                        $post = $postsTable->newEmptyEntity();
+                        $post->user_id = $userId;
+                        $post->content_text = trim($user->full_name) . ' uploaded a new profile picture';
+                        $post->privacy = 'public';
+                        if ($postsTable->save($post)) {
+                            $postImagesTable = $this->getTableLocator()->get('PostImages');
+                            $postImage = $postImagesTable->newEmptyEntity();
+                            $postImage->post_id = $post->id;
+                            $postImage->image_path = $user->profile_photo_path;
+                            $postImagesTable->save($postImage);
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    error_log('Profile update - failed to create post for profile photo change: ' . $e->getMessage());
+                }
+
                 return $this->response
                     ->withType('application/json')
                     ->withStringBody(json_encode([
                         'success' => true,
-                        'user' => $responseData
+                        'user' => $responseData,
+                        'reached_controller' => true
                     ]));
             }
         } catch (\Throwable $e) {
@@ -321,7 +389,8 @@ class ProfileController extends AppController
             ->withType('application/json')
             ->withStringBody(json_encode([
                 'success' => false,
-                'errors' => $validationErrors
+                'errors' => $validationErrors,
+                'reached_controller' => true
             ]));
     }
 }

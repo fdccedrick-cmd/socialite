@@ -185,4 +185,4 @@
     likes: <?= json_encode($userLikeCount ?? 0) ?>
   };
 </script>
-<script src="/js/profile.js"></script>
+<script src="/js/profile.js?v=<?= time() ?>"></script>

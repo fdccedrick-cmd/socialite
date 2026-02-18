@@ -1,4 +1,8 @@
 // Simple toast helper using Tailwind-style classes. Exposes `window.showToast(message, type, durationMs)`
+try {
+  console.log('toast.js loaded');
+} catch(e){}
+
 (function(){
   function makeToast(message, type){
     const el = document.createElement('div');
@@ -51,9 +55,31 @@
     return inner;
   }
 
+  window.__TOAST_LOADED = true;
   window.showToast = function(message, type = 'info', duration = 4000){
-    const container = getContainer();
-    const toast = makeToast(message, type);
+    try {
+      console.log('showToast called', { message, type, duration });
+
+      let container = null;
+      try { container = getContainer(); } catch (e) { console.error('getContainer error', e); }
+
+      const toast = makeToast(message, type);
+      try { console.debug('toast: appending to container', { container, toastHtml: toast.outerHTML }); } catch(e){}
+
+      // Fallback: if container missing, append to body
+      const appendTarget = container || document.body;
+
+      // Force inline styles to make toast visible (debugging safety)
+      try {
+        toast.style.position = 'relative';
+        toast.style.zIndex = '999999';
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+        toast.style.margin = '6px auto';
+        toast.style.maxWidth = '36rem';
+      } catch (e) { /* ignore */ }
+
+      appendTarget.appendChild(toast);
     // initial state already set via class; ensure layout
     toast.style.opacity = '0';
     toast.style.transform = 'translateY(-6px)';
@@ -67,7 +93,7 @@
 
     // enter
     requestAnimationFrame(()=>{
-      toast.classList.add('flash-in');
+      try { toast.classList.add('flash-in'); } catch(e) { console.warn('toast enter failed', e); }
     });
 
     const VISIBLE_FOR = duration || 4000;
@@ -95,9 +121,18 @@
       setTimeout(()=>{ try{ container.removeChild(toast); }catch(e){} }, 200);
     });
 
+    function removeToast(){
+      try { clearTimeout(timeoutId); } catch(e){}
+      try { if (toast.parentNode) toast.parentNode.removeChild(toast); } catch(e){}
+    }
+
     return {
-      close() { clearTimeout(timeoutId); remove(); }
+      close() { removeToast(); }
     };
+    } catch (err) {
+      try { console.error('showToast error', err); } catch(e){}
+      try { alert(message); } catch(e){}
+    }
   };
 
 })();

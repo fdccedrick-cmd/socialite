@@ -1,4 +1,5 @@
 // Simple Promise-based confirmation modal helper
+try { console.log('confirmModal.js loaded'); } catch(e){}
 (function(){
   function getModal() {
     return document.getElementById('global-confirm-modal');
@@ -39,17 +40,62 @@
     const cancelBtn = modal.querySelector('[data-confirm-cancel]');
     msgEl.textContent = message || 'Are you sure?';
 
+    // Save previously focused element to restore focus later
+    const previousFocus = document.activeElement;
+
+    // Try to make background inert (if supported) to prevent focus/AT issues
+    const inerted = [];
+    try {
+      if ('inert' in HTMLElement.prototype) {
+        Array.from(document.body.children).forEach(child => {
+          if (child !== modal) {
+            if (!child.hasAttribute('inert')) {
+              child.setAttribute('inert', '');
+              inerted.push(child);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+
     modal.style.display = 'flex';
     modal.setAttribute('aria-hidden','false');
 
     return new Promise((resolve)=>{
       function cleanup(){
-        modal.style.display = 'none';
-        modal.setAttribute('aria-hidden','true');
-        okBtn.removeEventListener('click', onOk);
-        cancelBtn.removeEventListener('click', onCancel);
-        modal.removeEventListener('click', onBackdrop);
-        document.removeEventListener('keydown', onKey);
+        try {
+          // blur any focused element inside modal to remove focus from descendants
+          try { okBtn.blur(); } catch(e){}
+          try { cancelBtn.blur(); } catch(e){}
+
+          // restore focus to previous element before hiding modal
+          if (previousFocus && typeof previousFocus.focus === 'function') {
+            previousFocus.focus();
+          } else {
+            try { document.body.focus(); } catch(e){}
+          }
+        } catch (e) {
+          // ignore focus restore errors
+        }
+
+        // remove inert from background elements
+        try {
+          inerted.forEach(el => { try { el.removeAttribute('inert'); } catch(e){} });
+        } catch (e) { /* ignore */ }
+
+        // hide modal after moving focus away to avoid aria-hidden on focused element
+        // use a short delay to let focus change take effect in AT/browsers
+        setTimeout(()=>{
+          modal.style.display = 'none';
+          modal.setAttribute('aria-hidden','true');
+
+          okBtn.removeEventListener('click', onOk);
+          cancelBtn.removeEventListener('click', onCancel);
+          modal.removeEventListener('click', onBackdrop);
+          document.removeEventListener('keydown', onKey);
+        }, 50);
       }
 
       function onOk(e){ e.stopPropagation(); cleanup(); resolve(true); }
@@ -63,7 +109,7 @@
       document.addEventListener('keydown', onKey);
 
       // focus the confirm button for quick keyboard confirm
-      okBtn.focus();
+      try { okBtn.focus(); } catch (e) { /* ignore */ }
     });
   }
 

@@ -1,5 +1,6 @@
 (function () {
-  console.debug('profile.js sees window.profileData', window.profileData);
+  console.log('=== profile.js v2.0 LOADED (with crop fix) ===');
+  try { console.log('profile.js loaded - window.profileData:', window.profileData); } catch(e){}
   const el = document.getElementById('profileApp');
   if (!el) return;
   
@@ -42,6 +43,15 @@
         isSubmitting: false,
         
         uploadError: '',
+        // cropper state
+        showCropper: false,
+        cropperInstance: null,
+        cropperImageSrc: null,
+        cropPreviewSrc: null,
+        // Store cropped file separately to avoid reactivity issues
+        croppedFile: null,
+        croppedDataURL: null,
+
         editForm: {
           full_name: '',
           username: '',
@@ -59,6 +69,45 @@
       };
     },
     methods: {
+      ensureCropperLoaded() {
+        if (window.Cropper) return Promise.resolve();
+        const cssHref = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css';
+        const jsSrc = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js';
+
+        // Inject CSS if not present
+        if (![...document.styleSheets].some(s => s.href && s.href.indexOf('cropperjs') !== -1)) {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = cssHref;
+          document.head.appendChild(link);
+        }
+
+        // Inject JS and return promise when loaded
+        return new Promise((resolve, reject) => {
+          if (window.Cropper) return resolve();
+          // avoid adding twice
+          if (document.querySelector('script[data-cropperjs]')) {
+            const checkInterval = setInterval(() => {
+              if (window.Cropper) {
+                clearInterval(checkInterval);
+                resolve();
+              }
+            }, 50);
+            setTimeout(() => reject(new Error('Cropper failed to load')), 5000);
+            return;
+          }
+
+          const script = document.createElement('script');
+          script.src = jsSrc;
+          script.setAttribute('data-cropperjs', '1');
+          script.onload = () => {
+            if (window.Cropper) resolve();
+            else reject(new Error('Cropper loaded but not available'));
+          };
+          script.onerror = () => reject(new Error('Failed to load Cropper.js'));
+          document.head.appendChild(script);
+        });
+      },
       formatDate(dateString) {
         if (!dateString) return '';
         const date = new Date(dateString);
@@ -152,8 +201,11 @@
           new_password: '',
           confirm_password: ''
         };
+        // Reset cropped file references
+        this.croppedFile = null;
+        this.croppedDataURL = null;
         this.errors = {};
-        console.debug('openEditModal - editForm initialized', { full_name: this.editForm.full_name, bio: this.editForm.bio, username: this.editForm.username });
+        console.log('[TRACK] openEditModal - editForm initialized', { full_name: this.editForm.full_name, bio: this.editForm.bio, username: this.editForm.username });
         this.uploadError = '';
         this.showEditModal = true;
         this.$nextTick(() => {
@@ -172,10 +224,14 @@
           new_password: '',
           confirm_password: ''
         };
+        // Clear cropped file references
+        this.croppedFile = null;
+        this.croppedDataURL = null;
         this.errors = {};
         this.uploadError = '';
+        console.log('[TRACK] closeEditModal - form cleared');
       },
-      handleFileChange(event) {
+      async handleFileChange(event) {
         const file = event.target.files[0];
         if (!file) return;
 
@@ -196,21 +252,137 @@
         }
 
         this.uploadError = '';
-        this.editForm.profile_picture_file = file;
 
-        // Preview the image
+        // Preview for cropping
         const reader = new FileReader();
-        reader.onload = (e) => {
-          this.editForm.avatar = e.target.result;
+        reader.onload = async (e) => {
+          this.cropperImageSrc = e.target.result;
+          this.cropPreviewSrc = e.target.result;
+          // ensure Cropper is loaded before attempting to initialize
+          try {
+            await this.ensureCropperLoaded();
+          } catch (err) {
+            console.error('Could not load cropper assets', err);
+            this.uploadError = 'Failed to load image editor. Try again later.';
+            return;
+          }
+
+          this.showCropper = true;
+          this.$nextTick(() => {
+            try {
+              if (this.cropperInstance) {
+                this.cropperInstance.destroy();
+                this.cropperInstance = null;
+              }
+              const image = document.getElementById('cropperImage');
+              if (image && window.Cropper) {
+                this.cropperInstance = new Cropper(image, {
+                  aspectRatio: 1,
+                  viewMode: 1,
+                  background: false,
+                  autoCropArea: 1,
+                  movable: true,
+                  zoomable: true,
+                  rotatable: false,
+                  scalable: false,
+                  ready: () => {
+                    try { this.updateCropPreview(); } catch(e){}
+                  },
+                  crop: () => { this.updateCropPreview(); }
+                });
+              }
+            } catch (e) {
+              console.error('Failed to init cropper', e);
+            }
+          });
         };
         reader.readAsDataURL(file);
+      },
+
+      updateCropPreview() {
+        if (!this.cropperInstance) return;
+        try {
+          const canvas = this.cropperInstance.getCroppedCanvas({ width: 300, height: 300 });
+          this.cropPreviewSrc = canvas.toDataURL('image/png');
+        } catch (e) {
+          // ignore
+        }
+      },
+
+      cropAndUse() {
+        if (!this.cropperInstance) return;
+        console.log('[TRACK] cropAndUse - starting crop process');
+        try {
+          const canvas = this.cropperInstance.getCroppedCanvas({ width: 400, height: 400, imageSmoothingQuality: 'high' });
+          console.log('[TRACK] cropAndUse - canvas created:', canvas.width, 'x', canvas.height);
+          canvas.toBlob((blob) => {
+            console.log('[TRACK] cropAndUse - blob callback fired, blob:', blob);
+            if (!blob) {
+              console.error('[TRACK] cropAndUse - blob is null');
+              this.uploadError = 'Failed to crop image';
+              return;
+            }
+            const file = new File([blob], 'profile_' + Date.now() + '.png', { type: 'image/png' });
+            console.log('[TRACK] cropAndUse - File created:', file.name, file.type, file.size, 'bytes');
+            
+            // Store file in both locations for redundancy
+            this.croppedFile = file;
+            this.editForm.profile_picture_file = file;
+            
+            // Store dataURL as backup
+            const dataURL = canvas.toDataURL('image/png');
+            this.croppedDataURL = dataURL;
+            this.editForm.avatar = dataURL;
+            
+            console.log('[TRACK] cropAndUse - Stored file:', {
+              croppedFile: this.croppedFile ? this.croppedFile.name : 'NULL',
+              editFormFile: this.editForm.profile_picture_file ? this.editForm.profile_picture_file.name : 'NULL',
+              hasDataURL: !!this.croppedDataURL
+            });
+            
+            this.showCropper = false;
+            try { this.cropperInstance.destroy(); } catch(e){}
+            this.cropperInstance = null;
+            this.cropperImageSrc = null;
+            this.cropPreviewSrc = null;
+            // clear file input value to keep behavior consistent
+            const input = document.getElementById('profilePictureInput');
+            if (input) input.value = '';
+            console.log('[TRACK] cropAndUse - completed successfully');
+          }, 'image/png');
+        } catch (e) {
+          console.error('[TRACK] cropAndUse error', e);
+        }
+      },
+
+      cancelCrop() {
+        console.log('[TRACK] cancelCrop - clearing cropper');
+        this.showCropper = false;
+        this.editForm.profile_picture_file = null;
+        this.croppedFile = null;
+        this.croppedDataURL = null;
+        this.cropperImageSrc = null;
+        this.cropPreviewSrc = null;
+        if (this.cropperInstance) {
+          try { this.cropperInstance.destroy(); } catch(e){}
+          this.cropperInstance = null;
+        }
+        const input = document.getElementById('profilePictureInput');
+        if (input) input.value = '';
       },
       async handleSubmit() {
         this.errors = {};
         this.isSubmitting = true;
 
         // Debug: log what is about to be submitted
-        console.debug('Submitting profile update - editForm snapshot', { full_name: this.editForm.full_name, bio: this.editForm.bio, hasFile: !!this.editForm.profile_picture_file });
+        console.log('[TRACK] === handleSubmit START ===');
+        console.log('[TRACK] State check:', {
+          croppedFile: this.croppedFile ? this.croppedFile.name : 'NULL',
+          editFormFile: this.editForm.profile_picture_file ? this.editForm.profile_picture_file.name : 'NULL',
+          hasDataURL: !!this.croppedDataURL,
+          avatarType: typeof this.editForm.avatar,
+          avatarPrefix: this.editForm.avatar ? this.editForm.avatar.substring(0, 20) : 'NULL'
+        });
 
         // Validate form
         if (!this.editForm.full_name || this.editForm.full_name.trim() === '') {
@@ -219,34 +391,86 @@
           return;
         }
 
-        // Validate password fields if any password field is filled
-        
-
         // Create FormData for file upload
         const formData = new FormData();
         formData.append('full_name', this.editForm.full_name);
         formData.append('bio', this.editForm.bio);
-        if (this.editForm.profile_picture_file) {
-          formData.append('profile_picture', this.editForm.profile_picture_file);
+        
+        // Try multiple sources for the file, with priority order
+        let fileToUpload = this.croppedFile || this.editForm.profile_picture_file;
+        
+        if (fileToUpload) {
+          console.log('[TRACK] Appending file to FormData:', fileToUpload.name, fileToUpload.type, fileToUpload.size);
+          formData.append('profile_picture', fileToUpload);
+        } else if (this.croppedDataURL || (this.editForm.avatar && typeof this.editForm.avatar === 'string' && this.editForm.avatar.indexOf('data:') === 0)) {
+          // Fallback: if cropped image is stored as data URL but File not present, convert to blob
+          console.log('[TRACK] Using dataURL fallback');
+          try {
+            const dataUrl = this.croppedDataURL || this.editForm.avatar;
+            const arr = dataUrl.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+              u8arr[n] = bstr.charCodeAt(n);
+            }
+            const blob = new Blob([u8arr], { type: mime });
+            const file = new File([blob], 'profile_' + Date.now() + '.png', { type: mime });
+            formData.append('profile_picture', file);
+            console.log('[TRACK] Appended fallback blob as profile_picture:', file.name, file.type, file.size);
+          } catch (e) {
+            console.error('[TRACK] Failed to convert dataURL to blob fallback', e);
+          }
+        } else {
+          console.log('[TRACK] No profile picture to upload');
         }
         
         
 
         try {
+          const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+          const meta = document.querySelector('meta[name="csrf-token"]');
+          if (meta && meta.getAttribute('content')) headers['X-CSRF-Token'] = meta.getAttribute('content');
+
+          // Debug: log formData contents
+          try {
+            console.log('[TRACK] Submitting FormData entries:');
+            for (const entry of formData.entries()) {
+              const [k, v] = entry;
+              if (v instanceof File) {
+                console.log('[TRACK] FormData entry file:', k, v.name, v.type, v.size);
+              } else {
+                console.log('[TRACK] FormData entry:', k, v);
+              }
+            }
+          } catch (e) { console.error('[TRACK] FormData debug error', e); }
+
           const response = await fetch('/profile/update', {
             method: 'POST',
-            body: formData
+            body: formData,
+            credentials: 'same-origin',
+            headers
           });
-          
-          const data = await response.json();
-          console.debug('Profile update response from backend', data);
+
+          let data = {};
+          try {
+            data = await response.json();
+          } catch (e) {
+            const text = await response.text().catch(() => '');
+            console.error('[TRACK] Profile update: failed to parse JSON response', e, text);
+          }
+          console.log('[TRACK] Profile update response from backend:', data);
+          console.log('[TRACK] Profile update - reached_controller:', data.reached_controller === true);
           
           if (data.success) {
+            console.log('[TRACK] Profile update SUCCESS');
             // Update user data with response
             this.user.full_name = data.user.full_name;
             this.user.username = data.user.username;
             this.user.bio = data.user.bio;
             if (data.user.profile_photo_path) {
+              console.log('[TRACK] Updating avatar to:', data.user.profile_photo_path);
               this.user.avatar = data.user.profile_photo_path;
             }
             
@@ -257,13 +481,14 @@
             window.location.reload();
           } else {
             // Handle validation errors - reload to show Flash error message
+            console.log('[TRACK] Profile update FAILED:', data.errors || 'unknown error');
             if (data.errors) {
               this.errors = data.errors;
             }
             window.location.reload();
           }
-        } catch (error) {
-          console.error('Error updating profile:', error);
+          } catch (error) {
+          console.error('[TRACK] Error updating profile:', error);
           // Redirect with error flag
           window.location.href = window.location.pathname + '?error=network';
         } finally {
@@ -407,12 +632,12 @@
             }
           } else {
             console.error('Error posting comment:', data.message);
-            if (typeof window.showToast === 'function') window.showToast(data.message || 'Failed to post comment. Please try again.', 'error');
+            if (typeof window.showFlash === 'function') window.showFlash(data.message || 'Failed to post comment. Please try again.', 'error');
             else alert(data.message || 'Failed to post comment. Please try again.');
           }
         } catch (error) {
           console.error('Error submitting comment:', error);
-          if (typeof window.showToast === 'function') window.showToast('Failed to post comment. Please try again.', 'error');
+          if (typeof window.showFlash === 'function') window.showFlash('Failed to post comment. Please try again.', 'error');
           else alert('Failed to post comment. Please try again.');
         }
       },
@@ -452,13 +677,13 @@
         
         const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
         if (!validTypes.includes(file.type)) {
-          if (typeof window.showToast === 'function') window.showToast('Please upload a valid image file (JPG, PNG, or GIF)', 'error');
+          if (typeof window.showFlash === 'function') window.showFlash('Please upload a valid image file (JPG, PNG, or GIF)', 'error');
           else alert('Please upload a valid image file (JPG, PNG, or GIF)');
           return;
         }
         
         if (file.size > 10 * 1024 * 1024) {
-          if (typeof window.showToast === 'function') window.showToast('Image must be less than 10MB', 'error');
+          if (typeof window.showFlash === 'function') window.showFlash('Image must be less than 10MB', 'error');
           else alert('Image must be less than 10MB');
           return;
         }
@@ -577,7 +802,7 @@
         // Validate file count
         const totalImages = post.editImages.length + post.newEditImages.length + files.length;
         if (totalImages > 10) {
-          if (typeof window.showToast === 'function') window.showToast('Maximum 10 images per post', 'error');
+          if (typeof window.showFlash === 'function') window.showFlash('Maximum 10 images per post', 'error');
           else alert('Maximum 10 images per post');
           event.target.value = '';
           return;
@@ -588,14 +813,14 @@
           // Validate file type
           const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
           if (!validTypes.includes(file.type)) {
-            if (typeof window.showToast === 'function') window.showToast('Please upload valid image files (JPG, PNG, or GIF)', 'error');
+            if (typeof window.showFlash === 'function') window.showFlash('Please upload valid image files (JPG, PNG, or GIF)', 'error');
             else alert('Please upload valid image files (JPG, PNG, or GIF)');
             return;
           }
           
           // Validate file size
           if (file.size > 10 * 1024 * 1024) {
-            if (typeof window.showToast === 'function') window.showToast('Each image must be less than 10MB', 'error');
+            if (typeof window.showFlash === 'function') window.showFlash('Each image must be less than 10MB', 'error');
             else alert('Each image must be less than 10MB');
             return;
           }
@@ -626,7 +851,7 @@
         const hasImages = (post.editImages.length + post.newEditImages.length) > 0;
         
         if (!hasContent && !hasImages) {
-          if (typeof window.showToast === 'function') window.showToast('Post must have either text or images', 'error');
+          if (typeof window.showFlash === 'function') window.showFlash('Post must have either text or images', 'error');
           else alert('Post must have either text or images');
           return;
         }
@@ -678,15 +903,15 @@
               if (window.lucide) lucide.createIcons();
             });
             
-            if (typeof window.showToast === 'function') window.showToast('Post updated successfully!', 'success');
+            if (typeof window.showFlash === 'function') window.showFlash('Post updated successfully!', 'success');
             else alert('Post updated successfully!');
           } else {
-            if (typeof window.showToast === 'function') window.showToast(data.message || 'Failed to update post. Please try again.', 'error');
+            if (typeof window.showFlash === 'function') window.showFlash(data.message || 'Failed to update post. Please try again.', 'error');
             else alert(data.message || 'Failed to update post. Please try again.');
           }
         } catch (error) {
           console.error('Error updating post:', error);
-            if (typeof window.showToast === 'function') window.showToast('Failed to update post. Please try again.', 'error');
+            if (typeof window.showFlash === 'function') window.showFlash('Failed to update post. Please try again.', 'error');
             else alert('Failed to update post. Please try again.');
         }
       },
@@ -721,7 +946,10 @@
             this.user.stats.posts = this.posts.length;
             
             // Show success message
-            if (typeof window.showToast === 'function') window.showToast('Post deleted successfully!', 'success');
+            if (typeof window.showToast === 'function') {
+              console.debug('profile.js: calling showToast for deletion');
+              window.showFlash('Post deleted successfully!', 'success');
+            }
             else alert('Post deleted successfully!');
           } else {
             if (typeof window.showToast === 'function') window.showToast('Failed to delete post. Please try again.', 'error');

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Socialite - Social Media App</title>
+    <?php // Expose CSRF token for JS to read if middleware provided one ?>
+    <meta name="csrf-token" content="<?= h($this->request->getAttribute('csrfToken') ?? '') ?>">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
@@ -11,6 +13,7 @@
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
     <script src="/js/confirmModal.js?v=<?= time() ?>"></script>
     <script src="/js/toast.js?v=<?= time() ?>"></script>
+    <script src="/js/flashClient.js?v=<?= time() ?>"></script>
     
     <style>
         body {
