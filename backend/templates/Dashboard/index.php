@@ -76,23 +76,30 @@
         <div class="flex-1 min-w-0 min-h-0 flex items-center justify-center bg-black relative">
           <template v-if="postDetailView.post.post_images && postDetailView.post.post_images.length > 0">
             <img
+              :key="'img-' + postDetailView.imageIndex"
               :src="postDetailView.post.post_images[postDetailView.imageIndex].image_path"
               :alt="'Image ' + (postDetailView.imageIndex + 1)"
               class="max-w-full max-h-full object-contain"
             />
             <button
-              v-if="postDetailView.imageIndex > 0"
-              @click="postDetailPrevImage"
-              class="absolute left-2 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-2"
+              v-show="postDetailView.post.post_images.length > 1"
+              :key="'prev-' + postDetailView.imageIndex"
+              @click.stop="postDetailPrevImage"
+              class="absolute left-2 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-2 transition-colors z-10"
             >
-              <i data-lucide="chevron-left" class="w-5 h-5"></i>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
             </button>
             <button
-              v-if="postDetailView.imageIndex < postDetailView.post.post_images.length - 1"
-              @click="postDetailNextImage"
-              class="absolute right-2 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-2"
+              v-show="postDetailView.post.post_images.length > 1"
+              :key="'next-' + postDetailView.imageIndex"
+              @click.stop="postDetailNextImage"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-2 transition-colors z-10"
             >
-              <i data-lucide="chevron-right" class="w-5 h-5"></i>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
             </button>
             <div class="absolute bottom-2 left-1/2 -translate-x-1/2 text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded-full">
               {{ postDetailView.imageIndex + 1 }} / {{ postDetailView.post.post_images.length }}

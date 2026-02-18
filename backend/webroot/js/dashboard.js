@@ -332,38 +332,55 @@ const app = createApp({
         },
         postDetailPrevImage() {
             if (!this.postDetailView.post || !this.postDetailView.post.post_images?.length) return;
-            if (this.postDetailView.imageIndex > 0) {
+            const imgs = this.postDetailView.post.post_images;
+            const totalImages = imgs.length;
+            console.log('postDetailPrevImage - BEFORE: imageIndex=', this.postDetailView.imageIndex, 'totalImages=', totalImages);
+            
+            // Loop navigation: go to last image if at first, otherwise go to previous
+            if (this.postDetailView.imageIndex === 0) {
+                this.postDetailView.imageIndex = totalImages - 1;
+            } else {
                 this.postDetailView.imageIndex--;
-                const imgs = this.postDetailView.post.post_images;
-                const img = imgs[this.postDetailView.imageIndex];
-                console.log('postDetailPrevImage - switching to index:', this.postDetailView.imageIndex, 'img:', img);
-                if (imgs.length >= 2 && img && img.id) {
-                    this.postDetailView.currentImageId = img.id;
-                    console.log('postDetailPrevImage - set currentImageId to:', img.id);
-                    this.loadImageComments(img.id);
-                    this.loadImageLikeStatus(img.id);
-                } else {
-                    this.postDetailView.currentImageId = null;
-                    console.log('postDetailPrevImage - cleared currentImageId');
-                }
             }
+            
+            console.log('postDetailPrevImage - AFTER: imageIndex=', this.postDetailView.imageIndex);
+            const img = imgs[this.postDetailView.imageIndex];
+            
+            if (totalImages >= 2 && img && img.id) {
+                this.postDetailView.currentImageId = img.id;
+                this.loadImageComments(img.id);
+                this.loadImageLikeStatus(img.id);
+            } else {
+                this.postDetailView.currentImageId = null;
+            }
+            
+            this.$forceUpdate();
         },
         postDetailNextImage() {
             if (!this.postDetailView.post || !this.postDetailView.post.post_images?.length) return;
-            if (this.postDetailView.imageIndex < this.postDetailView.post.post_images.length - 1) {
+            const imgs = this.postDetailView.post.post_images;
+            const totalImages = imgs.length;
+            console.log('postDetailNextImage - BEFORE: imageIndex=', this.postDetailView.imageIndex, 'totalImages=', totalImages);
+            
+            // Loop navigation: go to first image if at last, otherwise go to next
+            if (this.postDetailView.imageIndex === totalImages - 1) {
+                this.postDetailView.imageIndex = 0;
+            } else {
                 this.postDetailView.imageIndex++;
-                const imgs = this.postDetailView.post.post_images;
-                const img = imgs[this.postDetailView.imageIndex];
-                console.log('postDetailNextImage - switching to index:', this.postDetailView.imageIndex, 'img:', img);
-                if (imgs.length >= 2 && img && img.id) {
-                    this.postDetailView.currentImageId = img.id;
-                    console.log('postDetailNextImage - set currentImageId to:', img.id);
-                    this.loadImageComments(img.id);
-                    this.loadImageLikeStatus(img.id);
-                } else {
-                    this.postDetailView.currentImageId = null;
-                }
             }
+            
+            console.log('postDetailNextImage - AFTER: imageIndex=', this.postDetailView.imageIndex);
+            const img = imgs[this.postDetailView.imageIndex];
+            
+            if (totalImages >= 2 && img && img.id) {
+                this.postDetailView.currentImageId = img.id;
+                this.loadImageComments(img.id);
+                this.loadImageLikeStatus(img.id);
+            } else {
+                this.postDetailView.currentImageId = null;
+            }
+            
+            this.$forceUpdate();
         },
         noop() {},
         formatDate(dateString) {

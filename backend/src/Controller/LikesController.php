@@ -70,14 +70,19 @@ class LikesController extends AppController
                 ->where([
                     'user_id' => $userId,
                     'target_type' => 'Post',
-                    'target_id' => $id
+                    'target_id' => $id,
+                    'post_image_id IS' => null
                 ])
                 ->first();
 
             if ($existingLike) {
                 if ($this->Likes->delete($existingLike)) {
                     $likeCount = $this->Likes->find()
-                        ->where(['target_type' => 'Post', 'target_id' => $id])
+                        ->where([
+                            'target_type' => 'Post',
+                            'target_id' => $id,
+                            'post_image_id IS' => null
+                        ])
                         ->count();
 
                     return $this->response
@@ -100,12 +105,17 @@ class LikesController extends AppController
                 $like = $this->Likes->newEntity([
                     'user_id' => $userId,
                     'target_type' => 'Post',
-                    'target_id' => $id
+                    'target_id' => $id,
+                    'post_image_id' => null
                 ]);
 
                 if ($this->Likes->save($like)) {
                     $likeCount = $this->Likes->find()
-                        ->where(['target_type' => 'Post', 'target_id' => $id])
+                        ->where([
+                            'target_type' => 'Post',
+                            'target_id' => $id,
+                            'post_image_id IS' => null
+                        ])
                         ->count();
 
                     $response = $this->response
@@ -322,7 +332,11 @@ class LikesController extends AppController
         $this->request->allowMethod(['get']);
         
         $likes = $this->Likes->find()
-            ->where(['target_type' => 'Post', 'target_id' => $id])
+            ->where([
+                'target_type' => 'Post',
+                'target_id' => $id,
+                'post_image_id IS' => null
+            ])
             ->contain(['Users' => ['fields' => ['id', 'username', 'full_name', 'profile_photo_path']]])
             ->all();
 
@@ -410,19 +424,47 @@ class LikesController extends AppController
                 ->withStringBody(json_encode(['success' => false, 'message' => 'User ID not found']));
         }
         $id = (int)$id;
+        
+        error_log("togglePostImage - image_id: $id, user_id: $userId");
+        
         try {
+            // First, get the post_id from post_images table
+            $postImagesTable = $this->fetchTable('PostImages');
+            $postImage = $postImagesTable->find()
+                ->select(['post_id'])
+                ->where(['id' => $id])
+                ->first();
+                
+            if (!$postImage) {
+                error_log("togglePostImage - image not found: $id");
+                return $this->response
+                    ->withType('application/json')
+                    ->withStatus(404)
+                    ->withStringBody(json_encode(['success' => false, 'message' => 'Post image not found']));
+            }
+            
+            error_log("togglePostImage - found post_id: " . $postImage->post_id);
+            
             $existingLike = $this->Likes->find()
                 ->where([
                     'user_id' => $userId,
-                    'target_type' => 'PostImage',
-                    'target_id' => $id
+                    'target_type' => 'Post',
+                    'target_id' => $postImage->post_id,
+                    'post_image_id' => $id
                 ])
                 ->first();
+                
             if ($existingLike) {
+                error_log("togglePostImage - deleting existing like");
                 $this->Likes->delete($existingLike);
                 $likeCount = $this->Likes->find()
-                    ->where(['target_type' => 'PostImage', 'target_id' => $id])
+                    ->where([
+                        'target_type' => 'Post',
+                        'target_id' => $postImage->post_id,
+                        'post_image_id' => $id
+                    ])
                     ->count();
+                error_log("togglePostImage - deleted, new count: $likeCount");
                 return $this->response
                     ->withType('application/json')
                     ->withStringBody(json_encode([
@@ -431,15 +473,26 @@ class LikesController extends AppController
                         'likeCount' => $likeCount
                     ]));
             }
+            
+            error_log("togglePostImage - creating new like");
             $like = $this->Likes->newEntity([
                 'user_id' => $userId,
-                'target_type' => 'PostImage',
-                'target_id' => $id
+                'target_type' => 'Post',
+                'target_id' => $postImage->post_id,
+                'post_image_id' => $id
             ]);
+            
+            error_log("togglePostImage - like entity: " . json_encode($like->toArray()));
+            
             if ($this->Likes->save($like)) {
                 $likeCount = $this->Likes->find()
-                    ->where(['target_type' => 'PostImage', 'target_id' => $id])
+                    ->where([
+                        'target_type' => 'Post',
+                        'target_id' => $postImage->post_id,
+                        'post_image_id' => $id
+                    ])
                     ->count();
+                error_log("togglePostImage - saved, new count: $likeCount");
                 return $this->response
                     ->withType('application/json')
                     ->withStringBody(json_encode([
@@ -448,11 +501,19 @@ class LikesController extends AppController
                         'likeCount' => $likeCount
                     ]));
             }
+            
+            $errors = $like->getErrors();
+            error_log("togglePostImage - save failed: " . json_encode($errors));
             return $this->response
                 ->withType('application/json')
                 ->withStatus(400)
-                ->withStringBody(json_encode(['success' => false, 'message' => 'Failed to save like']));
+                ->withStringBody(json_encode([
+                    'success' => false, 
+                    'message' => 'Failed to save like',
+                    'errors' => $errors
+                ]));
         } catch (\Exception $e) {
+            error_log("togglePostImage - exception: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             return $this->response
                 ->withType('application/json')
                 ->withStatus(500)
@@ -473,8 +534,32 @@ class LikesController extends AppController
     {
         $this->request->allowMethod(['get']);
         $id = (int)$id;
+        
+        // Get the post_id from post_images table
+        $postImagesTable = $this->fetchTable('PostImages');
+        $postImage = $postImagesTable->find()
+            ->select(['post_id'])
+            ->where(['id' => $id])
+            ->first();
+            
+        if (!$postImage) {
+            return $this->response
+                ->withType('application/json')
+                ->withStatus(404)
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'message' => 'Post image not found',
+                    'count' => 0,
+                    'is_liked' => false
+                ]));
+        }
+        
         $likeCount = $this->Likes->find()
-            ->where(['target_type' => 'PostImage', 'target_id' => $id])
+            ->where([
+                'target_type' => 'Post',
+                'target_id' => $postImage->post_id,
+                'post_image_id' => $id
+            ])
             ->count();
         $isLiked = false;
         $identity = $this->Authentication->getIdentity();
@@ -483,8 +568,9 @@ class LikesController extends AppController
             if ($userId) {
                 $isLiked = $this->Likes->find()
                     ->where([
-                        'target_type' => 'PostImage',
-                        'target_id' => $id,
+                        'target_type' => 'Post',
+                        'target_id' => $postImage->post_id,
+                        'post_image_id' => $id,
                         'user_id' => $userId
                     ])
                     ->count() > 0;

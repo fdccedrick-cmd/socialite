@@ -48,6 +48,12 @@ class LikesTable extends Table
             'foreignKey' => 'user_id',
             'joinType' => 'INNER',
         ]);
+        
+        // Optional: belongs to post image (for likes on individual images in multi-image posts)
+        $this->belongsTo('PostImages', [
+            'foreignKey' => 'post_image_id',
+            'joinType' => 'LEFT',
+        ]);
     }
 
     /**
@@ -75,6 +81,10 @@ class LikesTable extends Table
             ->requirePresence('target_id', 'create')
             ->notEmptyString('target_id');
 
+        $validator
+            ->integer('post_image_id')
+            ->allowEmptyString('post_image_id');
+
         return $validator;
     }
 
@@ -101,11 +111,18 @@ class LikesTable extends Table
      */
     public function getLikeCount(string $targetType, int $targetId): int
     {
+        $conditions = [
+            'target_type' => $targetType,
+            'target_id' => $targetId
+        ];
+        
+        // For posts, only count general post likes (not image-specific)
+        if ($targetType === 'Post') {
+            $conditions['post_image_id IS'] = null;
+        }
+        
         return $this->find()
-            ->where([
-                'target_type' => $targetType,
-                'target_id' => $targetId
-            ])
+            ->where($conditions)
             ->count();
     }
 
@@ -123,12 +140,19 @@ class LikesTable extends Table
             return false;
         }
 
+        $conditions = [
+            'target_type' => $targetType,
+            'target_id' => $targetId,
+            'user_id' => $userId
+        ];
+        
+        // For posts, only check general post likes (not image-specific)
+        if ($targetType === 'Post') {
+            $conditions['post_image_id IS'] = null;
+        }
+
         return $this->find()
-            ->where([
-                'target_type' => $targetType,
-                'target_id' => $targetId,
-                'user_id' => $userId
-            ])
+            ->where($conditions)
             ->count() > 0;
     }
 }

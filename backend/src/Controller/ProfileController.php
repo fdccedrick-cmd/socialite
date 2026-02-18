@@ -76,7 +76,11 @@ class ProfileController extends AppController
         $postIds = array_map(function($p) { return $p->id; }, $posts);
         if (!empty($postIds)) {
             $userLikeCount = (int)$likesTable->find()
-                ->where(["LOWER(target_type) =" => 'post', 'target_id IN' => $postIds])
+                ->where([
+                    "LOWER(target_type) =" => 'post',
+                    'target_id IN' => $postIds,
+                    'post_image_id IS' => null
+                ])
                 ->count();
         } else {
             $userLikeCount = 0;
@@ -101,7 +105,11 @@ class ProfileController extends AppController
             
            
             $postData['like_count'] = (int)$likesTable->find()
-                ->where(["LOWER(target_type) =" => 'post', 'target_id' => $post->id])
+                ->where([
+                    "LOWER(target_type) =" => 'post',
+                    'target_id' => $post->id,
+                    'post_image_id IS' => null
+                ])
                 ->count();
             
             
@@ -109,7 +117,8 @@ class ProfileController extends AppController
                 ->where([
                     "LOWER(target_type) =" => 'post',
                     'target_id' => $post->id,
-                    'user_id' => $currentUserId
+                    'user_id' => $currentUserId,
+                    'post_image_id IS' => null
                 ])
                 ->count() > 0;
             
