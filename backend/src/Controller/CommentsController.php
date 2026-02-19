@@ -45,7 +45,7 @@ class CommentsController extends AppController
             $data['user_id'] = $user->id;
             $data['created_at'] = new \DateTime();
 
-            // Debug: Log incoming data
+            
             error_log('Comment add - Raw POST data: ' . json_encode($this->request->getData()));
 
             // Optional: comment on a specific post image (for posts with 2+ images)
@@ -77,13 +77,11 @@ class CommentsController extends AppController
             
             $comment = $this->Comments->patchEntity($comment, $data);
             
-            // Explicitly set post_image_id if it exists (workaround for CakePHP stripping it)
             if (isset($data['post_image_id']) && $data['post_image_id'] !== null) {
                 $comment->set('post_image_id', $data['post_image_id']);
                 $comment->setDirty('post_image_id', true);
             }
             
-            // Debug: Log entity state before save
             error_log('Comment add - Data array being patched: ' . json_encode($data));
             error_log('Comment add - Entity after patch: ' . json_encode($comment->toArray()));
             error_log('Comment add - Entity post_image_id specifically: ' . var_export($comment->post_image_id, true));
@@ -118,14 +116,13 @@ class CommentsController extends AppController
                         $insertedId = (int)$connection->getDriver()->lastInsertId();
                         error_log('Comment add - INSERT succeeded with ID: ' . $insertedId);
                         
-                        // Set all fields on the entity so it can be used later
                         $comment->id = $insertedId;
                         $comment->post_id = (int)$data['post_id'];
                         $comment->user_id = (int)$data['user_id'];
                         $comment->content_text = $data['content_text'] ?? null;
                         $comment->content_image_path = $data['content_image_path'] ?? null;
                         $comment->post_image_id = (int)$data['post_image_id'];
-                        $comment->created_at = $data['created_at']; // Already a DateTime object
+                        $comment->created_at = $data['created_at'];
                         
                         $saveResult = $comment;
                     } else {
@@ -185,7 +182,7 @@ class CommentsController extends AppController
                 if ($this->request->is('ajax') || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
                     error_log('Comment add - Preparing AJAX response');
                     
-                    // Build response from the entity data directly
+                    
                     $commentArray = [
                         'id' => $comment->id,
                         'post_id' => $comment->post_id,
@@ -415,7 +412,7 @@ class CommentsController extends AppController
             throw new \Cake\Datasource\Exception\RecordNotFoundException('Comment not found');
         }
 
-        // Redirect to the post view with an anchor to the comment
+       
         $url = '/posts/' . $comment->post_id . '#comment-' . $comment->id;
         return $this->redirect($url);
     }

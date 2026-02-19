@@ -65,12 +65,10 @@ class FriendshipsController extends AppController
             return $this->redirect(['controller' => 'Users', 'action' => 'login']);
         }
 
-        // Get all friends
         $friendships = $this->Friendships->getFriends($userId);
         
         $friends = [];
         foreach ($friendships as $friendship) {
-            // Determine which user is the friend
             if ($friendship->user_id == $userId) {
                 $friend = $friendship->friend;
                 $friendId = $friendship->friend_id;
@@ -79,7 +77,6 @@ class FriendshipsController extends AppController
                 $friendId = $friendship->user_id;
             }
 
-            // Get mutual friends count
             $mutualCount = $this->Friendships->getMutualFriendsCount($userId, $friendId);
 
             $friends[] = [
@@ -91,7 +88,7 @@ class FriendshipsController extends AppController
             ];
         }
 
-        // Get search query if provided
+     
         $searchQuery = $this->request->getQuery('search');
         if ($searchQuery) {
             $searchQuery = trim($searchQuery);
@@ -116,14 +113,12 @@ class FriendshipsController extends AppController
             return $this->redirect(['controller' => 'Users', 'action' => 'login']);
         }
 
-        // Get pending requests (requests received)
         $pendingRequests = $this->Friendships->getPendingRequests($userId);
         
         $requests = [];
         foreach ($pendingRequests as $request) {
             $sender = $request->user;
             
-            // Get mutual friends count
             $mutualCount = $this->Friendships->getMutualFriendsCount($userId, $request->user_id);
 
             $requests[] = [
@@ -152,7 +147,6 @@ class FriendshipsController extends AppController
             return $this->redirect(['controller' => 'Users', 'action' => 'login']);
         }
 
-        // Get all friend IDs (accepted friendships)
         $friendIds = [];
         $friendships = $this->Friendships->find()
             ->select(['user_id', 'friend_id'])
@@ -173,7 +167,6 @@ class FriendshipsController extends AppController
             }
         }
 
-        // Get all pending request IDs (both sent and received)
         $pendingIds = [];
         $pendingRequests = $this->Friendships->find()
             ->select(['user_id', 'friend_id'])
@@ -194,7 +187,6 @@ class FriendshipsController extends AppController
             }
         }
 
-        // Get users who are not friends and don't have pending requests
         $excludeIds = array_merge($friendIds, $pendingIds, [$userId]);
         
         $suggestions = $this->Users->find()
@@ -203,10 +195,10 @@ class FriendshipsController extends AppController
 
         $suggestionList = [];
         foreach ($suggestions as $user) {
-            // Get mutual friends count
+           
             $mutualCount = $this->Friendships->getMutualFriendsCount($userId, $user->id);
 
-            // Only include users with mutual friends
+           
             if ($mutualCount > 0) {
                 $suggestionList[] = [
                     'id' => $user->id,
@@ -218,7 +210,6 @@ class FriendshipsController extends AppController
             }
         }
 
-        // Sort by mutual friends count (highest first)
         usort($suggestionList, function($a, $b) {
             return $b['mutual_friends_count'] - $a['mutual_friends_count'];
         });
@@ -252,7 +243,7 @@ class FriendshipsController extends AppController
                 ->withStringBody(json_encode(['success' => false, 'message' => 'Friend ID is required']));
         }
 
-        // Check if friendship already exists
+      
         $existingFriendship = $this->Friendships->getFriendshipStatus($userId, $friendId);
         
         if ($existingFriendship) {
@@ -266,7 +257,6 @@ class FriendshipsController extends AppController
                 ->withStringBody(json_encode(['success' => false, 'message' => $message]));
         }
 
-        // Create new friendship
         $friendship = $this->Friendships->newEntity([
             'user_id' => $userId,
             'friend_id' => $friendId,
@@ -274,10 +264,8 @@ class FriendshipsController extends AppController
         ]);
 
         if ($this->Friendships->save($friendship)) {
-            // Create notification
             NotificationHelper::createFriendRequestNotification($friendId, $userId);
 
-            // Send WebSocket notification
             try {
                 $ws = WebSocketClient::getInstance();
                 $ws->broadcastFriendshipChange('added', $userId, $friendId, $friendship->id);
@@ -332,10 +320,8 @@ class FriendshipsController extends AppController
                 ->withStringBody(json_encode(['success' => false, 'message' => 'Friendship ID is required']));
         }
 
-        // Get the friendship
         $friendship = $this->Friendships->get($friendshipId);
         
-        // Make sure the current user is the recipient
         if ($friendship->friend_id != $userId) {
             return $this->response
                 ->withType('application/json')
@@ -343,14 +329,11 @@ class FriendshipsController extends AppController
                 ->withStringBody(json_encode(['success' => false, 'message' => 'You cannot accept this request']));
         }
 
-        // Update status to accepted
         $friendship->status = 'accepted';
         
         if ($this->Friendships->save($friendship)) {
-            // Create notification
             NotificationHelper::createFriendAcceptNotification($friendship->user_id, $userId);
 
-            // Send WebSocket notification
             try {
                 $ws = WebSocketClient::getInstance();
                 $ws->broadcastFriendshipChange('accepted', $userId, $friendship->user_id, $friendship->id);
@@ -403,10 +386,9 @@ class FriendshipsController extends AppController
                 ->withStringBody(json_encode(['success' => false, 'message' => 'Friendship ID is required']));
         }
 
-        // Get the friendship
         $friendship = $this->Friendships->get($friendshipId);
         
-        // Make sure the current user is the recipient
+
         if ($friendship->friend_id != $userId) {
             return $this->response
                 ->withType('application/json')
@@ -414,9 +396,7 @@ class FriendshipsController extends AppController
                 ->withStringBody(json_encode(['success' => false, 'message' => 'You cannot reject this request']));
         }
 
-        // Update status to rejected (or delete it)
         if ($this->Friendships->delete($friendship)) {
-            // Send WebSocket notification
             try {
                 $ws = WebSocketClient::getInstance();
                 $ws->notifyFriendRequestRejected($friendship->user_id, $userId);
@@ -466,9 +446,6 @@ class FriendshipsController extends AppController
                 ->withStatus(400)
                 ->withStringBody(json_encode(['success' => false, 'message' => 'Friend ID is required']));
         }
-
-        // Find the friendship - can be accepted (unfriend) or pending (cancel request)
-        // For pending requests, only allow the sender to cancel
         $friendship = $this->Friendships->find()
             ->where([
                 'OR' => [
@@ -479,7 +456,7 @@ class FriendshipsController extends AppController
                     [
                         'user_id' => $friendId,
                         'friend_id' => $userId,
-                        'status' => 'accepted' // Allow unfriending from either side
+                        'status' => 'accepted' 
                     ],
                 ],
             ])
