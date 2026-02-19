@@ -20,7 +20,7 @@ $suggestions = $suggestions ?? [];
         class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
       >
         <img 
-          :src="friend.profile_photo_path || '/img/default-avatar.png'" 
+          :src="friend.profile_photo_path || '/img/default/default_avatar.jpg'" 
           :alt="friend.full_name" 
           class="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-600 flex-shrink-0"
         />
@@ -37,9 +37,9 @@ $suggestions = $suggestions ?? [];
     </div>
   </div>
   
-  <!-- Suggested for You Section -->
+  <!-- People You May Know Section -->
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 xl:p-4">
-    <h3 class="font-semibold text-gray-900 dark:text-white text-sm mb-3">Suggested for you</h3>
+    <h3 class="font-semibold text-gray-900 dark:text-white text-sm mb-3">People You May Know</h3>
     
     <div v-if="suggestions.length > 0" class="space-y-2">
       <div 
@@ -49,7 +49,7 @@ $suggestions = $suggestions ?? [];
       >
         <a :href="'/profile/' + suggestion.id">
           <img 
-            :src="suggestion.profile_photo_path || '/img/default-avatar.png'" 
+            :src="suggestion.profile_photo_path || '/img/default/default_avatar.jpg'" 
             :alt="suggestion.full_name" 
             class="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-600 flex-shrink-0"
           />
@@ -70,11 +70,19 @@ $suggestions = $suggestions ?? [];
           <span>{{ suggestion.requestSent ? 'Sent' : 'Add' }}</span>
         </button>
       </div>
+      
+      <!-- See All Button -->
+      <a 
+        href="/friendships/suggestions" 
+        class="block text-center py-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors mt-2"
+      >
+        See All
+      </a>
     </div>
     
     <div v-else class="text-center py-4">
-      <p class="text-gray-500 dark:text-gray-400 text-xs">No suggestions with mutual friends</p>
-      <a href="/friendships/suggestions" class="text-blue-600 dark:text-blue-400 text-xs hover:underline mt-1 inline-block">View all suggestions</a>
+      <p class="text-gray-500 dark:text-gray-400 text-xs">No suggestions available</p>
+      <a href="/friendships/suggestions" class="text-blue-600 dark:text-blue-400 text-xs hover:underline mt-1 inline-block">View all people</a>
     </div>
   </div>
 </div>

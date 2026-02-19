@@ -1521,6 +1521,108 @@
           console.error('Error toggling comment like:', error);
         }
       },
+      async deleteComment(postId, commentId) {
+        const confirmed = typeof window.showConfirmModal === 'function'
+            ? await window.showConfirmModal('Are you sure you want to delete this comment?')
+            : confirm('Delete this comment?');
+        if (!confirmed) return;
+        
+        try {
+          const response = await fetch(`/comments/delete/${commentId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+          });
+
+          if (!response.ok) throw new Error('Failed to delete comment');
+
+          const data = await response.json();
+          // On success, remove comment from local state
+          const post = this.posts.find(p => p.id === postId);
+          if (post) {
+            const idx = post.comments.findIndex(c => c.id === commentId);
+            if (idx !== -1) {
+              post.comments.splice(idx, 1);
+              post.comment_count = Math.max(0, (post.comment_count || 1) - 1);
+            }
+          }
+        } catch (error) {
+          console.error('Error deleting comment:', error);
+          const errorMsg = 'Failed to delete comment.';
+          if (typeof window.showFlash === 'function') {
+            window.showFlash(errorMsg, 'error');
+          } else {
+            alert(errorMsg);
+          }
+        }
+      },
+      editComment(postId, commentId) {
+        const post = this.posts.find(p => p.id === postId);
+        if (!post) return;
+        
+        const comment = post.comments.find(c => c.id === commentId);
+        if (!comment) return;
+        
+        // Set editing state
+        comment.isEditing = true;
+        comment.editContent = comment.content_text || '';
+        this.$forceUpdate();
+      },
+      async saveCommentEdit(postId, commentId) {
+        const post = this.posts.find(p => p.id === postId);
+        if (!post) return;
+        
+        const comment = post.comments.find(c => c.id === commentId);
+        if (!comment || !comment.isEditing) return;
+        
+        const newContent = (comment.editContent || '').trim();
+        if (!newContent) {
+          alert('Comment cannot be empty.');
+          return;
+        }
+        
+        try {
+          const response = await fetch(`/comments/edit/${commentId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              content_text: newContent
+            })
+          });
+
+          if (!response.ok) throw new Error('Failed to update comment');
+
+          const data = await response.json();
+          
+          // Update comment in local state
+          comment.content_text = newContent;
+          comment.isEditing = false;
+          delete comment.editContent;
+          
+          this.$forceUpdate();
+        } catch (error) {
+          console.error('Error updating comment:', error);
+          alert('Failed to update comment.');
+        }
+      },
+      cancelCommentEdit(postId, commentId) {
+        const post = this.posts.find(p => p.id === postId);
+        if (!post) return;
+        
+        const comment = post.comments.find(c => c.id === commentId);
+        if (!comment) return;
+        
+        comment.isEditing = false;
+        delete comment.editContent;
+        this.$forceUpdate();
+      },
       handleCommentImage(event, postId) {
         const file = event.target.files[0];
         if (!file) return;

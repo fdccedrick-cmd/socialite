@@ -358,24 +358,30 @@ class ProfileController extends AppController
                     try {
                         if (!is_dir(dirname($uploadPath))) @mkdir(dirname($uploadPath), 0755, true);
                         
-                        // Move to temp location first
-                        $tempPath = dirname($uploadPath) . DS . 'temp_' . $filename;
-                        $uploadedFile->moveTo($tempPath);
-                        
-                        // Process image (resize, compress, sharpen)
-                        if (ImageProcessor::isAvailable()) {
-                            $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
+                        // Skip processing for GIFs to preserve animation
+                        if ($fileType === 'image/gif') {
+                            $uploadedFile->moveTo($uploadPath);
+                            error_log("ProfileController: Skipping processing for GIF profile photo $filename to preserve animation");
+                        }
+                        // Process other images (resize, compress, sharpen)
+                        else {
+                            $tempPath = dirname($uploadPath) . DS . 'temp_' . $filename;
+                            $uploadedFile->moveTo($tempPath);
                             
-                            if ($processSuccess) {
-                                @unlink($tempPath);
-                                error_log("ProfileController: Successfully processed profile photo $filename");
+                            if (ImageProcessor::isAvailable()) {
+                                $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
+                                
+                                if ($processSuccess) {
+                                    @unlink($tempPath);
+                                    error_log("ProfileController: Successfully processed profile photo $filename");
+                                } else {
+                                    @rename($tempPath, $uploadPath);
+                                    error_log("ProfileController: Failed to process profile photo, using original");
+                                }
                             } else {
                                 @rename($tempPath, $uploadPath);
-                                error_log("ProfileController: Failed to process profile photo, using original");
+                                error_log("ProfileController: GD not available, using original profile photo");
                             }
-                        } else {
-                            @rename($tempPath, $uploadPath);
-                            error_log("ProfileController: GD not available, using original profile photo");
                         }
                         
                         $data['profile_photo_path'] = '/img/profile_uploads/' . $filename;
@@ -447,24 +453,30 @@ class ProfileController extends AppController
                     try {
                         if (!is_dir(dirname($uploadPath))) @mkdir(dirname($uploadPath), 0755, true);
                         
-                        // Move to temp location first
-                        $tempPath = dirname($uploadPath) . DS . 'temp_' . $filename;
-                        $uploadedCoverPhoto->moveTo($tempPath);
-                        
-                        // Process image (resize, compress, sharpen)
-                        if (ImageProcessor::isAvailable()) {
-                            $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
+                        // Skip processing for GIFs to preserve animation
+                        if ($fileType === 'image/gif') {
+                            $uploadedCoverPhoto->moveTo($uploadPath);
+                            error_log("ProfileController: Skipping processing for GIF cover photo $filename to preserve animation");
+                        }
+                        // Process other images (resize, compress, sharpen)
+                        else {
+                            $tempPath = dirname($uploadPath) . DS . 'temp_' . $filename;
+                            $uploadedCoverPhoto->moveTo($tempPath);
                             
-                            if ($processSuccess) {
-                                @unlink($tempPath);
-                                error_log("ProfileController: Successfully processed cover photo $filename");
+                            if (ImageProcessor::isAvailable()) {
+                                $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
+                                
+                                if ($processSuccess) {
+                                    @unlink($tempPath);
+                                    error_log("ProfileController: Successfully processed cover photo $filename");
+                                } else {
+                                    @rename($tempPath, $uploadPath);
+                                    error_log("ProfileController: Failed to process cover photo, using original");
+                                }
                             } else {
                                 @rename($tempPath, $uploadPath);
-                                error_log("ProfileController: Failed to process cover photo, using original");
+                                error_log("ProfileController: GD  not available, using original cover photo");
                             }
-                        } else {
-                            @rename($tempPath, $uploadPath);
-                            error_log("ProfileController: GD  not available, using original cover photo");
                         }
                         
                         $data['cover_photo_path'] = '/img/cover_photo_uploads/' . $filename;
@@ -491,24 +503,37 @@ class ProfileController extends AppController
                     $uploadPath = WWW_ROOT . 'img' . DS . 'cover_photo_uploads' . DS . $filename;
                     if (!is_dir(dirname($uploadPath))) @mkdir(dirname($uploadPath), 0755, true);
                     
-                    // Move to temp location first
-                    $tempPath = dirname($uploadPath) . DS . 'temp_' . $filename;
-                    if (move_uploaded_file($uploadedCoverPhoto['tmp_name'], $tempPath)) {
-                        // Process image (resize, compress, sharpen)
-                        if (ImageProcessor::isAvailable()) {
-                            $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
-                            
-                            if ($processSuccess) {
-                                @unlink($tempPath);
-                                error_log("ProfileController: Successfully processed cover photo (array) $filename");
+                    // Check if it's a GIF
+                    $isGif = (strtolower($extension) === 'gif');
+                    
+                    // Skip processing for GIFs to preserve animation
+                    if ($isGif) {
+                        if (move_uploaded_file($uploadedCoverPhoto['tmp_name'], $uploadPath)) {
+                            error_log("ProfileController: Skipping processing for GIF cover photo (array) $filename to preserve animation");
+                        }
+                    }
+                    // Process other images
+                    else {
+                        $tempPath = dirname($uploadPath) . DS . 'temp_' . $filename;
+                        if (move_uploaded_file($uploadedCoverPhoto['tmp_name'], $tempPath)) {
+                            if (ImageProcessor::isAvailable()) {
+                                $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
+                                
+                                if ($processSuccess) {
+                                    @unlink($tempPath);
+                                    error_log("ProfileController: Successfully processed cover photo (array) $filename");
+                                } else {
+                                    @rename($tempPath, $uploadPath);
+                                    error_log("ProfileController: Failed to process cover photo (array), using original");
+                                }
                             } else {
                                 @rename($tempPath, $uploadPath);
-                                error_log("ProfileController: Failed to process cover photo (array), using original");
+                                error_log("ProfileController: GD not available for cover photo (array), using original");
                             }
-                        } else {
-                            @rename($tempPath, $uploadPath);
-                            error_log("ProfileController: GD not available for cover photo (array), using original");
                         }
+                    }
+                    
+                    if (file_exists($uploadPath)) {
                         
                         $data['cover_photo_path'] = '/img/cover_photo_uploads/' . $filename;
                         if (!empty($user->cover_photo_path) && $user->cover_photo_path !== '/img/cover_photo_uploads/' . $filename) {

@@ -270,7 +270,16 @@ class CommentsController extends AppController
         ]);
         
         $user = $this->Authentication->getIdentity();
-        if ($comment->user_id !== $user->id) {
+        if (!$user || $comment->user_id !== $user->id) {
+            if ($this->request->is('ajax') || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStatus(403)
+                    ->withStringBody(json_encode([
+                        'success' => false,
+                        'message' => 'You can only edit your own comments.'
+                    ]));
+            }
             $this->Flash->error(__('You can only edit your own comments.'));
             return $this->redirect($this->referer());
         }
@@ -305,8 +314,31 @@ class CommentsController extends AppController
         $comment = $this->Comments->patchEntity($comment, $data);
         
         if ($this->Comments->save($comment)) {
+            if ($this->request->is('ajax') || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([
+                        'success' => true,
+                        'message' => 'Comment updated successfully',
+                        'comment' => [
+                            'id' => $comment->id,
+                            'content_text' => $comment->content_text,
+                            'updated_at' => $comment->updated_at ? $comment->updated_at->format('c') : null
+                        ]
+                    ]));
+            }
             $this->Flash->success(__('Your comment has been updated.'));
         } else {
+            if ($this->request->is('ajax') || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStatus(400)
+                    ->withStringBody(json_encode([
+                        'success' => false,
+                        'message' => 'Unable to update your comment.',
+                        'errors' => $comment->getErrors()
+                    ]));
+            }
             $this->Flash->error(__('Unable to update your comment. Please try again.'));
         }
         

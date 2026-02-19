@@ -23,7 +23,7 @@
                 href="/friendships/suggestions" 
                 class="flex-1 px-4 py-3 sm:px-6 sm:py-4 text-center font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-                Suggestions
+                People You May Know
             </a>
         </div>
     </div>
@@ -41,7 +41,7 @@
                         <!-- Profile Photo -->
                         <a :href="'/profile/view/' + request.id" class="flex-shrink-0">
                             <img 
-                                :src="request.profile_photo_path || '/img/default-avatar.png'" 
+                                :src="request.profile_photo_path || '/img/default/default_avatar.jpg'" 
                                 :alt="request.full_name"
                                 class="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border border-gray-200 dark:border-gray-600"
                             >

@@ -1,7 +1,8 @@
 <div id="suggestionsApp" class="max-w-4xl mx-auto p-4 sm:p-6" v-cloak>
     <!-- Header -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6 mb-4">
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Friends</h1>
+        <h1 class="text-md sm:text-md font-bold text-gray-900 dark:text-white mb-2">People You May Know</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Connect with people based on mutual friends and more</p>
     </div>
 
     <!-- Tabs -->
@@ -23,12 +24,12 @@
                 href="/friendships/suggestions" 
                 class="flex-1 px-4 py-3 sm:px-6 sm:py-4 text-center font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-                Suggestions
+                People You May Know
             </a>
         </div>
     </div>
 
-    <!-- Suggestions List -->
+    <!-- People You May Know List -->
     <div class="space-y-3">
         <template v-if="suggestions.length > 0">
             <div 
@@ -41,7 +42,7 @@
                         <!-- Profile Photo -->
                         <a :href="'/profile/view/' + suggestion.id" class="flex-shrink-0">
                             <img 
-                                :src="suggestion.profile_photo_path || '/img/default-avatar.png'" 
+                                :src="suggestion.profile_photo_path || '/img/default/default_avatar.jpg'" 
                                 :alt="suggestion.full_name"
                                 class="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border border-gray-200 dark:border-gray-600"
                             >
@@ -55,8 +56,13 @@
                                 </h3>
                             </a>
                             <p class="text-sm text-gray-600 dark:text-gray-400 truncate">@{{ suggestion.username }}</p>
-                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-500 mt-1" v-if="suggestion.mutual_friends_count > 0">
-                                {{ suggestion.mutual_friends_count }} mutual
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-500 mt-1">
+                                <template v-if="suggestion.mutual_friends_count > 0">
+                                    <i data-lucide="users" class="w-3 h-3 inline-block mr-1"></i>{{ suggestion.mutual_friends_count }} mutual friend<template v-if="suggestion.mutual_friends_count > 1">s</template>
+                                </template>
+                                <template v-else>
+                                    <span class="text-gray-400 dark:text-gray-500">No mutual friends</span>
+                                </template>
                             </p>
                         </div>
                     </div>
@@ -87,9 +93,9 @@
         <!-- Empty State -->
         <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-8 sm:p-12 text-center">
             <i data-lucide="user-search" class="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No suggestions available</h3>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No people to suggest</h3>
             <p class="text-gray-600 dark:text-gray-400 mb-6">
-                We couldn't find any friend suggestions at the moment.
+                We couldn't find any people you may know at the moment.
             </p>
             <a 
                 href="/friendships/index" 

@@ -6,7 +6,7 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
 $currentPath = $this->request->getPath();
 ?>
 
-<div class="w-full bg-white dark:bg-gray-800 lg:rounded-xl lg:shadow-sm lg:border lg:border-gray-100 dark:border-gray-700 p-3 lg:p-4 lg:sticky lg:top-20 h-full lg:h-fit">
+<div class="w-full bg-white dark:bg-gray-800 lg:rounded-xl lg:shadow-sm lg:border lg:border-gray-100 dark:border-gray-700 p-3 lg:p-4 lg:sticky lg:top-20 flex flex-col" style="height: calc(100vh - 6rem);">
   <!-- Profile Section (Desktop Only) -->
   <div class="hidden lg:block text-center mb-3 lg:mb-4 pb-3 lg:pb-4 border-b border-gray-100 dark:border-gray-700 box-shadow-sm">
     <img 
@@ -24,7 +24,7 @@ $currentPath = $this->request->getPath();
   </div>
   
   <!-- Navigation Menu -->
-  <nav class="space-y-1 mb-4">
+  <nav class="space-y-1 flex-1">
     <a 
       href="/dashboard" 
       class="flex items-center gap-3 px-3 py-2.5 lg:py-2 rounded-lg transition-colors <?= str_contains($currentPath, '/dashboard') ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700' ?>"

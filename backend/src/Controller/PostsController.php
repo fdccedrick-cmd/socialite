@@ -142,23 +142,25 @@ class PostsController extends AppController
                                 ]));
                         }
                         
-                        // Check minimum dimensions (Facebook-style validation)
-                        $tempPath = $uploadedFile->getStream()->getMetadata('uri');
-                        $imageInfo = @getimagesize($tempPath);
-                        if ($imageInfo !== false) {
-                            [$width, $height] = $imageInfo;
-                            $minWidth = 480;
-                            $minHeight = 320;
-                            
-                            if ($width < $minWidth || $height < $minHeight) {
-                                $connection->rollback();
-                                $this->Flash->error("Image is too small. Minimum dimensions: {$minWidth}×{$minHeight}px. Your image: {$width}×{$height}px.");
-                                return $this->response
-                                    ->withType('application/json')
-                                    ->withStringBody(json_encode([
-                                        'success' => false,
-                                        'message' => "Image too small: {$width}×{$height}px. Minimum: {$minWidth}×{$minHeight}px"
-                                    ]));
+                        // Check minimum dimensions (Facebook-style validation) - Skip for GIFs
+                        if ($fileType !== 'image/gif') {
+                            $tempPath = $uploadedFile->getStream()->getMetadata('uri');
+                            $imageInfo = @getimagesize($tempPath);
+                            if ($imageInfo !== false) {
+                                [$width, $height] = $imageInfo;
+                                $minWidth = 480;
+                                $minHeight = 320;
+                                
+                                if ($width < $minWidth || $height < $minHeight) {
+                                    $connection->rollback();
+                                    $this->Flash->error("Image is too small. Minimum dimensions: {$minWidth}×{$minHeight}px. Your image: {$width}×{$height}px.");
+                                    return $this->response
+                                        ->withType('application/json')
+                                        ->withStringBody(json_encode([
+                                            'success' => false,
+                                            'message' => "Image too small: {$width}×{$height}px. Minimum: {$minWidth}×{$minHeight}px"
+                                        ]));
+                                }
                             }
                         }
 
@@ -178,8 +180,13 @@ class PostsController extends AppController
                             $tempPath = $uploadDir . DS . 'temp_' . $filename;
                             $uploadedFile->moveTo($tempPath);
                             
-                            // Process image (resize, compress, sharpen)
-                            if (ImageProcessor::isAvailable()) {
+                            // Skip processing for GIFs to preserve animation
+                            if ($fileType === 'image/gif') {
+                                @rename($tempPath, $uploadPath);
+                                error_log("PostsController: Skipping processing for GIF $filename to preserve animation");
+                            }
+                            // Process other images (resize, compress, sharpen)
+                            elseif (ImageProcessor::isAvailable()) {
                                 $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
                                 
                                 if ($processSuccess) {
@@ -521,7 +528,31 @@ class PostsController extends AppController
                         }
                         
                         $uploadPath = $uploadDir . DS . $filename;
-                        $uploadedFile->moveTo($uploadPath);
+                        
+                        // Skip processing for GIFs to preserve animation
+                        if ($fileType === 'image/gif') {
+                            $uploadedFile->moveTo($uploadPath);
+                            error_log("PostsController: Skipping processing for GIF $filename to preserve animation");
+                        }
+                        // Process other images (resize, compress, sharpen)
+                        else {
+                            $tempPath = $uploadDir . DS . 'temp_' . $filename;
+                            $uploadedFile->moveTo($tempPath);
+                            
+                            if (ImageProcessor::isAvailable()) {
+                                $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
+                                
+                                if ($processSuccess) {
+                                    @unlink($tempPath);
+                                    error_log("PostsController: Successfully processed image $filename");
+                                } else {
+                                    @rename($tempPath, $uploadPath);
+                                    error_log("PostsController: Image processing failed for $filename, using original");
+                                }
+                            } else {
+                                @rename($tempPath, $uploadPath);
+                            }
+                        }
                         
                         // Create PostImage entity
                         $postImage = $postImagesTable->newEmptyEntity();

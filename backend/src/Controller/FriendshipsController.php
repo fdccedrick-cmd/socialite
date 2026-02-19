@@ -199,7 +199,6 @@ class FriendshipsController extends AppController
         
         $suggestions = $this->Users->find()
             ->where(['id NOT IN' => $excludeIds])
-            ->limit(20)
             ->all();
 
         $suggestionList = [];
@@ -207,14 +206,22 @@ class FriendshipsController extends AppController
             // Get mutual friends count
             $mutualCount = $this->Friendships->getMutualFriendsCount($userId, $user->id);
 
-            $suggestionList[] = [
-                'id' => $user->id,
-                'full_name' => $user->full_name,
-                'username' => $user->username,
-                'profile_photo_path' => $user->profile_photo_path,
-                'mutual_friends_count' => $mutualCount,
-            ];
+            // Only include users with mutual friends
+            if ($mutualCount > 0) {
+                $suggestionList[] = [
+                    'id' => $user->id,
+                    'full_name' => $user->full_name,
+                    'username' => $user->username,
+                    'profile_photo_path' => $user->profile_photo_path,
+                    'mutual_friends_count' => $mutualCount,
+                ];
+            }
         }
+
+        // Sort by mutual friends count (highest first)
+        usort($suggestionList, function($a, $b) {
+            return $b['mutual_friends_count'] - $a['mutual_friends_count'];
+        });
 
         $this->set('suggestions', $suggestionList);
     }

@@ -1119,7 +1119,11 @@ const app = createApp({
             }
         },
         async deleteComment(postId, commentId) {
-            if (!confirm('Delete this comment?')) return;
+            const confirmed = typeof window.showConfirmModal === 'function'
+                ? await window.showConfirmModal('Are you sure you want to delete this comment?')
+                : confirm('Delete this comment?');
+            if (!confirmed) return;
+            
             try {
                 const response = await fetch(`/comments/delete/${commentId}`, {
                     method: 'POST',
@@ -1144,8 +1148,77 @@ const app = createApp({
                 }
             } catch (error) {
                 console.error('Error deleting comment:', error);
-                alert('Failed to delete comment.');
+                const errorMsg = 'Failed to delete comment.';
+                if (typeof window.showFlash === 'function') {
+                    window.showFlash(errorMsg, 'error');
+                } else {
+                    alert(errorMsg);
+                }
             }
+        },
+        editComment(postId, commentId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            
+            const comment = post.comments.find(c => c.id === commentId);
+            if (!comment) return;
+            
+            // Set editing state
+            comment.isEditing = true;
+            comment.editContent = comment.content_text || '';
+            this.$forceUpdate();
+        },
+        async saveCommentEdit(postId, commentId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            
+            const comment = post.comments.find(c => c.id === commentId);
+            if (!comment || !comment.isEditing) return;
+            
+            const newContent = (comment.editContent || '').trim();
+            if (!newContent) {
+                alert('Comment cannot be empty.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/comments/edit/${commentId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        content_text: newContent
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to update comment');
+
+                const data = await response.json();
+                
+                // Update comment in local state
+                comment.content_text = newContent;
+                comment.isEditing = false;
+                delete comment.editContent;
+                
+                this.$forceUpdate();
+            } catch (error) {
+                console.error('Error updating comment:', error);
+                alert('Failed to update comment.');
+            }
+        },
+        cancelCommentEdit(postId, commentId) {
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+            
+            const comment = post.comments.find(c => c.id === commentId);
+            if (!comment) return;
+            
+            comment.isEditing = false;
+            delete comment.editContent;
+            this.$forceUpdate();
         },
         
         // WebSocket Methods

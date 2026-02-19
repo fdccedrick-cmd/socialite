@@ -151,7 +151,7 @@ class AppController extends Controller
                         // Get mutual friends count
                         $mutualCount = $friendshipsTable->getMutualFriendsCount($userId, $user->id);
 
-                        // Only include if there are mutual friends
+                        // Only include users with mutual friends
                         if ($mutualCount > 0) {
                             $suggestions[] = [
                                 'id' => $user->id,
