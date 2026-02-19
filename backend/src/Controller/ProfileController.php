@@ -442,17 +442,47 @@ class ProfileController extends AppController
                 // If profile photo changed, create a post announcing the new profile picture
                 try {
                     if (!empty($data['profile_photo_path']) && $data['profile_photo_path'] !== $oldProfilePath) {
+                        // Copy the profile picture to post_uploads to preserve it when profile picture changes
+                        $sourceFile = WWW_ROOT . ltrim($data['profile_photo_path'], '/');
+                        $extension = pathinfo($sourceFile, PATHINFO_EXTENSION);
+                        $postFilename = 'post_' . $userId . '_' . time() . '_profile.' . $extension;
+                        $postUploadDir = WWW_ROOT . 'img' . DS . 'post_uploads';
+                        $postUploadPath = $postUploadDir . DS . $postFilename;
+                        
+                        // Ensure post_uploads directory exists
+                        if (!is_dir($postUploadDir)) {
+                            @mkdir($postUploadDir, 0755, true);
+                        }
+                        
+                        // Copy the file to post_uploads
+                        $postImagePath = null;
+                        if (file_exists($sourceFile) && copy($sourceFile, $postUploadPath)) {
+                            $postImagePath = '/img/post_uploads/' . $postFilename;
+                            error_log('Profile update - copied profile picture to post_uploads: ' . $postImagePath);
+                        } else {
+                            // If copy fails, log error but still create post without image
+                            error_log('Profile update - failed to copy profile picture from ' . $sourceFile . ' to ' . $postUploadPath);
+                        }
+                        
+                        // Create the post
                         $postsTable = $this->getTableLocator()->get('Posts');
                         $post = $postsTable->newEmptyEntity();
                         $post->user_id = $userId;
                         $post->content_text = trim($user->full_name) . ' uploaded a new profile picture';
                         $post->privacy = 'public';
-                        if ($postsTable->save($post)) {
+                        
+                        if ($postsTable->save($post) && $postImagePath) {
                             $postImagesTable = $this->getTableLocator()->get('PostImages');
                             $postImage = $postImagesTable->newEmptyEntity();
                             $postImage->post_id = $post->id;
-                            $postImage->image_path = $user->profile_photo_path;
-                            $postImagesTable->save($postImage);
+                            $postImage->image_path = $postImagePath; // Use the copied path in post_uploads
+                            $postImage->sort_order = 0;
+                            
+                            if ($postImagesTable->save($postImage)) {
+                                error_log('Profile update - created post with image: ' . $postImagePath);
+                            } else {
+                                error_log('Profile update - failed to save post image');
+                            }
                         }
                     }
                 } catch (\Throwable $e) {

@@ -36,12 +36,15 @@ class SearchController extends AppController
         $users = [];
         $posts = [];
 
+        // Note: $currentUser is already set by AppController initialize()
+        // Don't override it here to keep the Entity format for navigation
+
         if (!empty($query)) {
             try {
                 // Search Users (prioritize friends)
                 $users = $this->searchUsers($userId, $query);
 
-                // Search Posts by caption
+                // Search Posts by caption AND by user
                 $posts = $this->searchPosts($userId, $query);
             } catch (\Exception $e) {
                 // Log the error but continue to display page
@@ -172,14 +175,27 @@ class SearchController extends AppController
     private function searchPosts($currentUserId, $searchQuery)
     {
         $postsTable = $this->getTableLocator()->get('Posts');
+        $likesTable = $this->getTableLocator()->get('Likes');
+        $commentsTable = $this->getTableLocator()->get('Comments');
+        $usersTable = $this->getTableLocator()->get('Users');
         
+        // Search posts by content OR by user name/username
         $postsQuery = $postsTable->find()
-            ->contain(['Users', 'PostImages'])
+            ->contain([
+                'Users', 
+                'PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]
+            ])
+            ->leftJoinWith('Users')
             ->where([
-                'Posts.content_text LIKE' => '%' . $searchQuery . '%',
+                'OR' => [
+                    'Posts.content_text LIKE' => '%' . $searchQuery . '%',
+                    'Users.full_name LIKE' => '%' . $searchQuery . '%',
+                    'Users.username LIKE' => '%' . $searchQuery . '%',
+                ],
+                'Posts.deleted IS' => null
             ])
             ->order(['Posts.created' => 'DESC'])
-            ->limit(20);
+            ->limit(50);
 
         $posts = $postsQuery->all();
 
@@ -190,46 +206,25 @@ class SearchController extends AppController
                 continue;
             }
             
-            $isLiked = $this->getTableLocator()->get('Likes')->exists([
-                'target_type' => 'Post',
-                'target_id' => $post->id,
-                'user_id' => $currentUserId,
-            ]);
-
-            // Handle post_images - convert collection to array
-            $postImages = [];
-            if ($post->post_images) {
-                foreach ($post->post_images as $image) {
-                    $postImages[] = [
-                        'id' => $image->id,
-                        'image_path' => $image->image_path,
-                    ];
-                }
+            $postData = $post->toArray();
+            
+            // Format dates
+            if (!empty($postData['created']) && $postData['created'] instanceof \DateTimeInterface) {
+                $postData['created'] = $postData['created']->format(DATE_ATOM);
             }
-
-            $postsArray[] = [
-                'id' => $post->id,
-                'content' => $post->content_text,
-                'created' => $post->created ? $post->created->format('Y-m-d H:i:s') : null,
-                'user_id' => $post->user_id,
-                'user' => [
-                    'id' => $post->user->id,
-                    'full_name' => $post->user->full_name,
-                    'username' => $post->user->username,
-                    'profile_photo_path' => $post->user->profile_photo_path,
-                ],
-                'post_images' => $postImages,
-                'like_count' => $this->getTableLocator()->get('Likes')->find()
-                    ->where([
-                        'target_type' => 'Post',
-                        'target_id' => $post->id
-                    ])
-                    ->count(),
-                'comment_count' => $this->getTableLocator()->get('Comments')->find()
-                    ->where(['post_id' => $post->id])
-                    ->count(),
-                'is_liked' => $isLiked,
-            ];
+            if (!empty($postData['modified']) && $postData['modified'] instanceof \DateTimeInterface) {
+                $postData['modified'] = $postData['modified']->format(DATE_ATOM);
+            }
+            
+            // Add like data
+            $postData['like_count'] = $likesTable->getLikeCount('Post', $post->id);
+            $postData['is_liked'] = $likesTable->isLikedByUser('Post', $post->id, $currentUserId);
+            
+            // Add comments (full data structure for interactivity)
+            $postData['comments'] = $commentsTable->getCommentsForPost($post->id, $currentUserId);
+            $postData['comment_count'] = count($postData['comments']);
+            
+            $postsArray[] = $postData;
         }
 
         return $postsArray;

@@ -4,6 +4,7 @@
  * @var string $query
  * @var array $users
  * @var array $posts
+ * @var array $currentUser
  */
 $this->assign('title', 'Search Results');
 ?>
@@ -92,67 +93,13 @@ $this->assign('title', 'Search Results');
           </div>
         </div>
         
-        <div class="divide-y divide-gray-100">
-          <?php foreach ($posts as $post): ?>
-            <div class="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
-              <!-- Post Header -->
-              <div class="flex items-start gap-3 mb-3">
-                <a href="/profile/<?= h($post['user']['username']) ?>" class="shrink-0">
-                  <img 
-                    src="<?= h($post['user']['profile_photo_path'] ?: 'https://i.pravatar.cc/150?img=1') ?>" 
-                    alt="<?= h($post['user']['full_name']) ?>"
-                    class="w-10 h-10 rounded-full object-cover"
-                  />
-                </a>
-                <div class="flex-1 min-w-0">
-                  <a href="/profile/<?= h($post['user']['username']) ?>" class="font-semibold text-gray-900 hover:text-indigo-600 text-sm">
-                    <?= h($post['user']['full_name']) ?>
-                  </a>
-                  <p class="text-xs text-gray-500">
-                    <?php 
-                    $created = new DateTime($post['created']);
-                    echo $created->format('M j, Y \a\t g:i A');
-                    ?>
-                  </p>
-                </div>
-              </div>
-              
-              <!-- Post Content -->
-              <a href="/posts/view/<?= $post['id'] ?>" class="block mb-3">
-                <p class="text-sm sm:text-base text-gray-700 line-clamp-3"><?= h($post['content']) ?></p>
-              </a>
-              
-              <!-- Post Images (if any) -->
-              <?php if (!empty($post['post_images'])): ?>
-                <a href="/posts/view/<?= $post['id'] ?>" class="block mb-3">
-                  <div class="grid gap-2 <?= count($post['post_images']) > 1 ? 'grid-cols-2' : '' ?>">
-                    <?php foreach (array_slice($post['post_images'], 0, 4) as $image): ?>
-                      <img 
-                        src="<?= h($image['image_path']) ?>" 
-                        alt="Post image"
-                        class="rounded-lg object-cover w-full <?= count($post['post_images']) === 1 ? 'max-h-96' : 'h-32 sm:h-48' ?>"
-                      />
-                    <?php endforeach; ?>
-                  </div>
-                </a>
-              <?php endif; ?>
-              
-              <!-- Post Stats -->
-              <div class="flex items-center gap-4 text-sm text-gray-500 pt-3 border-t">
-                <span class="flex items-center gap-1">
-                  <i data-lucide="heart" class="w-4 h-4"></i>
-                  <?= $post['like_count'] ?>
-                </span>
-                <span class="flex items-center gap-1">
-                  <i data-lucide="message-circle" class="w-4 h-4"></i>
-                  <?= $post['comment_count'] ?>
-                </span>
-                <a href="/posts/view/<?= $post['id'] ?>" class="ml-auto text-indigo-600 hover:text-indigo-700 font-medium">
-                  View Post
-                </a>
-              </div>
-            </div>
-          <?php endforeach; ?>
+        <div class="divide-y divide-gray-100 p-4 sm:p-6 space-y-4">
+          <!-- Use reusable post components -->
+          <?= $this->element('posts/post_list', [
+            'posts' => $posts ?? [],
+            'currentUser' => isset($currentUser) && is_object($currentUser) ? $currentUser->toArray() : ($currentUser ?? []),
+            'emptyMessage' => 'No posts match your search'
+          ]) ?>
         </div>
       </div>
     <?php endif; ?>
@@ -181,24 +128,79 @@ $this->assign('title', 'Search Results');
       </p>
     </div>
   <?php endif; ?>
+
+  <!-- Image Viewer Modal (reused from dashboard pattern) -->
+  <transition name="fade">
+    <div 
+      v-if="imageViewer && imageViewer.isOpen"
+      @click="closeImageViewer"
+      class="fixed inset-0 bg-black bg-opacity-95 z-[9999] flex items-center justify-center"
+    >
+      <!-- Close Button -->
+      <button 
+        @click="closeImageViewer"
+        class="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+        title="Close (Esc)"
+      >
+        <i data-lucide="x" class="w-8 h-8"></i>
+      </button>
+      
+      <!-- Image Counter -->
+      <div class="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-sm font-medium bg-black bg-opacity-50 px-3 py-1.5 rounded-full">
+        {{ imageViewer.currentIndex + 1 }} / {{ imageViewer.images.length }}
+      </div>
+      
+      <!-- Previous Button -->
+      <button 
+        v-if="imageViewer.currentIndex > 0"
+        @click.stop="prevImage"
+        class="absolute left-4 text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-3"
+        title="Previous (←)"
+      >
+        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+      </button>
+      
+      <!-- Image Container -->
+      <div 
+        @click.stop
+        class="max-w-7xl max-h-screen w-full h-full flex items-center justify-center p-4"
+      >
+        <img 
+          :src="imageViewer.images[imageViewer.currentIndex]?.image_path || imageViewer.images[imageViewer.currentIndex]"
+          :alt="'Image ' + (imageViewer.currentIndex + 1)"
+          class="max-w-full max-h-full object-contain"
+        />
+      </div>
+      
+      <!-- Next Button -->
+      <button 
+        v-if="imageViewer.currentIndex < imageViewer.images.length - 1"
+        @click.stop="nextImage"
+        class="absolute right-4 text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-3"
+        title="Next (→)"
+      >
+        <i data-lucide="chevron-right" class="w-6 h-6"></i>
+      </button>
+    </div>
+  </transition>
+
+  <!-- Post Detail View Modal (reused from dashboard pattern) -->
+  <?= $this->element('posts/post_detail_modal') ?>
+
 </div>
 
+<!-- Pass data to search.js -->
 <script>
-(function() {
-  const el = document.getElementById('searchApp');
-  if (!el) return;
-  
-  const app = Vue.createApp({
-    data() {
-      return {};
-    },
-    mounted() {
-      if (window.lucide) {
-        lucide.createIcons();
-      }
-    }
-  });
-  
-  app.mount('#searchApp');
-})();
+window.searchData = {
+  user: {
+    id: <?= json_encode(isset($currentUser) && is_object($currentUser) ? $currentUser->id : ($currentUser['id'] ?? null)) ?>,
+    username: <?= json_encode(isset($currentUser) && is_object($currentUser) ? $currentUser->username : ($currentUser['username'] ?? 'user')) ?>,
+    avatar: <?= json_encode(isset($currentUser) && is_object($currentUser) ? $currentUser->profile_photo_path : ($currentUser['profile_photo_path'] ?? 'https://i.pravatar.cc/150?img=1')) ?>
+  },
+  posts: <?= json_encode($posts ?? []) ?>
+};
 </script>
+
+<!-- Load scripts -->
+<script src="/js/websocket-manager.js?v=<?= time() ?>"></script>
+<script src="/js/search.js?v=<?= time() ?>"></script>
