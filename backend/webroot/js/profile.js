@@ -258,6 +258,69 @@
           document.body.style.overflow = '';
           this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
         },
+        
+        openProfilePhotoView() {
+          if (!this.user?.avatar) return;
+          
+          // Create a temporary post object for the profile photo
+          const tempPost = {
+            id: 'profile-photo-view',
+            user: {
+              id: window.profileData?.profileUserId,
+              full_name: this.user.full_name,
+              username: this.user.username,
+              profile_photo_path: this.user.avatar,
+              avatar: this.user.avatar
+            },
+            content: 'Profile Photo',
+            content_text: 'Profile Photo',
+            post_images: [{
+              id: 'profile-photo',
+              image_path: this.user.avatar,
+              created: new Date().toISOString()
+            }],
+            created: new Date().toISOString(),
+            like_count: 0,
+            comment_count: 0,
+            is_liked: false,
+            comments: [],
+            showComments: false
+          };
+          
+          this.openPostDetailView(tempPost, 0);
+        },
+        
+        openCoverPhotoView() {
+          if (!this.user?.coverPhoto) return;
+          
+          // Create a temporary post object for the cover photo
+          const tempPost = {
+            id: 'cover-photo-view',
+            user: {
+              id: window.profileData?.profileUserId,
+              full_name: this.user.full_name,
+              username: this.user.username,
+              profile_photo_path: this.user.avatar,
+              avatar: this.user.avatar
+            },
+            content: 'Cover Photo',
+            content_text: 'Cover Photo',
+            post_images: [{
+              id: 'cover-photo',
+              image_path: this.user.coverPhoto,
+              created: new Date().toISOString()
+            }],
+            created: new Date().toISOString(),
+            like_count: 0,
+            comment_count: 0,
+            is_liked: false,
+            comments: [],
+            showComments: false
+          };
+          
+          this.openPostDetailView(tempPost, 0);
+        },
+        
         async loadImageComments(postImageId) {
           const imageId = parseInt(postImageId, 10);
           try {
