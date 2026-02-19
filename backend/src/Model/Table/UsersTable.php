@@ -102,7 +102,34 @@ class UsersTable extends Table
 
     public function buildRules(RulesChecker $rules): RulesChecker
     {
-        $rules->add($rules->isUnique(['username'], 'This username is already taken'), ['errorField' => 'username']);
+        // Case-insensitive username uniqueness check
+        $rules->add(
+            function ($entity, $options) {
+                if (!$entity->isNew() && !$entity->isDirty('username')) {
+                    return true;
+                }
+                
+                $username = $entity->get('username');
+                if (empty($username)) {
+                    return true;
+                }
+                
+                $query = $this->find()
+                    ->where(['LOWER(username)' => strtolower($username)]);
+                
+                if (!$entity->isNew()) {
+                    $query->where(['id !=' => $entity->get('id')]);
+                }
+                
+                return $query->count() === 0;
+            },
+            'uniqueUsername',
+            [
+                'errorField' => 'username',
+                'message' => 'This username is already taken'
+            ]
+        );
+        
         return $rules;
     }
 

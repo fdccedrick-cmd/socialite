@@ -8,6 +8,7 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/', ['controller' => 'Users', 'action' => 'login']);
         $builder->connect('/login', ['controller' => 'Users', 'action' => 'login']);
         $builder->connect('/register', ['controller' => 'Users', 'action' => 'register']);
+        $builder->connect('/users/check-username', ['controller' => 'Users', 'action' => 'checkUsername']);
         $builder->connect('/logout', ['controller' => 'Users', 'action' => 'logout']);
         $builder->connect('/dashboard', ['controller' => 'Dashboard', 'action' => 'index']);
         

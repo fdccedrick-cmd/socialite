@@ -9,6 +9,12 @@ use Cake\ORM\Locator\LocatorAwareTrait;
 
 class UsersController extends AppController
 {
+    public function beforeFilter(\Cake\Event\EventInterface $event)
+    {
+        parent::beforeFilter($event);
+        $this->Authentication->addUnauthenticatedActions(['login', 'register', 'checkUsername']);
+    }
+    
     public function login()
     {
         $this->viewBuilder()->setLayout('auth');
@@ -34,6 +40,30 @@ class UsersController extends AppController
         if ($this->request->getQuery('logged_out')) {
             $this->Flash->success('You have been logged out.');
         }
+    }
+
+    public function checkUsername()
+    {
+        $this->request->allowMethod(['get']);
+        $this->autoRender = false;
+        
+        $username = trim($this->request->getQuery('username', ''));
+        
+        if (empty($username)) {
+            return $this->response->withType('application/json')
+                ->withStringBody(json_encode(['available' => false, 'message' => 'Username is required']));
+        }
+        
+        // Case-insensitive username check using LOWER()
+        $existingUser = $this->Users->find()
+            ->where(['LOWER(username)' => strtolower($username)])
+            ->first();
+        
+        $available = empty($existingUser);
+        $message = $available ? 'Username is available' : 'Username is already taken';
+        
+        return $this->response->withType('application/json')
+            ->withStringBody(json_encode(['available' => $available, 'message' => $message]));
     }
 
     public function register()
