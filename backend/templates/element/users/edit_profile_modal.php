@@ -72,6 +72,8 @@
 
       <!-- Divider -->
       <div class="border-t border-gray-200 dark:border-gray-700"></div>
+      
+      <!-- Bio -->
       <div class="space-y-1.5 sm:space-y-2">
         <label for="bio" class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
           Bio
@@ -88,7 +90,90 @@
           <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Leave empty to show "No bio yet"</p>
           <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{{ (editForm.bio || '').length }}/500</p>
         </div>
+      </div>
+      
+      <!-- Personal Details Section -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 sm:pt-5">
+        <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">Personal Details</h3>
+        
+        <!-- Address -->
+        <div class="space-y-1.5 sm:space-y-2 mb-4">
+          <label for="address" class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
+            Address
+          </label>
+          <input 
+            type="text" 
+            id="address"
+            v-model="editForm.address"
+            maxlength="255"
+            class="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+            placeholder="Enter your address"
+          />
+          <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Optional</p>
         </div>
+        
+        <!-- Relationship Status -->
+        <div class="space-y-1.5 sm:space-y-2 mb-4">
+          <label for="relationship_status" class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
+            Relationship Status
+          </label>
+          <select 
+            id="relationship_status"
+            v-model="editForm.relationship_status"
+            class="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          >
+            <option value="">Not specified</option>
+            <option value="single">Single</option>
+            <option value="taken">Taken</option>
+            <option value="married">Married</option>
+          </select>
+          <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Optional</p>
+        </div>
+        
+        <!-- Contact Links -->
+        <div class="space-y-1.5 sm:space-y-2">
+          <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
+            Contact Links
+          </label>
+          <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-2">Add your social media links (Instagram, Twitter, etc.)</p>
+          
+          <div class="space-y-2">
+            <div v-for="(link, index) in editForm.contactLinksArray" :key="index" class="flex gap-2">
+              <input 
+                type="text" 
+                v-model="link.label"
+                placeholder="Label (e.g., Instagram)"
+                maxlength="50"
+                class="w-1/3 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+              />
+              <input 
+                type="url" 
+                v-model="link.url"
+                placeholder="https://..."
+                maxlength="255"
+                class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+              />
+              <button 
+                type="button"
+                @click="removeContactLink(index)"
+                class="px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+              >
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          
+          <button 
+            type="button"
+            @click="addContactLink"
+            class="mt-2 flex items-center gap-2 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+          >
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Add Link</span>
+          </button>
+        </div>
+      </div>
+      
       <!-- Full Name -->
       <div class="space-y-1.5 sm:space-y-2">
         <label for="full_name" class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">

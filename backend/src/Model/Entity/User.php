@@ -18,6 +18,9 @@ class User extends Entity
         'modified' => true,
         'bio' => true,
         'theme' => true,
+        'address' => true,
+        'relationship_status' => true,
+        'contact_links' => true,
     ];
 
     protected array $_hidden = [

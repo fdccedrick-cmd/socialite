@@ -33,7 +33,10 @@ window.profileData = {
           }
           echo json_encode($joinedDate);
         ?>,
-        bio: <?= json_encode($user['bio'] ?? null) ?>
+        bio: <?= json_encode($user['bio'] ?? null) ?>,
+        address: <?= json_encode($user['address'] ?? null) ?>,
+        relationship_status: <?= json_encode($user['relationship_status'] ?? null) ?>,
+        contact_links: <?= json_encode($user['contact_links'] ?? null) ?>
     },
     postCount: <?= json_encode($postCount ?? 0) ?>,
     likes: <?= json_encode($userLikeCount ?? 0) ?>
@@ -186,12 +189,60 @@ console.log('🔍 Profile Data Debug:', {
           <!-- Message Button (optional) -->
           <button 
             v-if="friendshipStatus === 'accepted'"
-            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors font-medium text-xs sm:text-sm"
+            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 dark:text-gray-300 rounded-lg transition-colors font-medium text-xs sm:text-sm"
           >
             <i data-lucide="message-circle" class="w-4 h-4"></i>
             <span class="hidden sm:inline">Message</span>
           </button>
         </div>
+    </div>
+  </div>
+  
+  <!-- Personal Details Section (Above Tabs - Facebook Style) -->
+  <div v-if="user.address || user.relationship_status || (user.contactLinksArray && user.contactLinksArray.length > 0)" class="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-5 lg:p-6">
+    <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">Personal Details</h3>
+    <div class="space-y-3">
+      <div v-if="user.address" class="flex items-start gap-3">
+        <div class="mt-0.5">
+          <i data-lucide="map-pin" class="w-5 h-5 text-gray-500 dark:text-gray-400"></i>
+        </div>
+        <div>
+          <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-0.5">Address</p>
+          <p class="text-sm sm:text-base text-gray-900 dark:text-white">{{ user.address }}</p>
+        </div>
+      </div>
+      
+      <div v-if="user.relationship_status" class="flex items-start gap-3">
+        <div class="mt-0.5">
+          <i data-lucide="heart" class="w-5 h-5 text-gray-500 dark:text-gray-400"></i>
+        </div>
+        <div>
+          <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-0.5">Relationship Status</p>
+          <p class="text-sm sm:text-base text-gray-900 dark:text-white capitalize">{{ user.relationship_status }}</p>
+        </div>
+      </div>
+      
+      <div v-if="user.contactLinksArray && user.contactLinksArray.length > 0" class="flex items-start gap-3">
+        <div class="mt-0.5">
+          <i data-lucide="link" class="w-5 h-5 text-gray-500 dark:text-gray-400"></i>
+        </div>
+        <div class="flex-1">
+          <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-2">Contact Links</p>
+          <div class="flex flex-wrap gap-2">
+            <a 
+              v-for="(link, index) in user.contactLinksArray" 
+              :key="index"
+              :href="link.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-xs sm:text-sm font-medium"
+            >
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              <span>{{ link.label }}</span>
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   

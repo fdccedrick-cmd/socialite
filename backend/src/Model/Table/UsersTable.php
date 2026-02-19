@@ -102,6 +102,27 @@ class UsersTable extends Table
             ->maxLength('theme', 20)
             ->allowEmptyString('theme')
             ->inList('theme', ['light', 'dark'], 'Invalid theme value');
+        $validator
+            ->scalar('address')
+            ->maxLength('address', 255)
+            ->allowEmptyString('address');
+        $validator
+            ->scalar('relationship_status')
+            ->maxLength('relationship_status', 20)
+            ->allowEmptyString('relationship_status');
+        $validator
+            ->scalar('contact_links')
+            ->allowEmptyString('contact_links')
+            ->add('contact_links', 'validJson', [
+                'rule' => function ($value) {
+                    if (empty($value)) {
+                        return true;
+                    }
+                    json_decode($value);
+                    return json_last_error() === JSON_ERROR_NONE;
+                },
+                'message' => 'Contact links must be a valid JSON string'
+            ]);
 
         return $validator;
     }

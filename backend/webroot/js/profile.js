@@ -41,6 +41,10 @@
           avatar: window.profileData?.user?.avatar || 'https://i.pravatar.cc/150?img=1',
           joinedDate: window.profileData?.user?.joinedDate || 'Joined recently',
           bio: window.profileData?.user?.bio || 'No bio yet',
+          address: window.profileData?.user?.address || null,
+          relationship_status: window.profileData?.user?.relationship_status || null,
+          contact_links: window.profileData?.user?.contact_links || null,
+          contactLinksArray: [],
           stats: {
             posts: window.profileData?.postCount || 0,
             friends: window.profileData?.friendsCount || 0,
@@ -67,7 +71,10 @@
           username: '',
           avatar: '',
           profile_picture_file: null,
-          bio: ''
+          bio: '',
+          address: '',
+          relationship_status: '',
+          contactLinksArray: []
         },
         errors: {},
         imageViewer: {
@@ -554,16 +561,45 @@
         }
       },
       openEditModal() {
+        // Parse contact links if available
+        let contactLinksArray = [];
+        if (this.user.contact_links) {
+          try {
+            const parsed = JSON.parse(this.user.contact_links);
+            if (Array.isArray(parsed)) {
+              contactLinksArray = parsed;
+            }
+          } catch (e) {
+            console.error('Failed to parse contact_links:', e);
+          }
+        }
+        
+        console.log('[TRACK] openEditModal - user data:', {
+          address: this.user.address,
+          relationship_status: this.user.relationship_status,
+          contact_links: this.user.contact_links,
+          parsed_contact_links: contactLinksArray
+        });
+        
         this.editForm = {
           full_name: this.user.full_name,
           username: this.user.username,
           avatar: this.user.avatar,
           profile_picture_file: null,
           bio: this.user.bio,
+          address: this.user.address || '',
+          relationship_status: this.user.relationship_status || '',
+          contactLinksArray: contactLinksArray.length > 0 ? contactLinksArray : [],
           current_password: '',
           new_password: '',
           confirm_password: ''
         };
+        
+        console.log('[TRACK] openEditModal - editForm initialized:', {
+          address: this.editForm.address,
+          relationship_status: this.editForm.relationship_status,
+          contactLinksArray: this.editForm.contactLinksArray
+        });
         this.croppedFile = null;
         this.croppedDataURL = null;
         this.errors = {};
@@ -582,6 +618,9 @@
           avatar: '',
           profile_picture_file: null,
           bio: '',
+          address: '',
+          relationship_status: '',
+          contactLinksArray: [],
           current_password: '',
           new_password: '',
           confirm_password: ''
@@ -597,6 +636,21 @@
       closeFriendsMenu() {
         this.showFriendsMenu = false;
       },
+      
+      // Contact Links methods
+      addContactLink() {
+        this.editForm.contactLinksArray.push({ label: '', url: '' });
+        this.$nextTick(() => {
+          if (window.lucide) lucide.createIcons();
+        });
+      },
+      removeContactLink(index) {
+        this.editForm.contactLinksArray.splice(index, 1);
+        this.$nextTick(() => {
+          if (window.lucide) lucide.createIcons();
+        });
+      },
+      
       async sendFriendRequest() {
         try {
           const response = await fetch('/friendships/add', {
@@ -1013,6 +1067,24 @@
         formData.append('full_name', this.editForm.full_name.trim());
         // Send bio even if empty (backend will handle null)
         formData.append('bio', this.editForm.bio ? this.editForm.bio.trim() : '');
+        // Add new personal details fields
+        formData.append('address', this.editForm.address ? this.editForm.address.trim() : '');
+        formData.append('relationship_status', this.editForm.relationship_status || '');
+        // Filter out empty contact links and send as JSON
+        const validContactLinks = this.editForm.contactLinksArray.filter(link => link.label && link.url);
+        if (validContactLinks.length > 0) {
+          formData.append('contact_links', JSON.stringify(validContactLinks));
+        } else {
+          formData.append('contact_links', '');
+        }
+        
+        // Debug log the new fields
+        console.log('[TRACK] Personal details to submit:', {
+          address: this.editForm.address,
+          relationship_status: this.editForm.relationship_status,
+          contactLinksArray: this.editForm.contactLinksArray,
+          validContactLinks: validContactLinks
+        });
         
         // Try multiple sources for the file, with priority order
         let fileToUpload = this.croppedFile || this.editForm.profile_picture_file;
@@ -1083,10 +1155,19 @@
           
           if (data.success) {
             console.log('[TRACK] Profile update SUCCESS');
+            console.log('[TRACK] Received user data:', data.user);
             // Update user data with response
             this.user.full_name = data.user.full_name;
             this.user.username = data.user.username;
             this.user.bio = data.user.bio;
+            this.user.address = data.user.address;
+            this.user.relationship_status = data.user.relationship_status;
+            this.user.contact_links = data.user.contact_links;
+            console.log('[TRACK] Updated local user object:', {
+              address: this.user.address,
+              relationship_status: this.user.relationship_status,
+              contact_links: this.user.contact_links
+            });
             if (data.user.profile_photo_path) {
               console.log('[TRACK] Updating avatar to:', data.user.profile_photo_path);
               this.user.avatar = data.user.profile_photo_path;
@@ -1603,6 +1684,19 @@
       }
     },
     mounted() {
+      // Parse contact links if available
+      if (this.user.contact_links) {
+        try {
+          const parsed = JSON.parse(this.user.contact_links);
+          if (Array.isArray(parsed)) {
+            this.user.contactLinksArray = parsed;
+          }
+        } catch (e) {
+          console.error('Failed to parse contact_links:', e);
+          this.user.contactLinksArray = [];
+        }
+      }
+      
       // Initialize WebSocket for real-time updates
       if (typeof WebSocketManager !== 'undefined' && this.currentUserId) {
         this.initWebSocket();

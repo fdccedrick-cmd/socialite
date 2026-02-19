@@ -183,13 +183,13 @@ $currentUser = $currentUser ?? [];
       />
     </div>
     
-    <!-- Two Images Grid - Equal split with proper aspect ratio -->
-    <div v-else-if="post.post_images.length === 2" class="grid grid-cols-2 gap-0.5 bg-black">
+    <!-- Two Images Grid - Equal split, minimal gap -->
+    <div v-else-if="post.post_images.length === 2" class="grid grid-cols-2 gap-px bg-black">
       <div
         v-for="(image, index) in post.post_images" 
         :key="index"
         class="relative overflow-hidden cursor-pointer group"
-        style="aspect-ratio: 1/1; min-height: 250px; max-height: 400px;"
+        style="height: 350px;"
         @click="safeOpenPostDetailView(post, index)"
       >
         <img 
@@ -202,7 +202,7 @@ $currentUser = $currentUser ?? [];
     </div>
     
     <!-- Three Images Grid (Facebook Style: 1 large left, 2 stacked right) -->
-    <div v-else-if="post.post_images.length === 3" class="grid grid-cols-2 gap-0.5 bg-black" style="height: 400px; max-height: 500px;">
+    <div v-else-if="post.post_images.length === 3" class="grid grid-cols-2 gap-px bg-black" style="height: 400px;">
       <div class="relative overflow-hidden cursor-pointer group" @click="safeOpenPostDetailView(post, 0)">
         <img 
           :src="post.post_images[0].image_path" 
@@ -211,7 +211,7 @@ $currentUser = $currentUser ?? [];
           class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
       </div>
-      <div class="grid grid-rows-2 gap-0.5">
+      <div class="grid grid-rows-2 gap-px">
         <div class="relative overflow-hidden cursor-pointer group" @click="safeOpenPostDetailView(post, 1)">
           <img 
             :src="post.post_images[1].image_path" 
@@ -231,42 +231,47 @@ $currentUser = $currentUser ?? [];
       </div>
     </div>
     
-    <!-- Four or More Images Grid (2x2 with +X overlay for 5+) -->
-    <div v-else class="grid grid-cols-2 gap-0.5 bg-black">
-      <template v-for="(image, index) in post.post_images.slice(0, 4)" :key="index">
-        <!-- Regular images for first 3 or all 4 if exactly 4 images -->
+    <!-- Four Images Grid - Perfect 2x2 -->
+    <div v-else-if="post.post_images.length === 4" class="grid grid-cols-2 gap-px bg-black">
+      <div 
+        v-for="(image, index) in post.post_images" 
+        :key="index"
+        class="relative overflow-hidden cursor-pointer group"
+        style="height: 250px;"
+        @click="safeOpenPostDetailView(post, index)"
+      >
+        <img 
+          :src="image.image_path" 
+          :alt="'Post image ' + (index + 1)" 
+          loading="lazy"
+          class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+      </div>
+    </div>
+    
+    <!-- Five or More Images Grid - Show first 4 in 2x2 grid with +X overlay on 4th -->
+    <div v-else class="grid grid-cols-2 gap-px bg-black">
+      <div 
+        v-for="(image, index) in post.post_images.slice(0, 4)" 
+        :key="index"
+        class="relative overflow-hidden cursor-pointer group"
+        style="height: 250px;"
+        @click="safeOpenPostDetailView(post, index)"
+      >
+        <img 
+          :src="image.image_path" 
+          :alt="'Post image ' + (index + 1)" 
+          loading="lazy"
+          class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+        <!-- Overlay for remaining images on 4th image -->
         <div 
-          v-if="index < 3 || post.post_images.length === 4"
-          class="relative overflow-hidden cursor-pointer group"
-          style="aspect-ratio: 1/1; min-height: 180px; max-height: 280px;"
-          @click="safeOpenPostDetailView(post, index)"
+          v-if="index === 3 && post.post_images.length > 4"
+          class="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center group-hover:bg-opacity-75 transition-all duration-200"
         >
-          <img 
-            :src="image.image_path" 
-            :alt="'Post image ' + (index + 1)" 
-            loading="lazy"
-            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+          <span class="text-white text-4xl sm:text-5xl font-bold drop-shadow-lg">+{{ post.post_images.length - 4 }}</span>
         </div>
-        
-        <!-- 4th image with overlay if 5+ images -->
-        <div 
-          v-else-if="index === 3 && post.post_images.length > 4"
-          class="relative overflow-hidden cursor-pointer group"
-          style="aspect-ratio: 1/1; min-height: 180px; max-height: 280px;"
-          @click="safeOpenPostDetailView(post, index)"
-        >
-          <img 
-            :src="image.image_path" 
-            :alt="'Post image ' + (index + 1)" 
-            loading="lazy"
-            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-          <div class="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center group-hover:bg-opacity-70 transition-all duration-200">
-            <span class="text-white text-3xl sm:text-4xl font-bold drop-shadow-lg">+{{ post.post_images.length - 4 }}</span>
-          </div>
-        </div>
-      </template>
+      </div>
     </div>
   </div>
   

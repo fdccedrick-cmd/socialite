@@ -70,6 +70,9 @@ class ProfileController extends AppController
         $user['username'] = $user['username'] ?? 'user';
         $user['profile_photo_path'] = $user['profile_photo_path'] ?? null;
         $user['bio'] = $user['bio'] ?? null;
+        $user['address'] = $user['address'] ?? null;
+        $user['relationship_status'] = $user['relationship_status'] ?? null;
+        $user['contact_links'] = $user['contact_links'] ?? null;
 
         
         foreach (['created', 'modified'] as $dtField) {
@@ -275,6 +278,40 @@ class ProfileController extends AppController
         // Allow empty bio - will be stored as null and show "No bio yet" in UI
         $data['bio'] = !empty($bio) ? trim($bio) : null;
 
+        // Handle address
+        $address = $this->request->getData('address');
+        $data['address'] = !empty($address) ? trim($address) : null;
+        error_log('Profile update - address received: ' . ($address ?? 'NULL'));
+
+        // Handle relationship status
+        $relationshipStatus = $this->request->getData('relationship_status');
+        error_log('Profile update - relationship_status received: ' . ($relationshipStatus ?? 'NULL'));
+        if (!empty($relationshipStatus)) {
+            $validStatuses = ['single', 'taken', 'married'];
+            if (in_array($relationshipStatus, $validStatuses)) {
+                $data['relationship_status'] = $relationshipStatus;
+            }
+        } else {
+            $data['relationship_status'] = null;
+        }
+
+        // Handle contact links (expects JSON array)
+        $contactLinks = $this->request->getData('contact_links');
+        error_log('Profile update - contact_links received: ' . ($contactLinks ?? 'NULL'));
+        if (!empty($contactLinks)) {
+            if (is_array($contactLinks)) {
+                $data['contact_links'] = json_encode($contactLinks);
+            } elseif (is_string($contactLinks)) {
+                // Validate it's valid JSON
+                $decoded = json_decode($contactLinks, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $data['contact_links'] = $contactLinks;
+                }
+            }
+        } else {
+            $data['contact_links'] = null;
+        }
+
         $fullName = $this->request->getData('full_name');
         if (!empty($fullName)) {
             $data['full_name'] = trim($fullName);
@@ -418,6 +455,12 @@ class ProfileController extends AppController
         try {
             $saveResult = $usersTable->save($user);
             error_log('Profile update - save result: ' . ($saveResult ? 'true' : 'false'));
+            
+            // Check for validation errors
+            if (!$saveResult) {
+                $validationErrors = $user->getErrors();
+                error_log('Profile update - VALIDATION ERRORS: ' . json_encode($validationErrors));
+            }
 
             if ($saveResult) {
                 
@@ -435,7 +478,10 @@ class ProfileController extends AppController
                     'full_name' => $user->full_name,
                     'username' => $user->username,
                     'bio' => $user->bio,
-                    'profile_photo_path' => $user->profile_photo_path
+                    'profile_photo_path' => $user->profile_photo_path,
+                    'address' => $user->address,
+                    'relationship_status' => $user->relationship_status,
+                    'contact_links' => $user->contact_links
                 ];
 
                 // If profile photo changed, create a post announcing the new profile picture
