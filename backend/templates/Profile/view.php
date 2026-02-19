@@ -16,6 +16,7 @@ window.profileData = {
         full_name: <?= json_encode(!empty($user['full_name']) ? $user['full_name'] : (!empty($user['username']) ? $user['username'] : 'User')) ?>,
         username: <?= json_encode(!empty($user['username']) ? $user['username'] : 'user') ?>,
         avatar: <?= json_encode(!empty($user['profile_photo_path']) ? $user['profile_photo_path'] : 'https://i.pravatar.cc/150?img=1') ?>,
+        coverPhoto: <?= json_encode(!empty($user['cover_photo_path']) ? $user['cover_photo_path'] : null) ?>,
         joinedDate: <?php 
           $joinedDate = 'Joined recently';
           if (!empty($user['created'])) {
@@ -54,147 +55,180 @@ console.log('🔍 Profile Data Debug:', {
 </script>
 
 <div id="profileApp" class="space-y-3 sm:space-y-4 lg:space-y-6" v-cloak>
-  <!-- Profile Header Card -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6 lg:p-8 mb-3 sm:mb-4 lg:mb-6">
-    <div class="flex flex-col md:flex-row items-start md:items-center gap-3 sm:gap-4 lg:gap-6">
-      <!-- Profile Photo -->
-      <div class="shrink-0 mx-auto md:mx-0">
-        <img 
-          :src="user.avatar" 
-          :alt="user.full_name" 
-          class="w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 rounded-full object-cover border-2 sm:border-4 border-gray-100 dark:border-gray-600"
-        />
-      </div>
-      
-      <!-- Profile Info -->
-      <div class="flex-1 text-center md:text-left w-full">
-        <div class="mb-2 sm:mb-3">
-          <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{{ user.full_name }}</h1>
-          <p class="text-gray-500 dark:text-gray-400 text-sm sm:text-base mt-0.5 sm:mt-1">@{{ user.username }}</p>
-          <p class="text-gray-400 dark:text-gray-500 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ user.joinedDate }}</p>
-        </div>
-        
-        <div class="mb-3 sm:mb-4">
-          <p v-if="user.bio" class="text-gray-700 dark:text-gray-300 text-xs sm:text-sm lg:text-base">{{ user.bio }}</p>
-          <p v-else class="text-gray-400 dark:text-gray-500 text-xs sm:text-sm lg:text-base italic">No bio yet</p>
-        </div>
-        
-        <!-- Stats -->
-        <div class="flex justify-center md:justify-start gap-4 sm:gap-6 lg:gap-8 mb-3 sm:mb-4">
-          <div>
-            <span class="font-bold text-gray-900 dark:text-white text-sm sm:text-base lg:text-lg">{{ user.stats.posts }}</span>
-            <span class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm ml-1">Posts</span>
-          </div>
-          <div>
-            <span class="font-bold text-gray-900 dark:text-white text-sm sm:text-base lg:text-lg">{{ user.stats.friends }}</span>
-            <span class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm ml-1">Friends</span>
-          </div>
-          <div>
-            <span class="font-bold text-gray-900 dark:text-white text-sm sm:text-base lg:text-lg">{{ user.stats.likes }}</span>
-            <span class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm ml-1">Likes</span>
-          </div>
-        </div>
-        
-      </div>
-      
-      <!-- Action Buttons -->
-      <div class="shrink-0 md:self-start w-full md:w-auto">
-        <!-- Edit Profile Button (Own Profile) -->
+  <!-- Cover Photo Section (Facebook Style) -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div class="relative">
+      <!-- Cover Photo -->
+      <div 
+        class="w-full h-48 sm:h-64 md:h-80 lg:h-96 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 dark:from-blue-600 dark:via-purple-600 dark:to-pink-600"
+        :style="user.coverPhoto ? `background-image: url('${user.coverPhoto}'); background-size: cover; background-position: center;` : ''"
+      >
+        <!-- Edit Cover Photo Button (Own Profile) - Positioned at TOP RIGHT of cover -->
         <button 
           v-if="isOwnProfile"
-          @click="openEditModal" 
-          class="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 pr-1.5 sm:pr-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors w-full md:w-auto"
+          @click="openCoverPhotoUpload"
+          class="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg shadow-lg transition-colors z-10"
         >
-          <i data-lucide="settings" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-700 dark:text-gray-300"></i>
-          <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Edit Profile</span>
+          <i data-lucide="camera" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-700 dark:text-gray-300"></i>
+          <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">{{ user.coverPhoto ? 'Edit Cover' : 'Add Cover' }}</span>
         </button>
-
-        <!-- Friend Action Buttons (Other's Profile) -->
-        <div v-if="!isOwnProfile" class="flex gap-2">
-          <!-- Add Friend Button -->
-          <button 
-            v-if="friendshipStatus === null"
-            @click="sendFriendRequest"
-            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors w-full md:w-auto font-medium text-xs sm:text-sm"
-          >
-            <i data-lucide="user-plus" class="w-4 h-4"></i>
-            <span>Add Friend</span>
-          </button>
-
-          <!-- Request Sent (temporarily shown for 2 seconds) -->
-          <button 
-            v-if="friendshipStatus === 'pending' && isSender && showRequestSent"
-            disabled
-            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-200 text-gray-700 rounded-lg cursor-default w-full md:w-auto font-medium text-xs sm:text-sm"
-          >
-            <i data-lucide="clock" class="w-4 h-4"></i>
-            <span>Request Sent</span>
-          </button>
-
-          <!-- Cancel Request Button (shown after 2 seconds) -->
-          <button 
-            v-if="friendshipStatus === 'pending' && isSender && !showRequestSent"
-            @click="cancelFriendRequest"
-            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors w-full md:w-auto font-medium text-xs sm:text-sm"
-          >
-            <i data-lucide="x-circle" class="w-4 h-4"></i>
-            <span>Cancel Request</span>
-          </button>
-
-          <!-- Accept/Reject Buttons (Pending - Other User Sent) -->
-          <template v-if="friendshipStatus === 'pending' && !isSender">
+      </div>
+      
+      <!-- Profile Info Overlay -->
+      <div class="relative -mt-16 sm:-mt-20 px-4 sm:px-6 lg:px-8 pb-4">
+        <div class="flex flex-col sm:flex-row items-center sm:items-end gap-3 sm:gap-4">
+          <!-- Profile Photo -->
+          <div class="shrink-0">
+            <img 
+              :src="user.avatar" 
+              :alt="user.full_name" 
+              class="w-32 h-32 sm:w-36 sm:h-36 lg:w-40 lg:h-40 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-lg bg-white dark:bg-gray-800"
+            />
+          </div>
+          
+          <!-- User Info -->
+          <div class="flex-1 text-center sm:text-left pb-2 min-w-0">
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white truncate">{{ user.full_name }}</h1>
+            <p class="text-gray-600 dark:text-gray-400 text-sm sm:text-base mt-1">@{{ user.username }}</p>
+          </div>
+          
+          <!-- Action Buttons - With proper spacing to avoid overlap -->
+          <div class="shrink-0 sm:self-end pb-2 w-full sm:w-auto flex justify-center sm:justify-end">
+            <!-- Edit Profile Button (Own Profile) -->
             <button 
-              @click="acceptFriendRequest"
-              class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-xs sm:text-sm"
+              v-if="isOwnProfile"
+              @click="openEditModal" 
+              class="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800 shadow-sm"
             >
-              <i data-lucide="check" class="w-4 h-4"></i>
-              <span>Accept</span>
-            </button>
-            <button 
-              @click="rejectFriendRequest"
-              class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors font-medium text-xs sm:text-sm"
-            >
-              <i data-lucide="x" class="w-4 h-4"></i>
-              <span>Reject</span>
-            </button>
-          </template>
-
-          <!-- Friends Button with Dropdown -->
-          <div v-if="friendshipStatus === 'accepted'" class="relative">
-            <button 
-              @click.stop="showFriendsMenu = !showFriendsMenu"
-              class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors w-full md:w-auto font-medium text-xs sm:text-sm"
-            >
-              <i data-lucide="user-check" class="w-4 h-4"></i>
-              <span>Friends</span>
-              <i data-lucide="chevron-down" class="w-3 h-3"></i>
+              <i data-lucide="settings" class="w-4 h-4 text-gray-700 dark:text-gray-300"></i>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Edit Profile</span>
             </button>
 
-            <!-- Dropdown Menu -->
-            <div 
-              v-if="showFriendsMenu"
-              v-click-outside="closeFriendsMenu"
-              class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10"
-            >
+            <!-- Friend Action Buttons (Other's Profile) -->
+            <div v-if="!isOwnProfile" class="flex gap-2">
+              <!-- Add Friend Button -->
               <button 
-                @click.stop="unfriend"
-                class="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                v-if="friendshipStatus === null"
+                @click="sendFriendRequest"
+                class="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-sm"
               >
-                <i data-lucide="user-minus" class="w-4 h-4"></i>
-                <span>Unfriend</span>
+                <i data-lucide="user-plus" class="w-4 h-4"></i>
+                <span>Add Friend</span>
+              </button>
+
+              <!-- Request Sent (temporarily shown for 2 seconds) -->
+              <button 
+                v-if="friendshipStatus === 'pending' && isSender && showRequestSent"
+                disabled
+                class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg cursor-default font-medium text-sm"
+              >
+                <i data-lucide="clock" class="w-4 h-4"></i>
+                <span>Request Sent</span>
+              </button>
+
+              <!-- Cancel Request Button (shown after 2 seconds) -->
+              <button 
+                v-if="friendshipStatus === 'pending' && isSender && !showRequestSent"
+                @click="cancelFriendRequest"
+                class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors font-medium text-sm"
+              >
+                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                <span>Cancel Request</span>
+              </button>
+
+              <!-- Accept/Reject Buttons (Pending - Other User Sent) -->
+              <template v-if="friendshipStatus === 'pending' && !isSender">
+                <button 
+                  @click="acceptFriendRequest"
+                  class="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-sm"
+                >
+                  <i data-lucide="check" class="w-4 h-4"></i>
+                  <span>Accept</span>
+                </button>
+                <button 
+                  @click="rejectFriendRequest"
+                  class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors font-medium text-sm"
+                >
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                  <span>Reject</span>
+                </button>
+              </template>
+
+              <!-- Friends Button with Dropdown -->
+              <div v-if="friendshipStatus === 'accepted'" class="relative">
+                <button 
+                  @click.stop="showFriendsMenu = !showFriendsMenu"
+                  class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-300 rounded-lg transition-colors font-medium text-sm"
+                >
+                  <i data-lucide="user-check" class="w-4 h-4"></i>
+                  <span>Friends</span>
+                  <i data-lucide="chevron-down" class="w-3 h-3"></i>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div 
+                  v-if="showFriendsMenu"
+                  v-click-outside="closeFriendsMenu"
+                  class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10"
+                >
+                  <button 
+                    @click.stop="unfriend"
+                    class="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                  >
+                    <i data-lucide="user-minus" class="w-4 h-4"></i>
+                    <span>Unfriend</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Message Button (optional) -->
+              <button 
+                v-if="friendshipStatus === 'accepted'"
+                class="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors font-medium text-sm"
+              >
+                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Message</span>
               </button>
             </div>
           </div>
-
-          <!-- Message Button (optional) -->
-          <button 
-            v-if="friendshipStatus === 'accepted'"
-            class="flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 dark:text-gray-300 rounded-lg transition-colors font-medium text-xs sm:text-sm"
-          >
-            <i data-lucide="message-circle" class="w-4 h-4"></i>
-            <span class="hidden sm:inline">Message</span>
-          </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bio and Additional Info Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-5 lg:p-6">
+    <div class="space-y-3">
+      <!-- Bio -->
+      <div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold mb-1">BIO</p>
+        <p v-if="user.bio" class="text-sm text-gray-900 dark:text-white">{{ user.bio }}</p>
+        <p v-else class="text-sm text-gray-400 dark:text-gray-500 italic">No bio yet</p>
+      </div>
+      
+      <!-- Joined Date -->
+      <div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold mb-1">JOINED</p>
+        <p class="text-sm text-gray-900 dark:text-white">{{ user.joinedDate }}</p>
+      </div>
+      
+      <!-- Stats -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+        <div class="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{{ user.stats.posts }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Posts</p>
+          </div>
+          <div>
+            <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{{ user.stats.friends }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Friends</p>
+          </div>
+          <div>
+            <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{{ user.stats.likes }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Likes</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   

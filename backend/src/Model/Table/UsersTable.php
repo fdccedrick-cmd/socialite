@@ -94,6 +94,10 @@ class UsersTable extends Table
             ->maxLength('profile_photo_path', 255)
             ->allowEmptyString('profile_photo_path');
         $validator
+            ->scalar('cover_photo_path')
+            ->maxLength('cover_photo_path', 255)
+            ->allowEmptyString('cover_photo_path');
+        $validator
             ->scalar('bio')
             ->maxLength('bio', 500)
             ->allowEmptyString('bio');

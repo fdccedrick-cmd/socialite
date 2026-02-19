@@ -14,6 +14,7 @@ class User extends Entity
         'username' => true,
         'password_hash' => true,
         'profile_photo_path' => true,
+        'cover_photo_path' => true,
         'created' => true,
         'modified' => true,
         'bio' => true,

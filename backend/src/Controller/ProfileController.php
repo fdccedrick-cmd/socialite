@@ -69,6 +69,7 @@ class ProfileController extends AppController
         $user['full_name'] = $user['full_name'] ?? $user['username'] ?? 'User';
         $user['username'] = $user['username'] ?? 'user';
         $user['profile_photo_path'] = $user['profile_photo_path'] ?? null;
+        $user['cover_photo_path'] = $user['cover_photo_path'] ?? null;
         $user['bio'] = $user['bio'] ?? null;
         $user['address'] = $user['address'] ?? null;
         $user['relationship_status'] = $user['relationship_status'] ?? null;
@@ -389,6 +390,75 @@ class ProfileController extends AppController
             }
         }
 
+        // Handle cover photo upload
+        $uploadedCoverPhoto = $this->request->getData('cover_photo');
+        try {
+            error_log('Profile update - cover photo raw: ' . json_encode(is_object($uploadedCoverPhoto) ? get_class($uploadedCoverPhoto) : $uploadedCoverPhoto));
+        } catch (\Throwable $e) {
+            // ignore logging errors
+        }
+
+        if ($uploadedCoverPhoto && is_object($uploadedCoverPhoto) && method_exists($uploadedCoverPhoto, 'getError') && $uploadedCoverPhoto->getError() === UPLOAD_ERR_OK) {
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+            $fileType = $uploadedCoverPhoto->getClientMediaType();
+            
+            if (!in_array($fileType, $allowedTypes)) {
+                $errors['cover_photo'] = 'Invalid file type. Only JPG, PNG, and GIF are allowed.';
+            } else {
+                $maxSize = 10 * 1024 * 1024; // 10MB for cover photos
+                if ($uploadedCoverPhoto->getSize() > $maxSize) {
+                    $errors['cover_photo'] = 'File size must be less than 10MB.';
+                } else {
+                    $extension = pathinfo($uploadedCoverPhoto->getClientFilename(), PATHINFO_EXTENSION);
+                    $filename = 'cover_' . $userId . '_' . time() . '.' . $extension;
+                    $uploadPath = WWW_ROOT . 'img' . DS . 'cover_photo_uploads' . DS . $filename;
+                    
+                    try {
+                        if (!is_dir(dirname($uploadPath))) @mkdir(dirname($uploadPath), 0755, true);
+                        $uploadedCoverPhoto->moveTo($uploadPath);
+                        $data['cover_photo_path'] = '/img/cover_photo_uploads/' . $filename;
+                        
+                        if (!empty($user->cover_photo_path) && $user->cover_photo_path !== '/img/cover_photo_uploads/' . $filename) {
+                            $oldPath = WWW_ROOT . ltrim($user->cover_photo_path, '/');
+                            if (file_exists($oldPath) && is_file($oldPath)) {
+                                @unlink($oldPath);
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        $errors['cover_photo'] = 'Failed to upload cover photo.';
+                    }
+                }
+            }
+        }
+        // Fallback: sometimes uploaded file may be provided as array
+        elseif (is_array($uploadedCoverPhoto) && isset($uploadedCoverPhoto['tmp_name']) && isset($uploadedCoverPhoto['error'])) {
+            try {
+                error_log('Profile update - handling array-style cover photo upload: ' . json_encode([$uploadedCoverPhoto['name'] ?? null, $uploadedCoverPhoto['error'] ?? null]));
+                if ($uploadedCoverPhoto['error'] === UPLOAD_ERR_OK && is_uploaded_file($uploadedCoverPhoto['tmp_name'])) {
+                    $extension = pathinfo($uploadedCoverPhoto['name'], PATHINFO_EXTENSION);
+                    $filename = 'cover_' . $userId . '_' . time() . '.' . $extension;
+                    $uploadPath = WWW_ROOT . 'img' . DS . 'cover_photo_uploads' . DS . $filename;
+                    if (!is_dir(dirname($uploadPath))) @mkdir(dirname($uploadPath), 0755, true);
+                    if (move_uploaded_file($uploadedCoverPhoto['tmp_name'], $uploadPath)) {
+                        $data['cover_photo_path'] = '/img/cover_photo_uploads/' . $filename;
+                        if (!empty($user->cover_photo_path) && $user->cover_photo_path !== '/img/cover_photo_uploads/' . $filename) {
+                            $oldPath = WWW_ROOT . ltrim($user->cover_photo_path, '/');
+                            if (file_exists($oldPath) && is_file($oldPath)) {
+                                @unlink($oldPath);
+                            }
+                        }
+                    } else {
+                        $errors['cover_photo'] = 'Failed to move uploaded cover photo.';
+                    }
+                } else {
+                    $errors['cover_photo'] = 'No valid uploaded cover photo found.';
+                }
+            } catch (\Throwable $e) {
+                error_log('Profile update - cover photo array upload fallback error: ' . $e->getMessage());
+                $errors['cover_photo'] = 'Failed to process uploaded cover photo.';
+            }
+        }
+
         $currentPassword = $this->request->getData('current_password');
         $newPassword = $this->request->getData('new_password');
         
@@ -444,6 +514,7 @@ class ProfileController extends AppController
 
         
         $oldProfilePath = $user->profile_photo_path;
+        $oldCoverPath = $user->cover_photo_path;
         $user = $usersTable->patchEntity($user, $data);
 
         try {
@@ -479,6 +550,7 @@ class ProfileController extends AppController
                     'username' => $user->username,
                     'bio' => $user->bio,
                     'profile_photo_path' => $user->profile_photo_path,
+                    'cover_photo_path' => $user->cover_photo_path,
                     'address' => $user->address,
                     'relationship_status' => $user->relationship_status,
                     'contact_links' => $user->contact_links
@@ -532,6 +604,55 @@ class ProfileController extends AppController
                     }
                 } catch (\Throwable $e) {
                     error_log('Profile update - failed to create post for profile photo change: ' . $e->getMessage());
+                }
+
+                // If cover photo changed, create a post announcing the new cover photo
+                try {
+                    if (!empty($data['cover_photo_path']) && $data['cover_photo_path'] !== $oldCoverPath) {
+                        // Copy the cover photo to post_uploads to preserve it when cover photo changes
+                        $sourceFile = WWW_ROOT . ltrim($data['cover_photo_path'], '/');
+                        $extension = pathinfo($sourceFile, PATHINFO_EXTENSION);
+                        $postFilename = 'post_' . $userId . '_' . time() . '_cover.' . $extension;
+                        $postUploadDir = WWW_ROOT . 'img' . DS . 'post_uploads';
+                        $postUploadPath = $postUploadDir . DS . $postFilename;
+                        
+                        // Ensure post_uploads directory exists
+                        if (!is_dir($postUploadDir)) {
+                            @mkdir($postUploadDir, 0755, true);
+                        }
+                        
+                        // Copy the file to post_uploads
+                        $postImagePath = null;
+                        if (file_exists($sourceFile) && copy($sourceFile, $postUploadPath)) {
+                            $postImagePath = '/img/post_uploads/' . $postFilename;
+                            error_log('Profile update - copied cover photo to post_uploads: ' . $postImagePath);
+                        } else {
+                            error_log('Profile update - failed to copy cover photo from ' . $sourceFile . ' to ' . $postUploadPath);
+                        }
+                        
+                        // Create the post
+                        $postsTable = $this->getTableLocator()->get('Posts');
+                        $post = $postsTable->newEmptyEntity();
+                        $post->user_id = $userId;
+                        $post->content_text = trim($user->full_name) . ' uploaded a new cover photo';
+                        $post->privacy = 'public';
+                        
+                        if ($postsTable->save($post) && $postImagePath) {
+                            $postImagesTable = $this->getTableLocator()->get('PostImages');
+                            $postImage = $postImagesTable->newEmptyEntity();
+                            $postImage->post_id = $post->id;
+                            $postImage->image_path = $postImagePath;
+                            $postImage->sort_order = 0;
+                            
+                            if ($postImagesTable->save($postImage)) {
+                                error_log('Profile update - created post with cover photo: ' . $postImagePath);
+                            } else {
+                                error_log('Profile update - failed to save cover photo post image');
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    error_log('Profile update - failed to create post for cover photo change: ' . $e->getMessage());
                 }
 
                 return $this->response

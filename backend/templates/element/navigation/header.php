@@ -464,6 +464,31 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
           this.fetchNotifications();
         }, 1000);
         
+        // Initialize WebSocket for real-time updates
+        if (window.wsManager) {
+          window.wsManager.addMessageHandler((data) => {
+            console.log('[Header] WebSocket message:', data);
+            
+            // Handle notification deleted
+            if (data.type === 'notification_deleted') {
+              const notificationId = data.notification_id;
+              const index = this.notifications.findIndex(n => n.id === notificationId);
+              if (index !== -1) {
+                this.notifications.splice(index, 1);
+                if (this.notificationCount > 0) {
+                  this.notificationCount--;
+                }
+                console.log('[Header] Notification removed:', notificationId);
+              }
+            }
+            
+            // Handle new notifications
+            if (data.type === 'notification') {
+              this.fetchNotifications();
+            }
+          });
+        }
+        
         // Initialize Lucide icons
         if (window.lucide) lucide.createIcons();
       },

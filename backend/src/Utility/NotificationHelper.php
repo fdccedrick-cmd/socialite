@@ -338,4 +338,54 @@ class NotificationHelper
             return false;
         }
     }
+
+    /**
+     * Delete a friend request notification
+     *
+     * @param int $recipientId User who received the friend request
+     * @param int $senderId User who sent the friend request
+     * @return bool Success
+     */
+    public static function deleteFriendRequestNotification(int $recipientId, int $senderId): bool
+    {
+        try {
+            $notificationsTable = TableRegistry::getTableLocator()->get('Notifications');
+            
+            $notification = $notificationsTable->find()
+                ->where([
+                    'user_id' => $recipientId,
+                    'actor_id' => $senderId,
+                    'type' => 'friend_request',
+                    'notifiable_type' => 'User',
+                    'notifiable_id' => $senderId,
+                ])
+                ->first();
+            
+            if ($notification) {
+                $result = $notificationsTable->delete($notification);
+                error_log('[DEBUG NotificationHelper] Deleted friend request notification');
+                
+                // Send WebSocket notification to remove the notification from UI
+                try {
+                    $ws = WebSocketClient::getInstance();
+                    $ws->sendToUser($recipientId, [
+                        'type' => 'notification_deleted',
+                        'notification_id' => $notification->id,
+                        'user_id' => $recipientId
+                    ]);
+                } catch (\Exception $e) {
+                    error_log('[ERROR NotificationHelper] WebSocket notification deletion failed: ' . $e->getMessage());
+                }
+                
+                return $result;
+            }
+            
+            error_log('[DEBUG NotificationHelper] No friend request notification found to delete');
+            return false;
+            
+        } catch (\Exception $e) {
+            error_log('[ERROR NotificationHelper] Delete friend request notification exception: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

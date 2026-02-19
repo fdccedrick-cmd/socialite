@@ -39,6 +39,7 @@
           full_name: window.profileData?.user?.full_name || 'User',
           username: window.profileData?.user?.username || 'user',
           avatar: window.profileData?.user?.avatar || 'https://i.pravatar.cc/150?img=1',
+          coverPhoto: window.profileData?.user?.coverPhoto || null,
           joinedDate: window.profileData?.user?.joinedDate || 'Joined recently',
           bio: window.profileData?.user?.bio || 'No bio yet',
           address: window.profileData?.user?.address || null,
@@ -651,6 +652,76 @@
         });
       },
       
+      // Cover Photo methods  
+      openCoverPhotoUpload() {
+        // Create a hidden file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/jpeg,image/png,image/jpg,image/gif';
+        input.onchange = async (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            await this.handleCoverPhotoUpload(file);
+          }
+        };
+        input.click();
+      },
+      
+      async handleCoverPhotoUpload(file) {
+        // Validate file
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+          window.showToast('Invalid file type. Only JPG, PNG, and GIF are allowed.', 'error');
+          return;
+        }
+        
+        const maxSize = 10 * 1024 * 1024; // 10MB for cover photos
+        if (file.size > maxSize) {
+          window.showToast('File size must be less than 10MB.', 'error');
+          return;
+        }
+        
+        // Show loading toast
+        window.showToast('Uploading cover photo...', 'info');
+        
+        // Upload the cover photo
+        const formData = new FormData();
+        formData.append('cover_photo', file);
+        formData.append('full_name', this.user.full_name);
+        formData.append('bio', this.user.bio || '');
+        
+        try {
+          const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+          const meta = document.querySelector('meta[name="csrf-token"]');
+          if (meta && meta.getAttribute('content')) headers['X-CSRF-Token'] = meta.getAttribute('content');
+          
+          const response = await fetch('/profile/update', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers
+          });
+          
+          const data = await response.json();
+          console.log('[Cover Photo] Upload response:', data);
+          
+          if (data.success) {
+            console.log('[Cover Photo] Upload successful');
+            if (data.user.cover_photo_path) {
+              this.user.coverPhoto = data.user.cover_photo_path;
+            }
+            window.showToast('Cover photo updated successfully!', 'success');
+            // Reload to show the new cover photo post
+            setTimeout(() => window.location.reload(), 1500);
+          } else {
+            window.showToast(data.message || 'Failed to update cover photo', 'error');
+          }
+        } catch (error) {
+          console.error('[Cover Photo] Upload error:', error);
+          window.showToast('An error occurred while uploading', 'error');
+        }
+      },
+      
       async sendFriendRequest() {
         try {
           const response = await fetch('/friendships/add', {
@@ -675,13 +746,13 @@
               this.showRequestSent = false;
             }, 2000);
             
-            window.toast.show('Friend request sent', 'success');
+            window.showToast('Friend request sent', 'success');
           } else {
-            window.toast.show(data.message || 'Failed to send friend request', 'error');
+            window.showToast(data.message || 'Failed to send friend request', 'error');
           }
         } catch (error) {
           console.error('Error sending friend request:', error);
-          window.toast.show('An error occurred', 'error');
+          window.showToast('An error occurred', 'error');
         }
       },
       async cancelFriendRequest() {
@@ -702,13 +773,13 @@
             this.isSender = false;
             this.friendshipId = null;
             this.showRequestSent = false;
-            window.toast.show('Friend request cancelled', 'success');
+            window.showToast('Friend request cancelled', 'success');
           } else {
-            window.toast.show(data.message || 'Failed to cancel request', 'error');
+            window.showToast(data.message || 'Failed to cancel request', 'error');
           }
         } catch (error) {
           console.error('Error cancelling request:', error);
-          window.toast.show('An error occurred', 'error');
+          window.showToast('An error occurred', 'error');
         }
       },
       async acceptFriendRequest() {
@@ -731,13 +802,13 @@
             this.user.stats.friends += 1;
             this.$forceUpdate();
             console.log('Friendship status updated to:', this.friendshipStatus);
-            window.toast.show('Friend request accepted', 'success');
+            window.showToast('Friend request accepted', 'success');
           } else {
-            window.toast.show(data.message || 'Failed to accept request', 'error');
+            window.showToast(data.message || 'Failed to accept request', 'error');
           }
         } catch (error) {
           console.error('Error accepting request:', error);
-          window.toast.show('An error occurred', 'error');
+          window.showToast('An error occurred', 'error');
         }
       },
       async rejectFriendRequest() {
@@ -764,13 +835,13 @@
           if (data.success) {
             this.friendshipStatus = null;
             this.friendshipId = null;
-            window.toast.show('Friend request rejected', 'success');
+            window.showToast('Friend request rejected', 'success');
           } else {
-            window.toast.show(data.message || 'Failed to reject request', 'error');
+            window.showToast(data.message || 'Failed to reject request', 'error');
           }
         } catch (error) {
           console.error('Error rejecting request:', error);
-          window.toast.show('An error occurred', 'error');
+          window.showToast('An error occurred', 'error');
         }
       },
       async unfriend() {
@@ -811,13 +882,13 @@
             this.$forceUpdate();
             
             console.log('Friendship status updated to:', this.friendshipStatus);
-            window.toast.show('Friend removed', 'success');
+            window.showToast('Friend removed', 'success');
           } else {
-            window.toast.show(data.message || 'Failed to remove friend', 'error');
+            window.showToast(data.message || 'Failed to remove friend', 'error');
           }
         } catch (error) {
           console.error('Error removing friend:', error);
-          window.toast.show('An error occurred', 'error');
+          window.showToast('An error occurred', 'error');
         }
       },
       
@@ -1163,10 +1234,14 @@
             this.user.address = data.user.address;
             this.user.relationship_status = data.user.relationship_status;
             this.user.contact_links = data.user.contact_links;
+            if (data.user.cover_photo_path) {
+              this.user.coverPhoto = data.user.cover_photo_path;
+            }
             console.log('[TRACK] Updated local user object:', {
               address: this.user.address,
               relationship_status: this.user.relationship_status,
-              contact_links: this.user.contact_links
+              contact_links: this.user.contact_links,
+              coverPhoto: this.user.coverPhoto
             });
             if (data.user.profile_photo_path) {
               console.log('[TRACK] Updating avatar to:', data.user.profile_photo_path);
