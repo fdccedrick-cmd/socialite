@@ -170,16 +170,16 @@ $currentUser = $currentUser ?? [];
     <!-- Single Image - Facebook style with smart aspect ratio -->
     <div 
       v-if="post.post_images.length === 1"
-      class="w-full relative overflow-hidden cursor-pointer bg-black"
-      style="max-height: 600px;"
+      class="w-full relative overflow-hidden cursor-pointer bg-black flex items-center justify-center"
+      style="max-height: 600px; min-height: 320px;"
       @click="safeOpenPostDetailView(post, 0)"
     >
       <img 
         :src="post.post_images[0].image_path" 
         :alt="'Post image'" 
         loading="lazy"
-        class="w-full h-full object-contain hover:opacity-95 transition-all duration-200"
-        style="max-height: 600px; min-height: 200px;"
+        class="max-w-full max-h-full object-contain hover:opacity-95 transition-all duration-200"
+        style="max-height: 600px;"
       />
     </div>
     

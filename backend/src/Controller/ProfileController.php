@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Utility\ImageProcessor;
+
 class ProfileController extends AppController
 {
     public function view($id = null)
@@ -335,9 +337,9 @@ class ProfileController extends AppController
             if (!in_array($fileType, $allowedTypes)) {
                 $errors['profile_picture'] = 'Invalid file type. Only JPG, PNG, and GIF are allowed.';
             } else {
-                $maxSize = 5 * 1024 * 1024;
+                $maxSize = 20 * 1024 * 1024; // 20MB for profile photos
                 if ($uploadedFile->getSize() > $maxSize) {
-                    $errors['profile_picture'] = 'File size must be less than 5MB.';
+                    $errors['profile_picture'] = 'File size must be less than 20MB.';
                 } else {
                     $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
                     $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
@@ -346,7 +348,27 @@ class ProfileController extends AppController
                     
                     try {
                         if (!is_dir(dirname($uploadPath))) @mkdir(dirname($uploadPath), 0755, true);
-                        $uploadedFile->moveTo($uploadPath);
+                        
+                        // Move to temp location first
+                        $tempPath = dirname($uploadPath) . DS . 'temp_' . $filename;
+                        $uploadedFile->moveTo($tempPath);
+                        
+                        // Process image (resize, compress, sharpen)
+                        if (ImageProcessor::isAvailable()) {
+                            $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
+                            
+                            if ($processSuccess) {
+                                @unlink($tempPath);
+                                error_log("ProfileController: Successfully processed profile photo $filename");
+                            } else {
+                                @rename($tempPath, $uploadPath);
+                                error_log("ProfileController: Failed to process profile photo, using original");
+                            }
+                        } else {
+                            @rename($tempPath, $uploadPath);
+                            error_log("ProfileController: GD not available, using original profile photo");
+                        }
+                        
                         $data['profile_photo_path'] = '/img/profile_uploads/' . $filename;
                         
                         if (!empty($user->profile_photo_path) && $user->profile_photo_path !== '/img/profile_uploads/' . $filename) {
@@ -405,9 +427,9 @@ class ProfileController extends AppController
             if (!in_array($fileType, $allowedTypes)) {
                 $errors['cover_photo'] = 'Invalid file type. Only JPG, PNG, and GIF are allowed.';
             } else {
-                $maxSize = 10 * 1024 * 1024; // 10MB for cover photos
+                $maxSize = 50 * 1024 * 1024; // 50MB for cover photos
                 if ($uploadedCoverPhoto->getSize() > $maxSize) {
-                    $errors['cover_photo'] = 'File size must be less than 10MB.';
+                    $errors['cover_photo'] = 'File size must be less than 50MB.';
                 } else {
                     $extension = pathinfo($uploadedCoverPhoto->getClientFilename(), PATHINFO_EXTENSION);
                     $filename = 'cover_' . $userId . '_' . time() . '.' . $extension;
@@ -415,7 +437,27 @@ class ProfileController extends AppController
                     
                     try {
                         if (!is_dir(dirname($uploadPath))) @mkdir(dirname($uploadPath), 0755, true);
-                        $uploadedCoverPhoto->moveTo($uploadPath);
+                        
+                        // Move to temp location first
+                        $tempPath = dirname($uploadPath) . DS . 'temp_' . $filename;
+                        $uploadedCoverPhoto->moveTo($tempPath);
+                        
+                        // Process image (resize, compress, sharpen)
+                        if (ImageProcessor::isAvailable()) {
+                            $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
+                            
+                            if ($processSuccess) {
+                                @unlink($tempPath);
+                                error_log("ProfileController: Successfully processed cover photo $filename");
+                            } else {
+                                @rename($tempPath, $uploadPath);
+                                error_log("ProfileController: Failed to process cover photo, using original");
+                            }
+                        } else {
+                            @rename($tempPath, $uploadPath);
+                            error_log("ProfileController: GD  not available, using original cover photo");
+                        }
+                        
                         $data['cover_photo_path'] = '/img/cover_photo_uploads/' . $filename;
                         
                         if (!empty($user->cover_photo_path) && $user->cover_photo_path !== '/img/cover_photo_uploads/' . $filename) {
@@ -439,7 +481,26 @@ class ProfileController extends AppController
                     $filename = 'cover_' . $userId . '_' . time() . '.' . $extension;
                     $uploadPath = WWW_ROOT . 'img' . DS . 'cover_photo_uploads' . DS . $filename;
                     if (!is_dir(dirname($uploadPath))) @mkdir(dirname($uploadPath), 0755, true);
-                    if (move_uploaded_file($uploadedCoverPhoto['tmp_name'], $uploadPath)) {
+                    
+                    // Move to temp location first
+                    $tempPath = dirname($uploadPath) . DS . 'temp_' . $filename;
+                    if (move_uploaded_file($uploadedCoverPhoto['tmp_name'], $tempPath)) {
+                        // Process image (resize, compress, sharpen)
+                        if (ImageProcessor::isAvailable()) {
+                            $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
+                            
+                            if ($processSuccess) {
+                                @unlink($tempPath);
+                                error_log("ProfileController: Successfully processed cover photo (array) $filename");
+                            } else {
+                                @rename($tempPath, $uploadPath);
+                                error_log("ProfileController: Failed to process cover photo (array), using original");
+                            }
+                        } else {
+                            @rename($tempPath, $uploadPath);
+                            error_log("ProfileController: GD not available for cover photo (array), using original");
+                        }
+                        
                         $data['cover_photo_path'] = '/img/cover_photo_uploads/' . $filename;
                         if (!empty($user->cover_photo_path) && $user->cover_photo_path !== '/img/cover_photo_uploads/' . $filename) {
                             $oldPath = WWW_ROOT . ltrim($user->cover_photo_path, '/');

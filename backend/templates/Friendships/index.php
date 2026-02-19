@@ -1,7 +1,7 @@
 <div id="friendshipsApp" class="max-w-4xl mx-auto p-4 sm:p-6" v-cloak>
     <!-- Header -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 mb-4 border border-gray-100 dark:border-gray-700">
-        <h1 class="text-2xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">Friends</h1>
+        <h1 class="text-md sm:text-md font-bold text-gray-900 dark:text-white mb-4">Friends</h1>
         
         <!-- Search Bar -->
         <div class="relative">

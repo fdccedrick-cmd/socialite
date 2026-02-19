@@ -6,6 +6,7 @@ namespace App\Controller;
 use Cake\Log\Log;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use App\Utility\WebSocketClient;
+use App\Utility\ImageProcessor;
 
 class PostsController extends AppController
 {
@@ -129,16 +130,36 @@ class PostsController extends AppController
                                 ]));
                         }
 
-                        $maxSize = 10 * 1024 * 1024;
+                        $maxSize = 50 * 1024 * 1024; // 50MB for high-res images
                         if ($uploadedFile->getSize() > $maxSize) {
                             $connection->rollback();
-                            $this->Flash->error('File size must be less than 10MB per image.');
+                            $this->Flash->error('File size must be less than 50MB per image.');
                             return $this->response
                                 ->withType('application/json')
                                 ->withStringBody(json_encode([
                                     'success' => false,
                                     'message' => 'File too large'
                                 ]));
+                        }
+                        
+                        // Check minimum dimensions (Facebook-style validation)
+                        $tempPath = $uploadedFile->getStream()->getMetadata('uri');
+                        $imageInfo = @getimagesize($tempPath);
+                        if ($imageInfo !== false) {
+                            [$width, $height] = $imageInfo;
+                            $minWidth = 480;
+                            $minHeight = 320;
+                            
+                            if ($width < $minWidth || $height < $minHeight) {
+                                $connection->rollback();
+                                $this->Flash->error("Image is too small. Minimum dimensions: {$minWidth}×{$minHeight}px. Your image: {$width}×{$height}px.");
+                                return $this->response
+                                    ->withType('application/json')
+                                    ->withStringBody(json_encode([
+                                        'success' => false,
+                                        'message' => "Image too small: {$width}×{$height}px. Minimum: {$minWidth}×{$minHeight}px"
+                                    ]));
+                            }
                         }
 
                         $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
@@ -152,9 +173,29 @@ class PostsController extends AppController
                         
                         $uploadPath = $uploadDir . DS . $filename;
                         
-                        
                         try {
-                            $uploadedFile->moveTo($uploadPath);
+                            // First, move uploaded file to temporary location
+                            $tempPath = $uploadDir . DS . 'temp_' . $filename;
+                            $uploadedFile->moveTo($tempPath);
+                            
+                            // Process image (resize, compress, sharpen)
+                            if (ImageProcessor::isAvailable()) {
+                                $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
+                                
+                                if ($processSuccess) {
+                                    // Remove temp file
+                                    @unlink($tempPath);
+                                    error_log("PostsController: Successfully processed image $filename");
+                                } else {
+                                    // If processing fails, use original
+                                    @rename($tempPath, $uploadPath);
+                                    error_log("PostsController: Image processing failed for $filename, using original");
+                                }
+                            } else {
+                                // GD not available, use original
+                                @rename($tempPath, $uploadPath);
+                                error_log("PostsController: GD library not available, using original image");
+                            }
                             
                             
                             $postImage = $postImagesTable->newEmptyEntity();

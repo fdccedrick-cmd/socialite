@@ -22,9 +22,9 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
   overflow: hidden;
 }
 </style>
-<div id="headerApp" class="fixed top-0 left-0 w-full bg-white dark:bg-gray-800 border-b dark:border-gray-700 z-50 shadow-sm" v-cloak>
+<div id="headerApp" class="fixed top-0  left-0 w-full bg-white dark:bg-gray-800 border-b dark:border-gray-700 z-50 shadow-sm" v-cloak>
   <div class="max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
-    <div class="flex items-center justify-between h-14 sm:h-16">
+    <div class="flex items-center justify-between h-12 sm:h-16">
       <!-- Left: Mobile Menu + Logo + Search -->
        <div class="flex items-center flex-1 gap-2 sm:gap-4">
   <!-- Mobile Menu Button -->
