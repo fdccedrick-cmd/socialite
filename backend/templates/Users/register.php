@@ -268,6 +268,7 @@
 }
 </style>
 
+<script src="/js/loader.js"></script>
 <script>
 const { createApp } = Vue;
 
@@ -349,55 +350,56 @@ createApp({
         },
         
         handleSubmit(e) {
+            e.preventDefault();
             this.errors = {};
             this.showError = false;
 
             // validations
             if (!this.formData.full_name || this.formData.full_name.trim().length < 2) {
                 this.errors.full_name = 'Full name is required (at least 2 characters)';
-                e.preventDefault();
                 return;
             }
             
             // Username validation
             if (this.formData.username.length < 3) {
                 this.errors.username = 'Username must be at least 3 characters';
-                e.preventDefault();
                 return;
             }
             
             if (!this.isAlphaNumeric(this.formData.username)) {
                 this.errors.username = 'Username can only contain letters and numbers';
-                e.preventDefault();
                 return;
             }
             
             // Check if username is taken
             if (this.usernameStatus === 'taken') {
                 this.errors.username = 'This username is already taken';
-                e.preventDefault();
                 return;
             }
             
             // Password validation
             if (this.formData.password.length < 6) {
                 this.errors.password = 'Password must be at least 6 characters';
-                e.preventDefault();
                 return;
             }
             
             // Confirm password validation
             if (this.formData.password !== this.formData.confirm_password) {
                 this.errors.confirm_password = 'Passwords do not match';
-                e.preventDefault();
                 return;
             }
             
             // Prevent submission if username check is still in progress
             if (this.isCheckingUsername) {
-                e.preventDefault();
                 return;
             }
+
+            // Show loader and submit form
+            this.isSubmitting = true;
+            window.showLoader('Creating your account...');
+            
+            // Submit the form
+            e.target.submit();
         }
     },
     mounted() {

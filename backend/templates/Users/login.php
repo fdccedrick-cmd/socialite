@@ -124,6 +124,7 @@
 }
 </style>
 
+<script src="/js/loader.js"></script>
 <script>
 const { createApp } = Vue;
 
@@ -144,21 +145,27 @@ createApp({
         }
     },
     methods: {
-        handleSubmit(e) {
+        async handleSubmit(e) {
+            e.preventDefault();
             this.errors = {};
 
             // validation
             if (!this.formData.username) {
                 this.errors.username = 'Username is required';
-                e.preventDefault();
                 return;
             }
 
             if (!this.formData.password) {
                 this.errors.password = 'Password is required';
-                e.preventDefault();
                 return;
             }
+
+            // Show loader and submit form
+            this.isSubmitting = true;
+            window.showLoader('Logging you in...');
+            
+            // Submit the form
+            e.target.submit();
         }
     },
     mounted() {
