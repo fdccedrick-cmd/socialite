@@ -996,15 +996,23 @@
 
         // Validate form
         if (!this.editForm.full_name || this.editForm.full_name.trim() === '') {
-          this.errors.full_name = 'Full name is required';
+          this.errors.full_name = 'Full name is required and cannot be empty';
           this.isSubmitting = false;
+          // Re-render icons after error shows
+          this.$nextTick(() => {
+            if (window.lucide) lucide.createIcons();
+          });
           return;
         }
 
+        // Clear any previous errors
+        this.errors = {};
+
         // Create FormData for file upload
         const formData = new FormData();
-        formData.append('full_name', this.editForm.full_name);
-        formData.append('bio', this.editForm.bio);
+        formData.append('full_name', this.editForm.full_name.trim());
+        // Send bio even if empty (backend will handle null)
+        formData.append('bio', this.editForm.bio ? this.editForm.bio.trim() : '');
         
         // Try multiple sources for the file, with priority order
         let fileToUpload = this.croppedFile || this.editForm.profile_picture_file;

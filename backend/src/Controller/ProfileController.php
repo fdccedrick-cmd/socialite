@@ -272,9 +272,8 @@ class ProfileController extends AppController
         }
 
         $bio = $this->request->getData('bio');
-        if (!empty($bio)) {
-            $data['bio'] = trim($bio);
-        }
+        // Allow empty bio - will be stored as null and show "No bio yet" in UI
+        $data['bio'] = !empty($bio) ? trim($bio) : null;
 
         $fullName = $this->request->getData('full_name');
         if (!empty($fullName)) {

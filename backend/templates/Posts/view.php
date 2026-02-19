@@ -133,7 +133,9 @@ $currentUserJson = $currentUserArray !== null ? json_encode($currentUserArray, J
       } catch (e) { console.error('currentUser injection error', e); }
 </script>
 
+<?php $this->start('script'); ?>
 <script src="/js/profile.js?v=<?= time() ?>"></script>
+<?php $this->end(); ?>
 
 <?php
 

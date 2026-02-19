@@ -25,6 +25,7 @@
         // Pass user's theme preference to JavaScript (before theme-init.js)
         window.userTheme = <?= json_encode($userTheme) ?>;
     </script>
+    <link rel="stylesheet" href="/css/modal.css?v=<?= time() ?>">
     <script src="/js/theme-init.js?v=<?= time() ?>"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -172,6 +173,9 @@
     </script>
 
     <?= $this->element('confirmation_modal') ?>
+    
+    <!-- Page-specific scripts -->
+    <?= $this->fetch('script') ?>
 
 </body>
 </html>

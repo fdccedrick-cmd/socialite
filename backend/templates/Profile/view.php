@@ -33,7 +33,7 @@ window.profileData = {
           }
           echo json_encode($joinedDate);
         ?>,
-        bio: <?= json_encode(!empty($user['bio']) ? $user['bio'] : 'No bio yet') ?>
+        bio: <?= json_encode($user['bio'] ?? null) ?>
     },
     postCount: <?= json_encode($postCount ?? 0) ?>,
     likes: <?= json_encode($userLikeCount ?? 0) ?>
@@ -72,7 +72,8 @@ console.log('🔍 Profile Data Debug:', {
         </div>
         
         <div class="mb-3 sm:mb-4">
-          <p class="text-gray-700 dark:text-gray-300 text-xs sm:text-sm lg:text-base">{{ user.bio }}</p>
+          <p v-if="user.bio" class="text-gray-700 dark:text-gray-300 text-xs sm:text-sm lg:text-base">{{ user.bio }}</p>
+          <p v-else class="text-gray-400 dark:text-gray-500 text-xs sm:text-sm lg:text-base italic">No bio yet</p>
         </div>
         
         <!-- Stats -->
@@ -303,6 +304,8 @@ console.log('🔍 Profile Data Debug:', {
   
 </div>
 
+<?php $this->start('script'); ?>
 <!-- WebSocket Manager for real-time updates -->
 <script src="/js/websocket-manager.js?v=<?= time() ?>"></script>
 <script src="/js/profile.js?v=<?= time() ?>"></script>
+<?php $this->end(); ?>

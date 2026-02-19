@@ -201,6 +201,8 @@ window.searchData = {
 };
 </script>
 
+<?php $this->start('script'); ?>
 <!-- Load scripts -->
 <script src="/js/websocket-manager.js?v=<?= time() ?>"></script>
 <script src="/js/search.js?v=<?= time() ?>"></script>
+<?php $this->end(); ?>

@@ -81,10 +81,13 @@
           v-model="editForm.bio"
           maxlength="500"
           class="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-          placeholder="Tell us about yourself"
+          placeholder="Tell us about yourself (leave empty for 'No bio yet')"
           rows="4"
         ></textarea>
-        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">Maximum 500 characters</p>
+        <div class="flex items-center justify-between">
+          <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Leave empty to show "No bio yet"</p>
+          <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{{ (editForm.bio || '').length }}/500</p>
+        </div>
         </div>
       <!-- Full Name -->
       <div class="space-y-1.5 sm:space-y-2">
@@ -97,10 +100,21 @@
           v-model="editForm.full_name"
           required
           maxlength="150"
-          class="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+          :class="{
+            'border-red-500 dark:border-red-500 focus:ring-red-500': errors.full_name,
+            'border-gray-300 dark:border-gray-600 focus:ring-blue-500': !errors.full_name
+          }"
+          class="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border rounded-lg focus:ring-2 focus:border-transparent transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
           placeholder="Enter your full name"
         />
-        <p v-if="errors.full_name" class="text-xs sm:text-sm text-red-600 dark:text-red-400">{{ errors.full_name }}</p>
+        <div class="flex items-center justify-between">
+          <p v-if="errors.full_name" class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+            <i data-lucide="alert-circle" class="w-3 h-3"></i>
+            {{ errors.full_name }}
+          </p>
+          <p v-else class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Required field</p>
+          <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{{ (editForm.full_name || '').length }}/150</p>
+        </div>
       </div>
 
       <!-- Username (Read-only) -->
@@ -138,7 +152,7 @@
         </button>
         <button 
           type="submit"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || !editForm.full_name || editForm.full_name.trim() === ''"
           class="px-4 sm:px-6 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 sm:gap-2"
         >
           <span v-if="isSubmitting">
