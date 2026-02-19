@@ -6,10 +6,10 @@ $suggestions = $suggestions ?? [];
 
 <div id="rightnavApp" class="w-full space-y-3 lg:space-y-4 sticky top-20 h-fit" v-cloak>
   <!-- Friends Section -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3 xl:p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 xl:p-4">
     <div class="flex items-center justify-between mb-3">
-      <h3 class="font-semibold text-gray-900 text-sm">Friends</h3>
-      <a href="/friendships/index" class="text-blue-600 text-xs font-medium hover:underline">See all</a>
+      <h3 class="font-semibold text-gray-900 dark:text-white text-sm">Friends</h3>
+      <a href="/friendships/index" class="text-blue-600 dark:text-blue-400 text-xs font-medium hover:underline">See all</a>
     </div>
     
     <div v-if="friends.length > 0" class="space-y-2">
@@ -17,29 +17,29 @@ $suggestions = $suggestions ?? [];
         v-for="friend in friends" 
         :key="friend.id"
         :href="'/profile/' + friend.id" 
-        class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+        class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
       >
         <img 
           :src="friend.profile_photo_path || '/img/default-avatar.png'" 
           :alt="friend.full_name" 
-          class="w-9 h-9 rounded-full object-cover border border-gray-200 flex-shrink-0"
+          class="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-600 flex-shrink-0"
         />
         <div class="flex-1 min-w-0">
-          <p class="font-semibold text-gray-900 text-xs truncate">{{ friend.full_name }}</p>
-          <p class="text-gray-500 text-[10px] truncate">@{{ friend.username }}</p>
+          <p class="font-semibold text-gray-900 dark:text-white text-xs truncate">{{ friend.full_name }}</p>
+          <p class="text-gray-500 dark:text-gray-400 text-[10px] truncate">@{{ friend.username }}</p>
         </div>
       </a>
     </div>
     
     <div v-else class="text-center py-4">
-      <p class="text-gray-500 text-xs">No friends yet</p>
-      <a href="/friendships/suggestions" class="text-blue-600 text-xs hover:underline mt-1 inline-block">Find friends</a>
+      <p class="text-gray-500 dark:text-gray-400 text-xs">No friends yet</p>
+      <a href="/friendships/suggestions" class="text-blue-600 dark:text-blue-400 text-xs hover:underline mt-1 inline-block">Find friends</a>
     </div>
   </div>
   
   <!-- Suggested for You Section -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3 xl:p-4">
-    <h3 class="font-semibold text-gray-900 text-sm mb-3">Suggested for you</h3>
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 xl:p-4">
+    <h3 class="font-semibold text-gray-900 dark:text-white text-sm mb-3">Suggested for you</h3>
     
     <div v-if="suggestions.length > 0" class="space-y-2">
       <div 
@@ -51,14 +51,14 @@ $suggestions = $suggestions ?? [];
           <img 
             :src="suggestion.profile_photo_path || '/img/default-avatar.png'" 
             :alt="suggestion.full_name" 
-            class="w-9 h-9 rounded-full object-cover border border-gray-200 flex-shrink-0"
+            class="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-600 flex-shrink-0"
           />
         </a>
         <div class="flex-1 min-w-0">
           <a :href="'/profile/' + suggestion.id">
-            <p class="font-semibold text-gray-900 text-xs truncate hover:underline">{{ suggestion.full_name }}</p>
+            <p class="font-semibold text-gray-900 dark:text-white text-xs truncate hover:underline">{{ suggestion.full_name }}</p>
           </a>
-          <p class="text-gray-500 text-[10px] truncate">{{ suggestion.mutual_friends_count }} mutual</p>
+          <p class="text-gray-500 dark:text-gray-400 text-[10px] truncate">{{ suggestion.mutual_friends_count }} mutual</p>
         </div>
         <button 
           @click="addFriend(suggestion.id)"
@@ -73,8 +73,8 @@ $suggestions = $suggestions ?? [];
     </div>
     
     <div v-else class="text-center py-4">
-      <p class="text-gray-500 text-xs">No suggestions with mutual friends</p>
-      <a href="/friendships/suggestions" class="text-blue-600 text-xs hover:underline mt-1 inline-block">View all suggestions</a>
+      <p class="text-gray-500 dark:text-gray-400 text-xs">No suggestions with mutual friends</p>
+      <a href="/friendships/suggestions" class="text-blue-600 dark:text-blue-400 text-xs hover:underline mt-1 inline-block">View all suggestions</a>
     </div>
   </div>
 </div>

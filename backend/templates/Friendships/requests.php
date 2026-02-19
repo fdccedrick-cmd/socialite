@@ -1,27 +1,27 @@
 <div id="requestsApp" class="max-w-4xl mx-auto p-4 sm:p-6" v-cloak>
     <!-- Header -->
-    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4">
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Friends</h1>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6 mb-4">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Friends</h1>
     </div>
 
     <!-- Tabs -->
-    <div class="bg-white rounded-lg shadow-sm mb-4">
-        <div class="flex border-b border-gray-200">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
+        <div class="flex border-b border-gray-200 dark:border-gray-700">
             <a 
                 href="/friendships/index" 
-                class="flex-1 px-4 py-3 sm:px-6 sm:py-4 text-center font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                class="flex-1 px-4 py-3 sm:px-6 sm:py-4 text-center font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
                 All Friends
             </a>
             <a 
                 href="/friendships/requests" 
-                class="flex-1 px-4 py-3 sm:px-6 sm:py-4 text-center font-medium text-blue-600 border-b-2 border-blue-600 hover:bg-gray-50 transition-colors"
+                class="flex-1 px-4 py-3 sm:px-6 sm:py-4 text-center font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
                 Requests
             </a>
             <a 
                 href="/friendships/suggestions" 
-                class="flex-1 px-4 py-3 sm:px-6 sm:py-4 text-center font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                class="flex-1 px-4 py-3 sm:px-6 sm:py-4 text-center font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
                 Suggestions
             </a>
@@ -34,7 +34,7 @@
             <div 
                 v-for="request in requests" 
                 :key="request.friendship_id"
-                class="bg-white rounded-lg shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow"
+                class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6 hover:shadow-md transition-shadow"
             >
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
@@ -43,19 +43,19 @@
                             <img 
                                 :src="request.profile_photo_path || '/img/default-avatar.png'" 
                                 :alt="request.full_name"
-                                class="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
+                                class="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border border-gray-200 dark:border-gray-600"
                             >
                         </a>
                         
                         <!-- User Info -->
                         <div class="flex-1 min-w-0">
                             <a :href="'/profile/view/' + request.id" class="block hover:underline">
-                                <h3 class="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                                <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
                                     {{ request.full_name }}
                                 </h3>
                             </a>
-                            <p class="text-sm text-gray-600 truncate">@{{ request.username }}</p>
-                            <p class="text-xs sm:text-sm text-gray-500 mt-1">
+                            <p class="text-sm text-gray-600 dark:text-gray-400 truncate">@{{ request.username }}</p>
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-500 mt-1">
                                 {{ request.mutual_friends_count }} mutual
                             </p>
                         </div>
@@ -83,10 +83,10 @@
         </template>
         
         <!-- Empty State -->
-        <div v-else class="bg-white rounded-lg shadow-sm p-8 sm:p-12 text-center">
-            <i data-lucide="inbox" class="w-16 h-16 text-gray-400 mx-auto mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">No friend requests</h3>
-            <p class="text-gray-600 mb-6">
+        <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-8 sm:p-12 text-center">
+            <i data-lucide="inbox" class="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No friend requests</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">
                 You don't have any pending friend requests.
             </p>
             <a 

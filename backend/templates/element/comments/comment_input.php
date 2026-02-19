@@ -8,14 +8,14 @@
 ?>
 
 <!-- Facebook-style comment input -->
-<div class="px-3 sm:px-4 pb-3 pt-2 border-t border-gray-100">
+<div class="px-3 sm:px-4 pb-3 pt-2 border-t border-gray-100 dark:border-gray-700">
   <div class="flex items-center gap-2">
     <img
       :src="user && user.avatar ? user.avatar : 'https://i.pravatar.cc/150?img=1'"
       alt=""
-      class="w-8 h-8 rounded-full object-cover flex-shrink-0"
+      class="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-gray-200 dark:border-gray-600"
     />
-    <div class="flex-1 flex items-center gap-1 bg-gray-100 rounded-full pl-3 pr-1 py-1">
+    <div class="flex-1 flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full pl-3 pr-1 py-1">
       <input
         :id="'comment-input-' + post.id"
         v-model="post.newComment"
@@ -23,12 +23,12 @@
         @focus="showCommentOptions(post.id)"
         type="text"
         placeholder="Write a comment..."
-        class="flex-1 min-w-0 bg-transparent text-sm text-gray-800 placeholder-gray-500 focus:outline-none py-1"
+        class="flex-1 min-w-0 bg-transparent text-sm text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none py-1"
       />
       <button
         @click="triggerCommentImageInput(post.id)"
         type="button"
-        class="p-1.5 text-gray-500 hover:bg-gray-200 rounded-full transition-colors"
+        class="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
         title="Add photo"
       >
         <i data-lucide="image" class="w-4 h-4"></i>
@@ -43,7 +43,7 @@
       <button
         @click="submitComment(post.id)"
         type="button"
-        class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+        class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full transition-colors"
         :class="{ 'text-blue-600': (post.newComment && post.newComment.trim()) || post.commentImage }"
         title="Send"
       >
@@ -53,7 +53,7 @@
   </div>
   <!-- Image preview (Facebook-style) -->
   <div v-if="post.commentImage" class="mt-2 ml-10 relative inline-block">
-    <img :src="post.commentImagePreview" alt="Preview" class="max-w-[180px] max-h-[180px] rounded-lg border border-gray-200 object-cover">
+    <img :src="post.commentImagePreview" alt="Preview" class="max-w-[180px] max-h-[180px] rounded-lg border border-gray-200 dark:border-gray-600 object-cover">
     <button
       @click="removeCommentImage(post.id)"
       type="button"

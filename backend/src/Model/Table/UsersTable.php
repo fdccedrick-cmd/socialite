@@ -97,6 +97,12 @@ class UsersTable extends Table
             ->scalar('bio')
             ->maxLength('bio', 500)
             ->allowEmptyString('bio');
+        $validator
+            ->scalar('theme')
+            ->maxLength('theme', 20)
+            ->allowEmptyString('theme')
+            ->inList('theme', ['light', 'dark'], 'Invalid theme value');
+
         return $validator;
     }
 

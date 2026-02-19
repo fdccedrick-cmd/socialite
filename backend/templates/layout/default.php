@@ -7,7 +7,31 @@
     <?php // Expose CSRF token for JS to read if middleware provided one ?>
     <meta name="csrf-token" content="<?= h($this->request->getAttribute('csrfToken') ?? '') ?>">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <?php 
+        // Get user's theme preference from database
+        $userTheme = null;
+        if (isset($currentUser) && is_object($currentUser)) {
+            $userTheme = $currentUser->theme ?? null;
+        } elseif (isset($currentUser) && is_array($currentUser)) {
+            $userTheme = $currentUser['theme'] ?? null;
+        } elseif ($this->Identity && $this->Identity->get()) {
+            $identity = $this->Identity->get();
+            if (is_object($identity)) {
+                $userTheme = $identity->theme ?? null;
+            }
+        }
+    ?>
+    <script>
+        // Pass user's theme preference to JavaScript (before theme-init.js)
+        window.userTheme = <?= json_encode($userTheme) ?>;
+    </script>
+    <script src="/js/theme-init.js?v=<?= time() ?>"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
@@ -84,7 +108,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 dark:bg-gray-900 transition-colors">
     <?php $currentUser = $currentUser ?? ($this->Identity->get() ?? null); ?>
     <?= $this->element('navigation/header', ['user' => $currentUser]) ?>
     

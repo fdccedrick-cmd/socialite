@@ -68,8 +68,11 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/friendships/status/{id}', ['controller' => 'Friendships', 'action' => 'status'], ['pass' => ['id']]);
         
         // Settings routes
+        $builder->connect('/settings', ['controller' => 'Settings', 'action' => 'index']);
+        $builder->connect('/settings/index', ['controller' => 'Settings', 'action' => 'index']);
         $builder->connect('/settings/account', ['controller' => 'Settings', 'action' => 'account']);
         $builder->connect('/settings/update-password', ['controller' => 'Settings', 'action' => 'updatePassword']);
+        $builder->connect('/settings/update-theme', ['controller' => 'Settings', 'action' => 'updateTheme']);
         
         $builder->fallbacks();
     });

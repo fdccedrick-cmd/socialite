@@ -11,13 +11,13 @@ $this->assign('title', 'Search Results');
 
 <div id="searchApp" class="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 space-y-4" v-cloak>
   <!-- Search Header -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-    <h1 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6">
+    <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
       Search Results
     </h1>
-    <p class="text-sm sm:text-base text-gray-600">
+    <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
       <?php if (!empty($query)): ?>
-        Showing results for: <span class="font-semibold text-gray-900">"<?= h($query) ?>"</span>
+        Showing results for: <span class="font-semibold text-gray-900 dark:text-white">"<?= h($query) ?>"</span>
       <?php else: ?>
         Enter a search query to find people and posts
       <?php endif; ?>
@@ -27,44 +27,44 @@ $this->assign('title', 'Search Results');
   <?php if (!empty($query)): ?>
     <!-- People Results -->
     <?php if (!empty($users)): ?>
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="p-4 sm:p-6 border-b border-gray-100">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700">
           <div class="flex items-center gap-2">
-            <i data-lucide="users" class="w-5 h-5 text-indigo-600"></i>
-            <h2 class="text-lg sm:text-xl font-bold text-gray-900">People</h2>
-            <span class="text-sm text-gray-500">(<?= count($users) ?>)</span>
+            <i data-lucide="users" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">People</h2>
+            <span class="text-sm text-gray-500 dark:text-gray-400">(<?= count($users) ?>)</span>
           </div>
         </div>
         
-        <div class="divide-y divide-gray-100">
+        <div class="divide-y divide-gray-100 dark:divide-gray-700">
           <?php foreach ($users as $user): ?>
-            <div class="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+            <div class="p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <div class="flex items-center gap-3 sm:gap-4">
                 <!-- Avatar -->
                 <a href="/profile/<?= h($user['username']) ?>" class="shrink-0">
                   <img 
                     src="<?= h($user['profile_photo_path'] ?: 'https://i.pravatar.cc/150?img=1') ?>" 
                     alt="<?= h($user['full_name']) ?>"
-                    class="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-100"
+                    class="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-100 dark:border-gray-600"
                   />
                 </a>
                 
                 <!-- User Info -->
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2">
-                    <a href="/profile/<?= h($user['username']) ?>" class="font-semibold text-gray-900 hover:text-indigo-600 text-sm sm:text-base truncate">
+                    <a href="/profile/<?= h($user['username']) ?>" class="font-semibold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 text-sm sm:text-base truncate">
                       <?= h($user['full_name']) ?>
                     </a>
                     <?php if ($user['is_friend']): ?>
-                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 shrink-0">
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 shrink-0">
                         <i data-lucide="check" class="w-3 h-3"></i>
                         Friend
                       </span>
                     <?php endif; ?>
                   </div>
-                  <p class="text-xs sm:text-sm text-gray-500">@<?= h($user['username']) ?></p>
+                  <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">@<?= h($user['username']) ?></p>
                   <?php if (!empty($user['bio'])): ?>
-                    <p class="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-1"><?= h($user['bio']) ?></p>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-1"><?= h($user['bio']) ?></p>
                   <?php endif; ?>
                 </div>
                 
@@ -84,12 +84,12 @@ $this->assign('title', 'Search Results');
 
     <!-- Posts Results -->
     <?php if (!empty($posts)): ?>
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="p-4 sm:p-6 border-b border-gray-100">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700">
           <div class="flex items-center gap-2">
-            <i data-lucide="file-text" class="w-5 h-5 text-indigo-600"></i>
-            <h2 class="text-lg sm:text-xl font-bold text-gray-900">Posts</h2>
-            <span class="text-sm text-gray-500">(<?= count($posts) ?>)</span>
+            <i data-lucide="file-text" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Posts</h2>
+            <span class="text-sm text-gray-500 dark:text-gray-400">(<?= count($posts) ?>)</span>
           </div>
         </div>
         
@@ -106,24 +106,24 @@ $this->assign('title', 'Search Results');
 
     <!-- No Results -->
     <?php if (empty($users) && empty($posts)): ?>
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-          <i data-lucide="search" class="w-8 h-8 text-gray-400"></i>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+          <i data-lucide="search" class="w-8 h-8 text-gray-400 dark:text-gray-500"></i>
         </div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">No results found</h3>
-        <p class="text-gray-600">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No results found</h3>
+        <p class="text-gray-600 dark:text-gray-400">
           Try searching for something else or check your spelling
         </p>
       </div>
     <?php endif; ?>
   <?php else: ?>
     <!-- Empty State -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center">
-        <i data-lucide="search" class="w-8 h-8 text-indigo-600"></i>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+        <i data-lucide="search" class="w-8 h-8 text-indigo-600 dark:text-indigo-400"></i>
       </div>
-      <h3 class="text-lg font-semibold text-gray-900 mb-2">Start searching</h3>
-      <p class="text-gray-600">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Start searching</h3>
+      <p class="text-gray-600 dark:text-gray-400">
         Use the search bar above to find people and posts
       </p>
     </div>

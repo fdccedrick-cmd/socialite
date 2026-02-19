@@ -12,7 +12,7 @@
   <button
     @click="toggleComments(post.id)"
     type="button"
-    class="text-gray-500 hover:text-gray-700 text-xs font-medium focus:outline-none"
+    class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-xs font-medium focus:outline-none"
   >
     <span v-if="!post.showComments">View all {{ post.comment_count }} {{ post.comment_count === 1 ? 'comment' : 'comments' }}</span>
     <span v-else>Hide comments</span>
@@ -26,17 +26,17 @@
       <img
         :src="comment.user?.profile_photo_path || 'https://i.pravatar.cc/150?img=1'"
         :alt="comment.user?.full_name"
-        class="w-8 h-8 rounded-full object-cover"
+        class="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-600"
       />
     </a>
     <div class="flex-1 min-w-0">
-      <div class="bg-gray-100 rounded-2xl px-3 py-2 inline-block max-w-full">
+      <div class="bg-gray-100 dark:bg-gray-700 rounded-2xl px-3 py-2 inline-block max-w-full">
         <a v-if="comment.user"
            :href="`/profile/${comment.user.id}`"
-           class="font-semibold text-gray-900 hover:underline"
+           class="font-semibold text-gray-900 dark:text-white hover:underline"
         >{{ comment.user.full_name }}</a>
-        <p v-else class="font-semibold text-gray-900">{{ comment.user?.full_name || 'Unknown User' }}</p>
-        <p v-if="comment.content_text" class="text-gray-900 whitespace-pre-wrap break-words">{{ comment.content_text }}</p>
+        <p v-else class="font-semibold text-gray-900 dark:text-white">{{ comment.user?.full_name || 'Unknown User' }}</p>
+        <p v-if="comment.content_text" class="text-gray-900 dark:text-gray-200 whitespace-pre-wrap break-words">{{ comment.content_text }}</p>
         <img v-if="comment.content_image_path"
              :src="'/' + comment.content_image_path"
              alt="Comment"
@@ -50,23 +50,23 @@
           @click="toggleCommentLike(post.id, comment.id)"
           type="button"
           class="text-xs font-semibold hover:underline"
-          :class="comment.is_liked ? 'text-red-600' : 'text-gray-500 hover:text-gray-700'"
+          :class="comment.is_liked ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
         >
           {{ comment.is_liked ? 'Liked' : 'Like' }}
         </button>
-        <span v-if="comment.like_count > 0" class="text-gray-500 text-xs">{{ comment.like_count }}</span>
-        <span class="text-gray-400 select-none">·</span>
-        <span class="text-gray-500 text-xs">{{ formatDate(comment.created_at) }}</span>
+        <span v-if="comment.like_count > 0" class="text-gray-500 dark:text-gray-400 text-xs">{{ comment.like_count }}</span>
+        <span class="text-gray-400 dark:text-gray-500 select-none">·</span>
+        <span class="text-gray-500 dark:text-gray-400 text-xs">{{ formatDate(comment.created_at) }}</span>
         <template v-if="typeof user !== 'undefined' && user && ((comment.user && comment.user.id === user.id) || (post.user && post.user.id === user.id))">
-          <span class="text-gray-400 select-none">·</span>
+          <span class="text-gray-400 dark:text-gray-500 select-none">·</span>
           <button
             v-if="comment.user && comment.user.id === user.id"
             @click="noop"
-            class="text-xs text-gray-500 hover:text-gray-700"
+            class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
           >Edit</button>
           <button
             @click.prevent="deleteComment(post.id, comment.id)"
-            class="text-xs text-gray-500 hover:text-gray-700"
+            class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
           >Delete</button>
         </template>
       </div>

@@ -11,7 +11,7 @@ $username = $currentUser['username'] ?? 'user';
 $fullName = $currentUser['full_name'] ?? $username;
 ?>
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
   <div
     class="p-3 sm:p-4 relative post-create-card transition-all"
     @dragenter="handleDragEnter"
@@ -19,7 +19,7 @@ $fullName = $currentUser['full_name'] ?? $username;
     @dragleave="handleDragLeave"
     @drop="handleDrop"
     :class="{
-      'bg-blue-50 border-2 border-blue-400 border-dashed ring-4 ring-blue-100': newPost.isDragging
+      'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-400 dark:border-blue-500 border-dashed ring-4 ring-blue-100 dark:ring-blue-900/50': newPost.isDragging
     }"
   >
     <!-- Drag & Drop Overlay -->
@@ -41,7 +41,7 @@ $fullName = $currentUser['full_name'] ?? $username;
       <img 
         :src="user.avatar" 
         :alt="user.username" 
-        class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-gray-100 flex-shrink-0"
+        class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-gray-100 dark:border-gray-600 flex-shrink-0"
       />
       <div class="flex-1 min-w-0">
         <textarea 
@@ -51,14 +51,14 @@ $fullName = $currentUser['full_name'] ?? $username;
           placeholder="What's on your mind?"
           rows="1"
           maxlength="5000"
-          class="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white resize-none transition-all"
+          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 resize-none transition-all"
         ></textarea>
         
         <!-- Character Counter -->
         <div v-if="newPost.content.length > 0" class="flex justify-end mt-1 px-1">
           <span 
             class="text-xs font-medium"
-            :class="newPost.content.length > 4500 ? 'text-red-500' : 'text-gray-400'"
+            :class="newPost.content.length > 4500 ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'"
           >
             {{ newPost.content.length }}/5000
           </span>
@@ -80,7 +80,7 @@ $fullName = $currentUser['full_name'] ?? $username;
           >
             <img 
               :src="preview" 
-              class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border-2 border-gray-200"
+              class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-600"
             />
             <button 
               @click="removeImage(index)"
@@ -93,7 +93,7 @@ $fullName = $currentUser['full_name'] ?? $username;
           
           <!-- Add More Photos Button -->
           <label 
-            class="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all group"
+            class="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all group"
             title="Add more photos"
           >
             <input 
@@ -112,20 +112,20 @@ $fullName = $currentUser['full_name'] ?? $username;
     
     <!-- Error Message -->
     <transition name="fade">
-      <div v-if="newPost.error" class="mb-3 p-2.5 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-        <i data-lucide="alert-circle" class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5"></i>
-        <p class="text-xs sm:text-sm text-red-700 flex-1">{{ newPost.error }}</p>
+      <div v-if="newPost.error" class="mb-3 p-2.5 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5"></i>
+        <p class="text-xs sm:text-sm text-red-700 dark:text-red-300 flex-1">{{ newPost.error }}</p>
       </div>
     </transition>
     
     <!-- Actions Bar -->
-    <div class="flex items-center justify-between pt-3 border-t border-gray-100 gap-2">
+    <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700 gap-2">
       <!-- Left Actions -->
       <div class="flex items-center gap-1 sm:gap-1.5">
         <!-- Photo Upload (Only show when no images) -->
         <label 
           v-if="newPost.imagePreview.length === 0"
-          class="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 text-gray-700 hover:bg-gray-50 rounded-lg cursor-pointer transition-all group"
+          class="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-all group"
           title="Add photos"
         >
           <input 
@@ -136,7 +136,7 @@ $fullName = $currentUser['full_name'] ?? $username;
             class="hidden"
             ref="imageInput"
           />
-          <i data-lucide="image" class="w-4 h-4 sm:w-5 sm:h-5 text-green-600"></i>
+          <i data-lucide="image" class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400"></i>
           <span class="text-xs sm:text-sm font-medium hidden sm:inline">Photo</span>
         </label>
         
@@ -144,7 +144,7 @@ $fullName = $currentUser['full_name'] ?? $username;
         <div class="relative ml-1">
           <select 
             v-model="newPost.privacy" 
-            class="appearance-none pl-2 pr-7 py-1.5 text-xs sm:text-sm font-medium border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+            class="appearance-none pl-2 pr-7 py-1.5 text-xs sm:text-sm font-medium border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer"
           >
             <option value="public">🌍 Public</option>
             <option value="friends">👥 Friends</option>

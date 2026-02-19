@@ -7,12 +7,12 @@
  */
 ?>
 
-<div class="relative w-full p-3 sm:p-4 pt-2 sm:pt-3 bg-white">
+<div class="relative w-full p-3 sm:p-4 pt-2 sm:pt-3 bg-white dark:bg-gray-800">
   <div class="flex items-center gap-4 sm:gap-5 mb-2 sm:mb-3">
     <!-- Like Button -->
     <button 
       @click.prevent="toggleLike(post.id)"
-      :class="post.is_liked ? 'text-red-500' : 'text-gray-700 hover:text-red-500'"
+      :class="post.is_liked ? 'text-red-500' : 'text-gray-700 dark:text-gray-300 hover:text-red-500'"
       class="flex items-center gap-1 sm:gap-1.5 transition-all duration-200 active:scale-110"
       :title="post.is_liked ? 'Unlike' : 'Like'"
     >
@@ -37,7 +37,7 @@
     <!-- Comment Button -->
     <button 
       @click.prevent="(typeof handleOpenComment === 'function' ? handleOpenComment(post.id) : (typeof window !== 'undefined' && typeof window.handleOpenComment === 'function' ? window.handleOpenComment(post.id) : null))"
-      class="flex items-center gap-1 sm:gap-1.5 text-gray-700 hover:text-blue-500 transition-colors"
+      class="flex items-center gap-1 sm:gap-1.5 text-gray-700 dark:text-gray-300 hover:text-blue-500 transition-colors"
       title="Comment"
     >
       <i data-lucide="message-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
