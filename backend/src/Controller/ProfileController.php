@@ -277,42 +277,51 @@ class ProfileController extends AppController
             // ignore
         }
 
-        $bio = $this->request->getData('bio');
-        // Allow empty bio - will be stored as null and show "No bio yet" in UI
-        $data['bio'] = !empty($bio) ? trim($bio) : null;
-
-        // Handle address
-        $address = $this->request->getData('address');
-        $data['address'] = !empty($address) ? trim($address) : null;
-        error_log('Profile update - address received: ' . ($address ?? 'NULL'));
-
-        // Handle relationship status
-        $relationshipStatus = $this->request->getData('relationship_status');
-        error_log('Profile update - relationship_status received: ' . ($relationshipStatus ?? 'NULL'));
-        if (!empty($relationshipStatus)) {
-            $validStatuses = ['single', 'taken', 'married'];
-            if (in_array($relationshipStatus, $validStatuses)) {
-                $data['relationship_status'] = $relationshipStatus;
-            }
-        } else {
-            $data['relationship_status'] = null;
+        // Only update bio if it's explicitly provided in the request
+        if ($this->request->getData('bio') !== null) {
+            $bio = $this->request->getData('bio');
+            // Allow empty bio - will be stored as null and show "No bio yet" in UI
+            $data['bio'] = !empty($bio) ? trim($bio) : null;
         }
 
-        // Handle contact links (expects JSON array)
-        $contactLinks = $this->request->getData('contact_links');
-        error_log('Profile update - contact_links received: ' . ($contactLinks ?? 'NULL'));
-        if (!empty($contactLinks)) {
-            if (is_array($contactLinks)) {
-                $data['contact_links'] = json_encode($contactLinks);
-            } elseif (is_string($contactLinks)) {
-                // Validate it's valid JSON
-                $decoded = json_decode($contactLinks, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $data['contact_links'] = $contactLinks;
+        // Only update address if it's explicitly provided in the request
+        if ($this->request->getData('address') !== null) {
+            $address = $this->request->getData('address');
+            $data['address'] = !empty($address) ? trim($address) : null;
+            error_log('Profile update - address received: ' . ($address ?? 'NULL'));
+        }
+
+        // Only update relationship status if it's explicitly provided in the request
+        if ($this->request->getData('relationship_status') !== null) {
+            $relationshipStatus = $this->request->getData('relationship_status');
+            error_log('Profile update - relationship_status received: ' . ($relationshipStatus ?? 'NULL'));
+            if (!empty($relationshipStatus)) {
+                $validStatuses = ['single', 'taken', 'married'];
+                if (in_array($relationshipStatus, $validStatuses)) {
+                    $data['relationship_status'] = $relationshipStatus;
                 }
+            } else {
+                $data['relationship_status'] = null;
             }
-        } else {
-            $data['contact_links'] = null;
+        }
+
+        // Only update contact links if it's explicitly provided in the request
+        if ($this->request->getData('contact_links') !== null) {
+            $contactLinks = $this->request->getData('contact_links');
+            error_log('Profile update - contact_links received: ' . ($contactLinks ?? 'NULL'));
+            if (!empty($contactLinks)) {
+                if (is_array($contactLinks)) {
+                    $data['contact_links'] = json_encode($contactLinks);
+                } elseif (is_string($contactLinks)) {
+                    // Validate it's valid JSON
+                    $decoded = json_decode($contactLinks, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $data['contact_links'] = $contactLinks;
+                    }
+                }
+            } else {
+                $data['contact_links'] = null;
+            }
         }
 
         $fullName = $this->request->getData('full_name');

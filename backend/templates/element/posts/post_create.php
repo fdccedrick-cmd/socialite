@@ -6,7 +6,7 @@
  * @var array $currentUser - Current logged in user data
  */
 $currentUser = $currentUser ?? [];
-$avatar = $currentUser['profile_photo_path'] ?? 'https://i.pravatar.cc/150?img=1';
+$avatar = $currentUser['profile_photo_path'] ?? '/img/default/default_avatar.jpg';
 $username = $currentUser['username'] ?? 'user';
 $fullName = $currentUser['full_name'] ?? $username;
 ?>

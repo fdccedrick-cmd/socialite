@@ -24,7 +24,7 @@
   <div v-for="comment in post.comments" :key="comment.id" :id="'comment-' + comment.id" class="flex gap-2 sm:gap-2.5 text-xs sm:text-sm">
     <a :href="comment.user ? `/profile/${comment.user.id}` : '#'" class="flex-shrink-0">
       <img
-        :src="comment.user?.profile_photo_path || 'https://i.pravatar.cc/150?img=1'"
+        :src="comment.user?.profile_photo_path || '/img/default/default_avatar.jpg'"
         :alt="comment.user?.full_name"
         class="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-600"
       />

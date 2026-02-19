@@ -109,7 +109,7 @@
           <!-- User + caption -->
           <div class="flex gap-3 p-3 bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-purple-50 dark:to-purple-900/30 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
             <img
-              :src="postDetailView.post.user?.profile_photo_path || 'https://i.pravatar.cc/150?img=1'"
+              :src="postDetailView.post.user?.profile_photo_path || '/img/default/default_avatar.jpg'"
               :alt="postDetailView.post.user?.full_name"
               class="w-11 h-11 rounded-full object-cover flex-shrink-0 ring-2 ring-white dark:ring-gray-700 shadow-md"
             />
@@ -154,7 +154,7 @@
               </div>
               <div class="space-y-3 max-h-[250px] overflow-y-auto mb-3 pr-2 custom-scrollbar">
                 <div v-for="comment in postDetailView.imageComments" :key="comment.id" class="flex gap-2.5 p-2.5 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                  <img :src="comment.user?.profile_photo_path || 'https://i.pravatar.cc/150?img=1'" :alt="comment.user?.full_name" class="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-2 ring-white dark:ring-gray-600 shadow-sm" />
+                  <img :src="comment.user?.profile_photo_path || '/img/default/default_avatar.jpg'" :alt="comment.user?.full_name" class="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-2 ring-white dark:ring-gray-600 shadow-sm" />
                   <div class="flex-1 min-w-0">
                     <a :href="`/profile/${comment.user?.id}`" class="font-semibold text-sm text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{ comment.user?.full_name }}</a>
                     <p v-if="comment.content_text" class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap mt-0.5">{{ comment.content_text }}</p>

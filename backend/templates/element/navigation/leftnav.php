@@ -2,7 +2,7 @@
 /** @var \App\View\AppView $this */
 $user = $currentUser ?? $user ?? null;
 $username = $user->full_name ?? $user->username ?? 'Guest';
-$avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
+$avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
 $currentPath = $this->request->getPath();
 ?>
 

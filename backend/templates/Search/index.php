@@ -43,7 +43,7 @@ $this->assign('title', 'Search Results');
                 <!-- Avatar -->
                 <a href="/profile/<?= h($user['username']) ?>" class="shrink-0">
                   <img 
-                    src="<?= h($user['profile_photo_path'] ?: 'https://i.pravatar.cc/150?img=1') ?>" 
+                    src="<?= h($user['profile_photo_path'] ?: '/img/default/default_avatar.jpg') ?>" 
                     alt="<?= h($user['full_name']) ?>"
                     class="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-100 dark:border-gray-600"
                   />
@@ -195,7 +195,7 @@ window.searchData = {
   user: {
     id: <?= json_encode(isset($currentUser) && is_object($currentUser) ? $currentUser->id : ($currentUser['id'] ?? null)) ?>,
     username: <?= json_encode(isset($currentUser) && is_object($currentUser) ? $currentUser->username : ($currentUser['username'] ?? 'user')) ?>,
-    avatar: <?= json_encode(isset($currentUser) && is_object($currentUser) ? $currentUser->profile_photo_path : ($currentUser['profile_photo_path'] ?? 'https://i.pravatar.cc/150?img=1')) ?>
+    avatar: <?= json_encode(isset($currentUser) && is_object($currentUser) ? $currentUser->profile_photo_path : ($currentUser['profile_photo_path'] ?? '/img/default/default_avatar.jpg')) ?>
   },
   posts: <?= json_encode($posts ?? []) ?>
 };

@@ -633,6 +633,60 @@ class PostsController extends AppController
                     ]));
             }
             
+            // Check if this post is a profile/cover photo post
+            $isProfilePhotoPost = false;
+            $isCoverPhotoPost = false;
+            
+            if (!empty($post->content_text)) {
+                if (strpos($post->content_text, 'uploaded a new profile picture') !== false) {
+                    $isProfilePhotoPost = true;
+                } elseif (strpos($post->content_text, 'uploaded a new cover photo') !== false) {
+                    $isCoverPhotoPost = true;
+                }
+            }
+            
+            // If it's a profile or cover photo post, clear the path in users table
+            if ($isProfilePhotoPost || $isCoverPhotoPost) {
+                $usersTable = $this->getTableLocator()->get('Users');
+                $user = $usersTable->get($userId);
+                
+                if ($isProfilePhotoPost) {
+                    // Delete the physical file if it exists
+                    if (!empty($user->profile_photo_path)) {
+                        $filePath = WWW_ROOT . ltrim($user->profile_photo_path, '/');
+                        if (file_exists($filePath) && is_file($filePath)) {
+                            @unlink($filePath);
+                            Log::info("Deleted profile photo file: $filePath");
+                        }
+                    }
+                    $user->profile_photo_path = null;
+                    Log::info("Cleared profile_photo_path for user $userId");
+                    
+                    // Save only the profile_photo_path field to avoid affecting other fields
+                    $user = $usersTable->patchEntity($user, ['profile_photo_path' => null], ['fields' => ['profile_photo_path']]);
+                    if (!$usersTable->save($user)) {
+                        Log::error('Failed to clear profile photo path for user ' . $userId);
+                    }
+                } elseif ($isCoverPhotoPost) {
+                    // Delete the physical file if it exists
+                    if (!empty($user->cover_photo_path)) {
+                        $filePath = WWW_ROOT . ltrim($user->cover_photo_path, '/');
+                        if (file_exists($filePath) && is_file($filePath)) {
+                            @unlink($filePath);
+                            Log::info("Deleted cover photo file: $filePath");
+                        }
+                    }
+                    $user->cover_photo_path = null;
+                    Log::info("Cleared cover_photo_path for user $userId");
+                    
+                    // Save only the cover_photo_path field to avoid affecting other fields
+                    $user = $usersTable->patchEntity($user, ['cover_photo_path' => null], ['fields' => ['cover_photo_path']]);
+                    if (!$usersTable->save($user)) {
+                        Log::error('Failed to clear cover photo path for user ' . $userId);
+                    }
+                }
+            }
+            
             // Soft delete by setting deleted field
             $post->deleted = new \DateTime();
             

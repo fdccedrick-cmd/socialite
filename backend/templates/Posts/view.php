@@ -120,7 +120,7 @@ $currentUserJson = $currentUserArray !== null ? json_encode($currentUserArray, J
                   window.profileData.user = {
                         full_name: currentUser?.full_name || 'User',
                         username: currentUser?.username || 'user',
-                        avatar: currentUser?.profile_photo_path || 'https://i.pravatar.cc/150?img=1',
+                        avatar: currentUser?.profile_photo_path || '/img/default/default_avatar.jpg',
                         joinedDate: 'Joined recently',
                         bio: currentUser?.bio || null,
                         stats: {

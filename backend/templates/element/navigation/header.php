@@ -5,7 +5,7 @@ if (is_array($user)) {
     $user = (object)$user;
 }
 $username = $user->full_name ?? $user->username ?? 'Guest';
-$avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
+$avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
 ?>
 <style>
 @keyframes spin {
@@ -79,7 +79,7 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
               class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               <img 
-                :src="user.profile_photo_path || 'https://i.pravatar.cc/150?img=1'" 
+                :src="user.profile_photo_path || '/img/default/default_avatar.jpg'" 
                 :alt="user.full_name"
                 class="w-10 h-10 rounded-full object-cover border"
               />
@@ -105,7 +105,7 @@ $avatar = $user->profile_photo_path ?? 'https://i.pravatar.cc/150?img=1';
               class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               <img 
-                :src="post.user.profile_photo_path || 'https://i.pravatar.cc/150?img=1'" 
+                :src="post.user.profile_photo_path || '/img/default/default_avatar.jpg'" 
                 :alt="post.user.full_name"
                 class="w-8 h-8 rounded-full object-cover"
               />

@@ -46,7 +46,7 @@
               <div class="flex gap-3">
                 <!-- Actor Avatar -->
                 <?php 
-                  $actorAvatar = 'https://i.pravatar.cc/150?img=' . ($notification->actor_id % 70 + 1);
+                  $actorAvatar = '/img/default/default_avatar.jpg';
                   if (isset($notification->actor) && !empty($notification->actor->profile_photo_path)) {
                       $actorAvatar = $notification->actor->profile_photo_path;
                   }
@@ -55,7 +55,7 @@
                   src="<?= h($actorAvatar) ?>" 
                   alt="<?= h($notification->actor->full_name ?? $notification->actor->username ?? 'User') ?>"
                   class="w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
-                  onerror="this.src='https://i.pravatar.cc/150?img=1'"
+                  onerror="this.src='/img/default/default_avatar.jpg'"
                 />
                 
                 <!-- Notification Content -->

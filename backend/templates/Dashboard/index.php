@@ -86,7 +86,7 @@ window.dashboardData = {
   user: {
     id: <?= json_encode($user['id'] ?? null) ?>,
     username: <?= json_encode($user['username'] ?? 'user') ?>,
-    avatar: <?= json_encode($user['profile_photo_path'] ?? 'https://i.pravatar.cc/150?img=1') ?>
+    avatar: <?= json_encode($user['profile_photo_path'] ?? '/img/default/default_avatar.jpg') ?>
   },
     posts: <?= json_encode($postsArray ?? []) ?>
 };

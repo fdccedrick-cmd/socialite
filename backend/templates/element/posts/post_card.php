@@ -14,7 +14,7 @@ $currentUser = $currentUser ?? [];
   <div class="p-3 sm:p-4 pb-2 sm:pb-3">
     <div class="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
       <img 
-        :src="post.user.profile_photo_path || 'https://i.pravatar.cc/150?img=1'" 
+        :src="post.user.profile_photo_path || '/img/default/default_avatar.jpg'" 
         :alt="post.user.full_name" 
         class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600 flex-shrink-0"
       />

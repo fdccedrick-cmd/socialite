@@ -38,7 +38,8 @@
         user: {
           full_name: window.profileData?.user?.full_name || 'User',
           username: window.profileData?.user?.username || 'user',
-          avatar: window.profileData?.user?.avatar || 'https://i.pravatar.cc/150?img=1',
+          profile_photo_path: window.profileData?.user?.profile_photo_path || null,
+          avatar: window.profileData?.user?.avatar || '/img/default/default_avatar.jpg',
           coverPhoto: window.profileData?.user?.coverPhoto || null,
           joinedDate: window.profileData?.user?.joinedDate || 'Joined recently',
           bio: window.profileData?.user?.bio || 'No bio yet',
@@ -259,8 +260,22 @@
           this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
         },
         
+        isUsingDefaultAvatar() {
+          return this.user?.avatar === '/img/default/default_avatar.jpg';
+        },
+        
+        handleProfilePhotoClick() {
+          // If using default avatar, open edit modal to upload a profile photo
+          if (this.isUsingDefaultAvatar()) {
+            this.openEditModal();
+          } else {
+            // Otherwise, open the profile photo view
+            this.openProfilePhotoView();
+          }
+        },
+        
         openProfilePhotoView() {
-          if (!this.user?.avatar) return;
+          if (!this.user?.avatar || this.isUsingDefaultAvatar()) return;
           
           // Create a temporary post object for the profile photo
           const tempPost = {
@@ -1309,6 +1324,7 @@
             if (data.user.profile_photo_path) {
               console.log('[TRACK] Updating avatar to:', data.user.profile_photo_path);
               this.user.avatar = data.user.profile_photo_path;
+              this.user.profile_photo_path = data.user.profile_photo_path;
             }
             
             // Close modal first

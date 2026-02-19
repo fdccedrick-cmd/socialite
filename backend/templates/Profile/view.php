@@ -15,7 +15,8 @@ window.profileData = {
     user: {
         full_name: <?= json_encode(!empty($user['full_name']) ? $user['full_name'] : (!empty($user['username']) ? $user['username'] : 'User')) ?>,
         username: <?= json_encode(!empty($user['username']) ? $user['username'] : 'user') ?>,
-        avatar: <?= json_encode(!empty($user['profile_photo_path']) ? $user['profile_photo_path'] : 'https://i.pravatar.cc/150?img=1') ?>,
+        profile_photo_path: <?= json_encode(!empty($user['profile_photo_path']) ? $user['profile_photo_path'] : null) ?>,
+        avatar: <?= json_encode(!empty($user['profile_photo_path']) ? $user['profile_photo_path'] : '/img/default/default_avatar.jpg') ?>,
         coverPhoto: <?= json_encode(!empty($user['cover_photo_path']) ? $user['cover_photo_path'] : null) ?>,
         joinedDate: <?php 
           $joinedDate = 'Joined recently';
@@ -97,14 +98,14 @@ console.log('🔍 Profile Data Debug:', {
           <!-- Profile Photo -->
           <div class="shrink-0 relative group">
             <img 
-              @click="openProfilePhotoView"
+              @click="handleProfilePhotoClick"
               :src="user.avatar" 
               :alt="user.full_name" 
               class="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-lg bg-white dark:bg-gray-800 cursor-pointer transition-all duration-200 hover:shadow-xl"
             />
             <!-- Hover overlay for profile photo -->
             <div class="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-              <i data-lucide="zoom-in" class="w-6 h-6 sm:w-8 sm:h-8 text-white drop-shadow-lg"></i>
+              <i :data-lucide="isUsingDefaultAvatar() ? 'edit' : 'zoom-in'" class="w-6 h-6 sm:w-8 sm:h-8 text-white drop-shadow-lg"></i>
             </div>
           </div>
           

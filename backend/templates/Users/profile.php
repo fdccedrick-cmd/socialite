@@ -162,7 +162,7 @@
     user: {
       full_name: <?= json_encode(!empty($user['full_name']) ? $user['full_name'] : (!empty($user['username']) ? $user['username'] : 'User')) ?>,
       username: <?= json_encode(!empty($user['username']) ? $user['username'] : 'user') ?>,
-      avatar: <?= json_encode(!empty($user['profile_photo_path']) ? $user['profile_photo_path'] : 'https://i.pravatar.cc/150?img=1') ?>,
+      avatar: <?= json_encode(!empty($user['profile_photo_path']) ? $user['profile_photo_path'] : '/img/default/default_avatar.jpg') ?>,
       joinedDate: <?php 
         $joinedDate = 'Joined recently';
         if (!empty($user['created'])) {
