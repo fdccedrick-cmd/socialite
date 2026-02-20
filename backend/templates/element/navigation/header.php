@@ -147,9 +147,9 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
         <a href="/dashboard" class="px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300" title="Home">
           <i data-lucide="home" class="h-6 w-6"></i>
         </a>
-        <a href="/explore" class="px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300" title="Explore">
+        <!-- <a href="/explore" class="px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300" title="Explore">
           <i data-lucide="compass" class="h-6 w-6"></i>
-        </a>
+        </a> -->
         <button @click="focusPostCreate" class="px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300" title="Create">
           <i data-lucide="plus" class="h-6 w-6"></i>
         </button>
@@ -187,19 +187,30 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
                 <div class="font-medium"><?= h($username) ?></div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">View profile and settings</div>
               </div>
-              <a href="/profile" class="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700">Profile</a>
-              <a href="/settings" class="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700">Settings</a>
-              <a href="/saved" class="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700">Saved</a>
-              <?= $this->Form->create(null, [
-                'type' => 'post',
-                'url' => '/logout',
-                'class' => 'm-0'
-              ]) ?>
-                <?= $this->Form->button('Logout', [
-                  'type' => 'submit',
-                  'class' => 'w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
+              <a href="/profile" class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="user" class="w-4 h-4 flex-shrink-0"></i>
+                <span class="text-sm font-medium">Profile</span>
+              </a>
+              <a href="/settings" class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="settings" class="w-4 h-4 flex-shrink-0"></i>
+                <span class="text-sm font-medium">Settings</span>
+              </a>
+              <a href="/" class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="bookmark" class="w-4 h-4 flex-shrink-0"></i>
+                <span class="text-sm font-medium">Saved</span>
+              </a>
+              <div class="border-t border-gray-200 dark:border-gray-700 mt-1 pt-1">
+                <?= $this->Form->create(null, [
+                  'type' => 'post',
+                  'url' => '/logout',
+                  'class' => 'm-0'
                 ]) ?>
-              <?= $this->Form->end() ?>
+                  <button type="submit" class="flex items-center gap-3 w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors">
+                    <i data-lucide="log-out" class="w-4 h-4 flex-shrink-0"></i>
+                    <span class="text-sm font-medium">Logout</span>
+                  </button>
+                <?= $this->Form->end() ?>
+              </div>
             </div>
           </div>
         </div>
