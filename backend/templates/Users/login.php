@@ -37,7 +37,7 @@
                     'required' => true,
                     'autocomplete' => 'username',
                     'templates' => [
-                        'input' => '<input type="{{type}}" name="{{name}}"{{attrs}} v-model="formData.username" :disabled="isSubmitting" :class="{ \'border-red-400\': errors.username }" class="w-full px-3 py-3 border border-gray-300 rounded-md text-base transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"/>',
+                        'input' => '<input type="{{type}}" name="{{name}}"{{attrs}} v-model="formData.username" @input="sanitizeUsername" :disabled="isSubmitting" :class="{ \'border-red-400\': errors.username }" class="w-full px-3 py-3 border border-gray-300 rounded-md text-base transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed"/>',
                         'inputContainer' => '<div class="form-group">{{content}}</div>',
                         'inputContainerError' => '<div class="form-group error">{{content}}</div>',
                     ],
@@ -145,6 +145,22 @@ createApp({
         }
     },
     methods: {
+        sanitizeUsername() {
+            // Force lowercase and remove invalid characters
+            const originalValue = this.formData.username;
+            // Convert to lowercase
+            let sanitized = originalValue.toLowerCase();
+            // Remove spaces
+            sanitized = sanitized.replace(/\s/g, '');
+            // Remove special characters (keep only lowercase letters and numbers)
+            sanitized = sanitized.replace(/[^a-z0-9]/g, '');
+            
+            // Update the field if sanitization changed the value
+            if (sanitized !== originalValue) {
+                this.formData.username = sanitized;
+            }
+        },
+        
         async handleSubmit(e) {
             e.preventDefault();
             this.errors = {};
@@ -152,6 +168,12 @@ createApp({
             // validation
             if (!this.formData.username) {
                 this.errors.username = 'Username is required';
+                return;
+            }
+            
+            // Validate username format
+            if (!/^[a-z0-9]+$/.test(this.formData.username)) {
+                this.errors.username = 'Username can only contain lowercase letters and numbers';
                 return;
             }
 

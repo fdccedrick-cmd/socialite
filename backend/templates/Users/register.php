@@ -89,7 +89,7 @@
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                         </svg>
                         <span :class="isAlphaNumeric(formData.username) ? 'text-green-600' : 'text-gray-500'">
-                            Letters and numbers only
+                            Lowercase letters and numbers only (no spaces or special characters)
                         </span>
                     </div>
                 </div>
@@ -293,10 +293,25 @@ createApp({
     methods: {
         isAlphaNumeric(str) {
             if (!str) return str === '';
-            return /^[a-zA-Z0-9]+$/.test(str);
+            // Only allow lowercase letters and numbers - no uppercase, no spaces, no special chars
+            return /^[a-z0-9]+$/.test(str);
         },
         
         checkUsernameDebounced() {
+            // Force lowercase and remove invalid characters
+            const originalValue = this.formData.username;
+            // Convert to lowercase
+            let sanitized = originalValue.toLowerCase();
+            // Remove spaces
+            sanitized = sanitized.replace(/\s/g, '');
+            // Remove special characters (keep only lowercase letters and numbers)
+            sanitized = sanitized.replace(/[^a-z0-9]/g, '');
+            
+            // Update the field if sanitization changed the value
+            if (sanitized !== originalValue) {
+                this.formData.username = sanitized;
+            }
+            
             // Clear previous timeout
             if (this.usernameCheckTimeout) {
                 clearTimeout(this.usernameCheckTimeout);
@@ -367,7 +382,18 @@ createApp({
             }
             
             if (!this.isAlphaNumeric(this.formData.username)) {
-                this.errors.username = 'Username can only contain letters and numbers';
+                this.errors.username = 'Username can only contain lowercase letters and numbers (no spaces or special characters)';
+                return;
+            }
+            
+            // Additional validation for spaces and uppercase
+            if (/\s/.test(this.formData.username)) {
+                this.errors.username = 'Username cannot contain spaces';
+                return;
+            }
+            
+            if (/[A-Z]/.test(this.formData.username)) {
+                this.errors.username = 'Username must be lowercase only';
                 return;
             }
             
