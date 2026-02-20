@@ -1,0 +1,276 @@
+# Socialite - Social Media Web Application
+
+A full-featured social networking platform built with modern web technologies, featuring real-time notifications, user interactions, and a responsive interface.
+
+## Tech Stack
+
+### Backend
+- **Framework**: CakePHP 5.0 (PHP MVC Framework)
+- **Language**: PHP 8.1+
+- **Database**: MySQL 8.0
+- **Web Server**: Nginx (Reverse Proxy)
+- **Real-time**: WebSocket Server (Ratchet Library)
+- **Authentication**: CakePHP Authentication Plugin
+- **Password Hashing**: Bcrypt
+
+### Infrastructure
+- **Containerization**: Docker & Docker Compose
+- **PHP Runtime**: PHP-FPM
+- **Database Volume**: Persistent MySQL data storage
+
+### Key Libraries
+- `cakephp/cakephp`: ^5.0
+- `cakephp/authentication`: ^3.0
+- `cboden/ratchet`: ^0.4.4 (WebSocket)
+- `cakephp/migrations`: ^5.0
+
+## Features
+
+- **User Authentication**: Secure login/logout with session management (72-hour session timeout)
+- **User Profiles**: Customizable profiles with bio, cover photos, profile pictures, and personal details
+- **Posts**: Create, edit, delete posts with text and multiple images
+- **Comments**: Comment on posts and post images
+- **Likes**: Like posts and post images
+- **Friendships**: Send, accept, and manage friend requests
+- **Notifications**: Real-time notifications via WebSocket
+- **Search**: Find users and content
+- **Privacy Controls**: Public, friends-only, and private post settings
+- **Themes**: Dark and light theme support
+- **Dashboard**: Personalized feed with posts from friends
+
+## Default Credentials
+
+**Username**: johndoe 
+**Password**: `123456`
+
+
+## Setup Instructions
+
+### Prerequisites
+- Docker Desktop installed
+- Docker Compose installed
+- Port 8080, 8081, and 3308 available
+
+### Installation Steps
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd Socialite
+   ```
+
+2. **Start Docker containers**
+   ```bash
+   docker compose up --build
+   ```
+   This will start:
+   - Nginx web server (port 8080)
+   - PHP-FPM backend
+   - MySQL database (port 3308)
+   - WebSocket server (port 8081)
+
+3. **Run database migrations**
+   ```bash
+   docker compose exec backend php bin/cake migrations migrate
+   ```
+   This creates all tables and inserts sample users.
+
+4. **Access the application**
+   - Open browser: `http://localhost:8080`
+   - Register a new account or use existing credentials
+
+## How to Use
+
+### Getting Started
+
+1. **Registration**
+   - Navigate to `http://localhost:8080/register`
+   - Fill in: Full Name, Username, Password
+   - Submit to create your account
+   - You'll be automatically logged in
+
+2. **Login**
+   - Go to `http://localhost:8080/login`
+   - Enter username and password: `admin123`
+   - Click "Login"
+
+### Main Features Flow
+
+#### Creating a Post
+1. From Dashboard, locate the "Create Post" section
+2. Type your content in the text area
+3. (Optional) Upload up to multiple images
+4. Select privacy: Public, Friends, or Private
+5. Click "Post" button
+6. Your post appears in the feed immediately
+
+#### Interacting with Posts
+1. **Like**: Click the heart/like icon on any post
+2. **Comment**: Click comment icon, type your comment, press Enter
+3. **View Details**: Click on the post to see full content and all comments
+
+#### Managing Friends
+1. **Find Friends**
+   - Use the Search bar at top
+   - Type username or full name
+   - Click on user profile from results
+
+2. **Send Friend Request**
+   - Visit user's profile
+   - Click "Add Friend" button
+   - Request is sent
+
+3. **Accept/Reject Requests**
+   - Navigate to Notifications
+   - View friend requests
+   - Click "Accept" or "Reject"
+
+4. **View Friends List**
+   - Go to your Profile
+   - Click "Friends" tab
+   - See all your connections
+
+#### Notifications (Real-time)
+- Bell icon shows notification count
+- Click to view all notifications
+- Types: Friend requests, Likes, Comments
+- Updates instantly via WebSocket
+
+#### Profile Management
+1. **View Profile**: Click your name/avatar
+2. **Edit Profile**:
+   - Click "Edit Profile" button
+   - Update bio, profile photo, cover photo
+   - Add personal details (address, relationship status)
+   - Change theme preference (dark/light)
+   - Save changes
+
+#### Settings
+- Navigate to Settings (gear icon)
+- Update: Username, Full Name, Password
+- Change theme preference
+- Manage account settings
+
+### Privacy Controls
+- **Public**: Anyone can see your post
+- **Friends**: Only friends can see
+- **Private**: Only you can see
+
+### Search Functionality
+1. Click search bar at top
+2. Type username or name
+3. View results
+4. Click on user to visit their profile
+
+## Application Architecture
+
+### Directory Structure
+```
+Socialite/
+├── backend/            # CakePHP application
+│   ├── bin/           # Command-line executables
+│   ├── config/        # Configuration and migrations
+│   ├── src/           # Application code
+│   │   ├── Controller/
+│   │   ├── Model/
+│   │   ├── Service/
+│   │   ├── Utility/
+│   │   └── WebSocket/
+│   ├── templates/     # View templates
+│   ├── webroot/       # Public assets (CSS, JS, images)
+│   └── vendor/        # Composer dependencies
+├── db/                # Database initialization
+├── nginx/             # Nginx configuration
+├── php/               # PHP Docker configuration
+└── docker-compose.yaml
+```
+
+### Database Tables
+- `users` - User accounts and profiles
+- `posts` - User posts with privacy settings
+- `post_images` - Images attached to posts
+- `comments` - Comments on posts/images
+- `likes` - Likes on posts/images
+- `notifications` - User notifications
+- `friendships` - Friend relationships
+
+## Development
+
+### Viewing Logs
+```bash
+# PHP application logs
+docker compose exec backend tail -f /var/www/html/logs/error.log
+
+# WebSocket logs
+docker compose exec backend cat /var/www/html/logs/websocket.log
+
+# Nginx logs
+docker compose exec nginx tail -f /var/log/nginx/error.log
+```
+
+### Database Access
+```bash
+# Connect to MySQL
+docker compose exec db mysql -u user -padmin123 socialite
+
+# View all users
+SELECT id, username, full_name FROM users;
+```
+
+### Clearing Cache
+```bash
+# Clear OPcache
+curl http://localhost:8080/clear-opcache.php
+
+# Restart PHP-FPM
+docker compose exec backend pkill -USR2 php-fpm
+```
+
+### Running Migrations
+```bash
+# Run all pending migrations
+docker compose exec backend php bin/cake migrations migrate
+
+# Rollback last migration
+docker compose exec backend php bin/cake migrations rollback
+```
+
+## Troubleshooting
+
+### Application not loading
+1. Check all containers are running: `docker compose ps`
+2. View logs: `docker compose logs backend`
+3. Restart containers: `docker compose restart`
+
+### Database connection issues
+1. Verify database is running: `docker compose ps db`
+2. Check credentials in `docker-compose.yaml`
+3. Wait 10-20 seconds after starting for DB to initialize
+
+### WebSocket not connecting
+1. Check WebSocket server: `docker compose ps websocket`
+2. View WebSocket logs: `docker compose logs websocket`
+3. Restart: `docker compose restart websocket`
+
+### Session/Login issues
+- Clear browser cookies for localhost:8080
+- Check session timeout (72 hours default)
+- Verify credentials with database
+
+## Ports Used
+
+- **8080**: Nginx web server (HTTP)
+- **8081**: WebSocket server
+- **3308**: MySQL database
+
+## Security Notes
+
+- Default password (`admin123`) should be changed in production
+- Security salt in `config/app.php` must be changed for production
+- Debug mode is enabled - disable for production
+- All passwords are hashed using bcrypt
+- Session timeout: 4320 minutes (72 hours)
+
+## License
+
+This is a learning/demo project for educational purposes.

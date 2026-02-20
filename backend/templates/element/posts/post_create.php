@@ -158,7 +158,7 @@ $fullName = $currentUser['full_name'] ?? $username;
       <button 
         @click="createPost"
         :disabled="newPost.isSubmitting || (!newPost.content.trim() && newPost.images.length === 0)"
-        class="px-4 sm:px-5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md flex items-center gap-1.5"
+        class="px-4 sm:px-5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white dark:text-white text-xs sm:text-sm font-semibold rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md flex items-center gap-1.5"
       >
         <span v-if="newPost.isSubmitting">
           <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i>

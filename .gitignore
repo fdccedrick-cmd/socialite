@@ -16,3 +16,6 @@ backend/logs/
 # IDE files
 .vscode/
 .idea/
+
+# Environment variables
+.env
