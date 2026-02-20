@@ -398,6 +398,39 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
             notif.is_read = true; // Optimistically update UI
           }
 
+          // Special handling for post image notifications
+          if (notif.notifiable_type === 'Post' && notif.post_image_id) {
+            // Close notification dropdown
+            this.notificationsOpen = false;
+            
+            // Fetch the post data to find the image index
+            try {
+              const response = await fetch(`/posts/view/${notif.notifiable_id}.json`, {
+                credentials: 'same-origin'
+              });
+              const data = await response.json();
+              
+              if (data.success && data.post) {
+                // Find the index of the image in the post_images array
+                const imageIndex = data.post.post_images?.findIndex(img => img.id === notif.post_image_id) ?? 0;
+                
+                // Emit event to open post detail modal with specific image
+                if (typeof window.openPostDetailWithImage === 'function') {
+                  window.openPostDetailWithImage(data.post, Math.max(0, imageIndex));
+                } else {
+                  // Fallback: just navigate to the post
+                  window.location.href = `/posts/${notif.notifiable_id}`;
+                }
+              } else {
+                window.location.href = `/posts/${notif.notifiable_id}`;
+              }
+            } catch (error) {
+              console.error('Failed to load post:', error);
+              window.location.href = `/posts/${notif.notifiable_id}`;
+            }
+            return;
+          }
+
           // Use the URL from the notification or build one based on type
           let to = notif.url;
           

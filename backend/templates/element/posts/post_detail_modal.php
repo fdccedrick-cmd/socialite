@@ -16,7 +16,7 @@
   >
     <div class="w-full h-full max-w-7xl max-h-[95vh] m-3 md:m-6 flex flex-col sm:flex-row bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-2xl animate-scale-in" @click.stop>
       <!-- Left: Photo Viewer -->
-      <div class="flex-1 min-w-0 min-h-0 flex flex-col bg-gradient-to-br from-gray-900 to-black relative">
+      <div class="flex-1 min-w-0 min-h-0 flex flex-col bg-gradient-to-br from-gray-900 to-black relative overflow-hidden">
         <!-- Close button (mobile) -->
         <button @click="closePostDetailView" class="absolute top-3 right-3 z-20 p-2 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full transition-all sm:hidden">
           <i data-lucide="x" class="w-5 h-5 text-white"></i>
@@ -24,22 +24,23 @@
         
         <template v-if="postDetailView.post.post_images && postDetailView.post.post_images.length > 0">
           <!-- Main Image Display -->
-          <div class="flex-1 flex items-center justify-center p-4 relative">
+          <div class="flex-1 flex items-center justify-center p-4 relative overflow-hidden min-h-0">
             <transition name="image-fade" mode="out-in">
               <img
                 :key="'img-' + postDetailView.imageIndex"
                 :src="postDetailView.post.post_images[postDetailView.imageIndex].image_path"
                 :alt="'Image ' + (postDetailView.imageIndex + 1)"
-                class="max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-transform duration-300 hover:scale-[1.02]"
-                style="max-height: calc(100% - 100px);"
+                class="w-full h-full object-contain rounded-lg shadow-2xl"
+                style="max-height: 100%; max-width: 100%;"
               />
             </transition>
             
-            <!-- Navigation Arrows -->
+            <!-- Navigation Arrows - Fixed positioning within viewport -->
             <button
               v-show="postDetailView.post.post_images.length > 1"
               @click.stop="postDetailPrevImage"
-              class="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full p-3 transition-all transform hover:scale-110 hover:-translate-x-1 z-10 group"
+              class="fixed left-4 top-1/2 -translate-y-1/2 text-white bg-black/70 hover:bg-black/90 backdrop-blur-sm rounded-full p-3 transition-all transform hover:scale-110 hover:-translate-x-1 z-[9999] group shadow-xl"
+              style="max-width: 48px;"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
                 <polyline points="15 18 9 12 15 6"></polyline>
@@ -48,7 +49,8 @@
             <button
               v-show="postDetailView.post.post_images.length > 1"
               @click.stop="postDetailNextImage"
-              class="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full p-3 transition-all transform hover:scale-110 hover:translate-x-1 z-10 group"
+              class="fixed right-8 top-1/2 -translate-y-1/2 text-white bg-black/70 hover:bg-black/90 backdrop-blur-sm rounded-full p-3 transition-all transform hover:scale-110 hover:translate-x-1 z-[9999] group shadow-xl sm:right-[500px]"
+              style="max-width: 48px;"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
                 <polyline points="9 18 15 12 9 6"></polyline>

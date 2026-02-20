@@ -153,13 +153,14 @@ class NotificationsController extends AppController
                     'type' => $notif->type,
                     'notifiable_type' => $notif->notifiable_type,
                     'notifiable_id' => $notif->notifiable_id,
+                    'post_image_id' => $notif->post_image_id,
                     'is_read' => $notif->is_read,
                     'created' => $notif->created->toIso8601String(),
                     'actor_avatar' => $actorAvatar,
                     'actor_username' => isset($notif->actor) ? ($notif->actor->username ?? 'Unknown') : 'Unknown',
                     'actor_full_name' => isset($notif->actor) ? ($notif->actor->full_name ??  'Unknown') : 'Unknown',
-                    'actor_id' => $notif->actor_id
-                    , 'url' => $url
+                    'actor_id' => $notif->actor_id,
+                    'url' => $url
                 ];
             }, $notifications);
             

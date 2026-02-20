@@ -1428,6 +1428,11 @@ const app = createApp({
         }
         if (typeof this.openPostDetailView === 'function') {
             window.openPostDetailView = this.openPostDetailView.bind(this);
+            // Create wrapper for opening post detail with specific image
+            window.openPostDetailWithImage = (post, imageIndex = 0) => {
+                console.log('openPostDetailWithImage called:', { post, imageIndex });
+                this.openPostDetailView(post, imageIndex);
+            };
         }
         window.__appCanEditPost = typeof this.canEditPost === 'function' ? this.canEditPost.bind(this) : null;
         window.__appOpenPostDetailView = typeof this.openPostDetailView === 'function' ? this.openPostDetailView.bind(this) : null;

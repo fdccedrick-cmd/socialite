@@ -796,6 +796,16 @@ const app = createApp({
             }
         });
         
+        // Expose post detail view globally for notifications
+        if (typeof this.openPostDetailView === 'function') {
+            window.openPostDetailView = this.openPostDetailView.bind(this);
+            // Create wrapper for opening post detail with specific image
+            window.openPostDetailWithImage = (post, imageIndex = 0) => {
+                console.log('openPostDetailWithImage called:', { post, imageIndex });
+                this.openPostDetailView(post, imageIndex);
+            };
+        }
+        
         this.appReady = true;
     },
     beforeUnmount() {
