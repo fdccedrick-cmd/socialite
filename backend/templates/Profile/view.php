@@ -12,6 +12,12 @@ window.profileData = {
     mutualFriendsCount: <?= json_encode($mutualFriendsCount ?? 0) ?>,
     friendsCount: <?= json_encode($friendsCount ?? 0) ?>,
     posts: <?= json_encode($postsArray ?? []) ?>,
+    currentUser: {
+        id: <?= json_encode($commentUser['id'] ?? null) ?>,
+        username: <?= json_encode($commentUser['username'] ?? 'user') ?>,
+        full_name: <?= json_encode($commentUser['full_name'] ?? 'User') ?>,
+        avatar: <?= json_encode($commentUser['avatar'] ?? '/img/default/default_avatar.jpg') ?>
+    },
     user: {
         full_name: <?= json_encode(!empty($user['full_name']) ? $user['full_name'] : (!empty($user['username']) ? $user['username'] : 'User')) ?>,
         username: <?= json_encode(!empty($user['username']) ? $user['username'] : 'user') ?>,

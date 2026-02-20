@@ -95,7 +95,6 @@
             display: none; /* Chrome, Safari, Opera */
         }
         
-        /* Vue transition styles */
         .fade-enter-active, .fade-leave-active {
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
@@ -111,7 +110,7 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 transition-colors">
     <?php $currentUser = $currentUser ?? ($this->Identity->get() ?? null); ?>
-    <?= $this->element('navigation/header', ['user' => $currentUser]) ?>
+    <?= $this->element('navigation/header', ['currentUser' => $currentUser]) ?>
     
     <div id="flashContainer" class="flash-container fixed top-16 sm:top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
         <?= $this->Flash->render() ?>
@@ -123,14 +122,14 @@
     
     <!-- Mobile Sidebar -->
     <div id="mobileSidebar" class="fixed top-14 sm:top-16 left-0 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] w-64 bg-white shadow-lg transform -translate-x-full transition-transform duration-300 z-40 lg:hidden overflow-y-auto">
-        <?= $this->element('navigation/leftnav', ['user' => $currentUser]) ?>
+        <?= $this->element('navigation/leftnav', ['currentUser' => $currentUser]) ?>
     </div>
     
     <div class="w-full px-2 sm:px-4 lg:px-0 pt-16 sm:pt-20">
         <div class="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-4 xl:gap-5 2xl:gap-6">
             <!-- Left Navigation - Desktop Only -->
             <aside class="hidden lg:block flex-shrink-0 w-64 lg:w-72 xl:w-80 2xl:w-96 lg:pl-4 xl:pl-6 2xl:pl-8">
-                <?= $this->element('navigation/leftnav', ['user' => $currentUser]) ?>
+                <?= $this->element('navigation/leftnav', ['currentUser' => $currentUser]) ?>
             </aside>
             
             <!-- Main Content - Scrollable -->
@@ -146,7 +145,6 @@
     </div>
     
     <script>
-    // Mobile menu toggle handler
     window.addEventListener('mobile-menu-toggle', function(e) {
         const overlay = document.getElementById('mobileMenuOverlay');
         const sidebar = document.getElementById('mobileSidebar');
@@ -159,12 +157,10 @@
         }
     });
     
-    // Close mobile menu when clicking overlay
     document.getElementById('mobileMenuOverlay')?.addEventListener('click', function() {
         window.dispatchEvent(new CustomEvent('mobile-menu-toggle', { detail: { open: false } }));
     });
     
-    // Initialize Lucide icons after DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
         if (window.lucide) {
             lucide.createIcons();
@@ -185,29 +181,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const container = document.getElementById('flashContainer');
     if (!container) return;
 
-    // Duration the message stays visible (ms)
     const VISIBLE_FOR = 4000;
     const messages = Array.from(container.children).filter(n => n.nodeType === 1);
 
     messages.forEach((el, idx) => {
-        // normalize class name so styling applies
+       
         if (!el.classList.contains('flash-message')) el.classList.add('flash-message');
-
-        // enter animation
+      
         requestAnimationFrame(() => {
             el.classList.add('flash-in');
         });
 
-        // auto-hide after VISIBLE_FOR + small stagger
         const delay = VISIBLE_FOR + idx * 150;
         setTimeout(() => {
             el.classList.remove('flash-in');
             el.classList.add('flash-out');
-            // remove after transition
             setTimeout(() => { try { el.remove(); } catch(e){} }, 400);
         }, delay);
 
-        // allow click to dismiss immediately
         el.addEventListener('click', function () {
             el.classList.remove('flash-in');
             el.classList.add('flash-out');

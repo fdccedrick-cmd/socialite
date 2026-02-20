@@ -80,7 +80,7 @@
         <span class="text-gray-400 dark:text-gray-500 select-none">·</span>
         <span class="text-gray-500 dark:text-gray-400 text-xs">{{ formatDate(comment.created_at) }}</span>
         <!-- Edit button: only comment owner -->
-        <template v-if="typeof user !== 'undefined' && user && comment.user && comment.user.id === user.id">
+        <template v-if="typeof currentUserId !== 'undefined' && currentUserId && comment.user && comment.user.id === currentUserId">
           <span class="text-gray-400 dark:text-gray-500 select-none">·</span>
           <button
             @click="editComment(post.id, comment.id)"
@@ -88,7 +88,7 @@
           >Edit</button>
         </template>
         <!-- Delete button: comment owner OR post owner -->
-        <template v-if="typeof user !== 'undefined' && user && ((comment.user && comment.user.id === user.id) || (post.user && post.user.id === user.id))">
+        <template v-if="typeof currentUserId !== 'undefined' && currentUserId && ((comment.user && comment.user.id === currentUserId) || (post.user && post.user.id === currentUserId))">
           <span class="text-gray-400 dark:text-gray-500 select-none">·</span>
           <button
             @click.prevent="deleteComment(post.id, comment.id)"

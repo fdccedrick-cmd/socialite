@@ -218,7 +218,23 @@ class ProfileController extends AppController
         
         $postCount = count($postsArray);
 
-        $this->set(compact('user', 'postsArray', 'postCount', 'currentUserId', 'userLikeCount', 'postIds', 'isOwnProfile', 'friendshipStatus', 'friendshipId', 'friendsCount'));
+        // Fetch current user's data for comment inputs (for JavaScript)
+        $commentUser = null;
+        if ($currentUserId) {
+            $currentUserEntity = $usersTable->find()
+                ->where(['id' => $currentUserId])
+                ->first();
+            if ($currentUserEntity) {
+                $commentUser = [
+                    'id' => $currentUserEntity->id,
+                    'username' => $currentUserEntity->username ?? 'user',
+                    'full_name' => $currentUserEntity->full_name ?? $currentUserEntity->username ?? 'User',
+                    'avatar' => $currentUserEntity->profile_photo_path ?? '/img/default/default_avatar.jpg'
+                ];
+            }
+        }
+
+        $this->set(compact('user', 'postsArray', 'postCount', 'currentUserId', 'commentUser', 'userLikeCount', 'postIds', 'isOwnProfile', 'friendshipStatus', 'friendshipId', 'friendsCount'));
     }
 
     public function update()

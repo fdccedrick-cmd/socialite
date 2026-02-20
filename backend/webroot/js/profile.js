@@ -42,6 +42,12 @@
           newEditImagePreviews: [],
           isExpanded: false
         })),
+        currentUser: {
+          id: window.profileData?.currentUser?.id || null,
+          username: window.profileData?.currentUser?.username || 'user',
+          full_name: window.profileData?.currentUser?.full_name || 'User',
+          avatar: window.profileData?.currentUser?.avatar || '/img/default/default_avatar.jpg'
+        },
         user: {
           full_name: window.profileData?.user?.full_name || 'User',
           username: window.profileData?.user?.username || 'user',
@@ -1682,6 +1688,123 @@
         const post = this.posts.find(p => p.id === postId);
         if (post && !post.showComments && post.comment_count > 0) {
           // Optionally auto-show comments when user starts typing
+        }
+      },
+      // Image Comment Edit/Delete Methods
+      editImageComment(commentId) {
+        const comment = this.postDetailView.imageComments.find(c => c.id === commentId);
+        if (!comment) return;
+        
+        // Set editing state
+        comment.isEditing = true;
+        comment.editContent = comment.content_text || '';
+        this.$forceUpdate();
+      },
+      async saveImageCommentEdit(commentId) {
+        const comment = this.postDetailView.imageComments.find(c => c.id === commentId);
+        if (!comment || !comment.isEditing) return;
+        
+        const newContent = (comment.editContent || '').trim();
+        if (!newContent) {
+          alert('Comment cannot be empty.');
+          return;
+        }
+        
+        try {
+          const response = await fetch(`/comments/edit/${commentId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-Token': getCsrfToken()
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              content_text: newContent
+            })
+          });
+
+          if (!response.ok) throw new Error('Failed to update comment');
+
+          const data = await response.json();
+          
+          // Update comment in local state
+          comment.content_text = newContent;
+          comment.isEditing = false;
+          delete comment.editContent;
+          
+          this.$forceUpdate();
+        } catch (error) {
+          console.error('Error updating image comment:', error);
+          alert('Failed to update comment.');
+        }
+      },
+      cancelImageCommentEdit(commentId) {
+        const comment = this.postDetailView.imageComments.find(c => c.id === commentId);
+        if (!comment) return;
+        
+        comment.isEditing = false;
+        delete comment.editContent;
+        this.$forceUpdate();
+      },
+      async deleteImageComment(commentId) {
+        const confirmed = typeof window.showConfirmModal === 'function'
+            ? await window.showConfirmModal('Are you sure you want to delete this comment?')
+            : confirm('Delete this comment?');
+        if (!confirmed) return;
+        
+        try {
+          const response = await fetch(`/comments/delete/${commentId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-Token': getCsrfToken()
+            },
+            credentials: 'same-origin'
+          });
+
+          if (!response.ok) throw new Error('Failed to delete comment');
+
+          const data = await response.json();
+          // On success, remove comment from imageComments array
+          const idx = this.postDetailView.imageComments.findIndex(c => c.id === commentId);
+          if (idx !== -1) {
+            this.postDetailView.imageComments.splice(idx, 1);
+          }
+        } catch (error) {
+          console.error('Error deleting image comment:', error);
+          const errorMsg = 'Failed to delete comment.';
+          if (typeof window.showFlash === 'function') {
+            window.showFlash(errorMsg, 'error');
+          } else {
+            alert(errorMsg);
+          }
+        }
+      },
+      async toggleImageCommentLike(commentId) {
+        try {
+          const response = await fetch(`/likes/toggle-comment/${commentId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-Token': getCsrfToken()
+            }
+          });
+          
+          if (!response.ok) throw new Error('Failed to toggle like');
+          
+          const data = await response.json();
+          if (data.success) {
+            const comment = this.postDetailView.imageComments.find(c => c.id === commentId);
+            if (comment) {
+              comment.is_liked = data.liked;
+              comment.like_count = data.likeCount;
+            }
+          }
+        } catch (error) {
+          console.error('Error toggling image comment like:', error);
         }
       },
       canEditPost(post) {

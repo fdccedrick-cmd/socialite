@@ -11,7 +11,7 @@
 <div class="px-3 sm:px-4 pb-3 pt-2 border-t border-gray-100 dark:border-gray-700">
   <div class="flex items-center gap-2">
     <img
-      :src="user && user.avatar ? user.avatar : 'https://i.pravatar.cc/150?img=1'"
+      :src="(currentUser && currentUser.avatar) ? currentUser.avatar : (user && user.avatar ? user.avatar : 'https://i.pravatar.cc/150?img=1')"
       alt=""
       class="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-gray-200 dark:border-gray-600"
     />
