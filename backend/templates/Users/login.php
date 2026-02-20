@@ -153,7 +153,7 @@ createApp({
             // Remove spaces
             sanitized = sanitized.replace(/\s/g, '');
             // Remove special characters (keep only lowercase letters and numbers)
-            sanitized = sanitized.replace(/[^a-z0-9]/g, '');
+            sanitized = sanitized.replace(/[^a-z0-9_]/g, '');
             
             // Update the field if sanitization changed the value
             if (sanitized !== originalValue) {
@@ -172,7 +172,7 @@ createApp({
             }
             
             // Validate username format
-            if (!/^[a-z0-9]+$/.test(this.formData.username)) {
+            if (!/^[a-z0-9_]+$/.test(this.formData.username)) {
                 this.errors.username = 'Username can only contain lowercase letters and numbers';
                 return;
             }

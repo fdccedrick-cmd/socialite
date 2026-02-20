@@ -1062,7 +1062,8 @@ const app = createApp({
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-Token': getCsrfToken()
                     }
                 });
                 
@@ -1141,7 +1142,8 @@ const app = createApp({
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-Token': getCsrfToken()
                     },
                     credentials: 'same-origin'
                 });
@@ -1198,7 +1200,8 @@ const app = createApp({
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-Token': getCsrfToken()
                     },
                     credentials: 'same-origin',
                     body: JSON.stringify({
