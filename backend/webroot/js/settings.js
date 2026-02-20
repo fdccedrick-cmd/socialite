@@ -18,20 +18,20 @@
         };
       },
       mounted() {
-        if (window.lucide) lucide.createIcons();
-      },
-      watch: {
-        showCurrent() {
-          this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-        },
-        showNew() {
-          this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-        },
-        showConfirm() {
-          this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-        }
+        this.initIcons();
       },
       methods: {
+        initIcons() {
+          if (window.lucide) {
+            this.$nextTick(() => {
+              try {
+                lucide.createIcons();
+              } catch (e) {
+                console.warn('Failed to initialize icons:', e);
+              }
+            });
+          }
+        },
         async handlePasswordSubmit() {
           this.errors = {};
           this.isSubmitting = true;
@@ -58,10 +58,25 @@
           formData.append('new_password', this.form.new_password);
 
           try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             const resp = await fetch('/settings/update-password', {
               method: 'POST',
+              headers: {
+                'X-CSRF-Token': csrfToken
+              },
               body: formData
             });
+            
+            // Check if response is OK and is JSON
+            if (!resp.ok) {
+              throw new Error(`Server error: ${resp.status}`);
+            }
+            
+            const contentType = resp.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              throw new Error('Server returned non-JSON response');
+            }
+            
             const data = await resp.json();
             if (data.success) {
               this.form.current_password = '';
@@ -78,7 +93,7 @@
             }
           } catch (e) {
             console.error('Error updating password', e);
-            alert('Failed to update password. Please try again.');
+            this.errors.general = 'Failed to update password. Please try again.';
           } finally {
             this.isSubmitting = false;
           }
@@ -110,14 +125,20 @@
         this.theme = savedTheme;
         this.applyTheme(savedTheme);
         
-        if (window.lucide) lucide.createIcons();
-      },
-      watch: {
-        theme() {
-          this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-        }
+        this.initIcons();
       },
       methods: {
+        initIcons() {
+          if (window.lucide) {
+            this.$nextTick(() => {
+              try {
+                lucide.createIcons();
+              } catch (e) {
+                console.warn('Failed to initialize icons:', e);
+              }
+            });
+          }
+        },
         setTheme(newTheme) {
           this.theme = newTheme;
           this.applyTheme(newTheme);
@@ -137,8 +158,12 @@
             const formData = new FormData();
             formData.append('theme', theme);
             
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             const resp = await fetch('/settings/update-theme', {
               method: 'POST',
+              headers: {
+                'X-CSRF-Token': csrfToken
+              },
               body: formData
             });
             

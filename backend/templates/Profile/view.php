@@ -57,12 +57,12 @@ console.log('🔍 Profile Data Debug:', {
 
 <div id="profileApp" class="space-y-2 sm:space-y-3 md:space-y-3" v-cloak>
   <!-- Cover Photo Section (Facebook Style) -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+  <div class="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-visible">
     <div class="relative">
       <!-- Cover Photo -->
       <div 
         @click="user.coverPhoto ? openCoverPhotoView() : null"
-        class="relative w-full h-32 sm:h-40 md:h-48 lg:h-56 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 dark:from-blue-600 dark:via-purple-600 dark:to-pink-600 group"
+        class="relative w-full h-32 sm:h-40 md:h-48 lg:h-56 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 dark:from-blue-600 dark:via-purple-600 dark:to-pink-600 group rounded-t-xl sm:rounded-t-2xl"
         :class="{ 'cursor-pointer': user.coverPhoto }"
         :style="user.coverPhoto ? `background-image: url('${user.coverPhoto}'); background-size: cover; background-position: center;` : ''"
       >
@@ -169,7 +169,7 @@ console.log('🔍 Profile Data Debug:', {
             </template>
 
             <!-- Friends Button with Dropdown -->
-            <div v-if="friendshipStatus === 'accepted'" class="relative">
+            <div v-if="friendshipStatus === 'accepted'" class="relative z-[9999]">
               <button 
                 @click.stop="showFriendsMenu = !showFriendsMenu"
                 class="flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors font-medium text-xs sm:text-sm"
@@ -183,7 +183,7 @@ console.log('🔍 Profile Data Debug:', {
               <div 
                 v-if="showFriendsMenu"
                 v-click-outside="closeFriendsMenu"
-                class="absolute right-0 mt-2 w-40 sm:w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10"
+                class="absolute right-0 mt-2 w-40 sm:w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-[9999]"
               >
                 <button 
                   @click.stop="unfriend"

@@ -155,13 +155,33 @@ $currentUser = $currentUser ?? [];
     
     <!-- Normal View Mode -->
     <div v-else>
-      <!-- Post Content (click opens Facebook-style detail view) -->
-      <div 
-        v-if="post.content_text" 
-        class="text-gray-800 dark:text-gray-200 text-xs sm:text-sm whitespace-pre-wrap cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 -mx-1 px-1 rounded" 
-        :class="{'mb-2 sm:mb-3': post.post_images && post.post_images.length > 0}"
-        @click="safeOpenPostDetailView(post, 0)"
-      >{{ post.content_text }}</div>
+      <!-- Post Content with See More/Less -->
+      <div v-if="post.content_text">
+        <div class="text-gray-800 dark:text-gray-200 text-xs sm:text-sm whitespace-pre-wrap"
+             :class="{'mb-2 sm:mb-3': post.post_images && post.post_images.length > 0}">
+          <!-- Show truncated text if it's long and not expanded -->
+          <template v-if="post.content_text.length > 300 && !post.isExpanded">
+            <span>{{ post.content_text.substring(0, 300) }}...</span>
+            <button 
+              @click.stop="post.isExpanded = true"
+              class="ml-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-colors"
+            >
+              See More
+            </button>
+          </template>
+          <!-- Show full text if short or expanded -->
+          <template v-else>
+            <span>{{ post.content_text }}</span>
+            <button 
+              v-if="post.content_text.length > 300"
+              @click.stop="post.isExpanded = false"
+              class="ml-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-colors"
+            >
+              See Less
+            </button>
+          </template>
+        </div>
+      </div>
     </div>
   </div>
   

@@ -11,6 +11,7 @@ use Cake\Core\Exception\MissingPluginException;
 use Cake\Error\Middleware\ErrorHandlerMiddleware;
 use Cake\Http\BaseApplication;
 use Cake\Http\Middleware\BodyParserMiddleware;
+use Cake\Http\Middleware\SessionCsrfProtectionMiddleware;
 use Cake\Http\MiddlewareQueue;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\Routing\Middleware\RoutingMiddleware;
@@ -52,11 +53,19 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 
     public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue
     {
+        $csrf = new SessionCsrfProtectionMiddleware();
+        // Skip CSRF check for login and register routes
+        $csrf->skipCheckCallback(function ($request) {
+            $path = $request->getUri()->getPath();
+            return in_array($path, ['/login', '/register', '/users/login', '/users/register']);
+        });
+        
         $middlewareQueue
             ->add(new ErrorHandlerMiddleware(Configure::read('Error') ?: []))
             ->add(new AssetMiddleware())
             ->add(new RoutingMiddleware($this))
             ->add(new BodyParserMiddleware())
+            ->add($csrf)
             ->add(new AuthenticationMiddleware($this));
 
         return $middlewareQueue;

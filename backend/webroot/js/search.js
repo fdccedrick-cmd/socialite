@@ -6,6 +6,12 @@ if (typeof window.searchData === 'undefined') {
     window.searchData = { user: null, posts: [] };
 }
 
+// CSRF token helper
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
 const app = createApp({
     data() {
         const userId = window.searchData?.user?.id ?? null;
@@ -31,7 +37,8 @@ const app = createApp({
                 editImages: [],
                 removedImageIds: [],
                 newEditImages: [],
-                newEditImagePreviews: []
+                newEditImagePreviews: [],
+                isExpanded: false
             })),
             
             imageViewer: {
@@ -49,7 +56,8 @@ const app = createApp({
                 imageIsLiked: false,
                 imageNewComment: '',
                 imageCommentImage: null,
-                imageCommentImagePreview: null
+                imageCommentImagePreview: null,
+                isExpanded: false
             },
             wsManager: null,
             wsConnected: false,
@@ -236,7 +244,7 @@ const app = createApp({
             try {
                 const response = await fetch(`/posts/edit/${postId}`, {
                     method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() },
                     body: formData
                 });
                 const data = await response.json();
@@ -272,7 +280,7 @@ const app = createApp({
             try {
                 const response = await fetch(`/posts/delete/${postId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() }
                 });
                 if (response.ok) {
                     this.posts = this.posts.filter(p => p.id !== postId);
@@ -341,6 +349,7 @@ const app = createApp({
             this.postDetailView.imageNewComment = '';
             this.postDetailView.imageCommentImage = null;
             this.postDetailView.imageCommentImagePreview = null;
+            this.postDetailView.isExpanded = false;
             
             const img = p.post_images && p.post_images[this.postDetailView.imageIndex];
             if (p.post_images && p.post_images.length >= 2 && img && img.id) {
@@ -441,7 +450,7 @@ const app = createApp({
             try {
                 const response = await fetch('/comments/add', {
                     method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() },
                     body: formData
                 });
                 
@@ -483,7 +492,7 @@ const app = createApp({
             try {
                 const response = await fetch(`/comments/delete/${commentId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() }
                 });
                 
                 if (response.ok) {
@@ -528,7 +537,8 @@ const app = createApp({
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-Token': getCsrfToken()
                     },
                     credentials: 'same-origin',
                     body: JSON.stringify({
@@ -566,7 +576,7 @@ const app = createApp({
             try {
                 const response = await fetch(`/likes/toggle-comment/${commentId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() }
                 });
                 
                 if (response.ok) {
@@ -628,7 +638,7 @@ const app = createApp({
             try {
                 const response = await fetch('/comments/add', { 
                     method: 'POST', 
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }, 
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() }, 
                     body: formData 
                 });
                 const data = await response.json();
@@ -682,7 +692,7 @@ const app = createApp({
             try {
                 const response = await fetch(`/likes/toggle-post-image/${imageId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() },
                     credentials: 'same-origin'
                 });
                 
@@ -717,7 +727,7 @@ const app = createApp({
             try {
                 const response = await fetch(`/likes/toggle-post/${postId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() }
                 });
                 
                 if (!response.ok) {

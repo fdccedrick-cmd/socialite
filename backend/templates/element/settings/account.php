@@ -18,8 +18,8 @@
           class="absolute right-2 top-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" 
           aria-label="Toggle current password visibility"
         >
-          <i v-if="showCurrent" data-lucide="eye-off" class="w-4 h-4"></i>
-          <i v-else data-lucide="eye" class="w-4 h-4"></i>
+          <i v-show="showCurrent" data-lucide="eye-off" class="w-4 h-4"></i>
+          <i v-show="!showCurrent" data-lucide="eye" class="w-4 h-4"></i>
         </button>
       </div>
       <p v-if="errors.current_password" class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors.current_password }}</p>
@@ -40,8 +40,8 @@
           class="absolute right-2 top-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" 
           aria-label="Toggle new password visibility"
         >
-          <i v-if="showNew" data-lucide="eye-off" class="w-4 h-4"></i>
-          <i v-else data-lucide="eye" class="w-4 h-4"></i>
+          <i v-show="showNew" data-lucide="eye-off" class="w-4 h-4"></i>
+          <i v-show="!showNew" data-lucide="eye" class="w-4 h-4"></i>
         </button>
       </div>
       <p v-if="errors.new_password" class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors.new_password }}</p>
@@ -62,8 +62,8 @@
           class="absolute right-2 top-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" 
           aria-label="Toggle confirm password visibility"
         >
-          <i v-if="showConfirm" data-lucide="eye-off" class="w-4 h-4"></i>
-          <i v-else data-lucide="eye" class="w-4 h-4"></i>
+          <i v-show="showConfirm" data-lucide="eye-off" class="w-4 h-4"></i>
+          <i v-show="!showConfirm" data-lucide="eye" class="w-4 h-4"></i>
         </button>
       </div>
       <p v-if="errors.confirm_password" class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors.confirm_password }}</p>

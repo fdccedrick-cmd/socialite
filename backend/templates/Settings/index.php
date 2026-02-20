@@ -38,7 +38,7 @@
   </div>
 </div>
 
-<script src="/js/settings.js"></script>
+<script src="/js/settings.js?v=<?= time() ?>"></script>
 <script>
   // Initialize lucide icons after page load
   if (window.lucide) {

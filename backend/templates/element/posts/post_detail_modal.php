@@ -121,9 +121,29 @@
                 <i data-lucide="clock" class="w-3 h-3"></i>
                 {{ formatDate(postDetailView.post.created) }}
               </p>
-              <p v-if="postDetailView.post.content_text" class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap mt-2 leading-relaxed">
-                {{ postDetailView.post.content_text }}
-              </p>
+              <div v-if="postDetailView.post.content_text" class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap mt-2 leading-relaxed">
+                <!-- Show truncated text if it's long and not expanded -->
+                <template v-if="postDetailView.post.content_text.length > 300 && !postDetailView.isExpanded">
+                  <span>{{ postDetailView.post.content_text.substring(0, 300) }}...</span>
+                  <button 
+                    @click.stop="postDetailView.isExpanded = true"
+                    class="ml-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-colors"
+                  >
+                    See More
+                  </button>
+                </template>
+                <!-- Show full text if short or expanded -->
+                <template v-else>
+                  <span>{{ postDetailView.post.content_text }}</span>
+                  <button 
+                    v-if="postDetailView.post.content_text.length > 300"
+                    @click.stop="postDetailView.isExpanded = false"
+                    class="ml-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-colors"
+                  >
+                    See Less
+                  </button>
+                </template>
+              </div>
             </div>
           </div>
           

@@ -4,6 +4,12 @@
   const el = document.getElementById('profileApp');
   if (!el) return;
   
+  // CSRF token helper
+  function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+  }
+  
   const app = Vue.createApp({
     data() {
       const userId = window.profileData?.currentUserId || null;
@@ -33,7 +39,8 @@
           editImages: [],
           removedImageIds: [],
           newEditImages: [],
-          newEditImagePreviews: []
+          newEditImagePreviews: [],
+          isExpanded: false
         })),
         user: {
           full_name: window.profileData?.user?.full_name || 'User',
@@ -92,7 +99,8 @@
           imageComments: [],
           imageLikeCount: 0,
           imageIsLiked: false,
-          imageNewComment: ''
+          imageNewComment: '',
+          isExpanded: false
         },
         appReady: false,
         wsManager: null,
@@ -241,6 +249,7 @@
           this.postDetailView.imageIsLiked = false;
           this.postDetailView.currentImageId = null;
           this.postDetailView.imageNewComment = '';
+          this.postDetailView.isExpanded = false;
           const img = p.post_images && p.post_images[this.postDetailView.imageIndex];
           if (p.post_images && p.post_images.length >= 2 && img && img.id) {
             this.postDetailView.currentImageId = parseInt(img.id, 10);
@@ -386,7 +395,7 @@
           try {
             const response = await fetch(`/likes/toggle-post-image/${imageId}`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+              headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() },
               credentials: 'same-origin'
             });
             
@@ -435,7 +444,7 @@
           }
           
           try {
-            const response = await fetch('/comments/add', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData });
+            const response = await fetch('/comments/add', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() }, body: formData });
             const data = await response.json();
             console.log('submitImageComment response:', { ok: response.ok, data });
             if (response.ok && data.success) {
@@ -579,7 +588,8 @@
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-Token': getCsrfToken()
             },
             credentials: 'same-origin'
           });
@@ -1451,7 +1461,8 @@
           const response = await fetch('/comments/add', {
             method: 'POST',
             headers: {
-              'X-Requested-With': 'XMLHttpRequest'
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-Token': getCsrfToken()
             },
             body: formData
           });
@@ -1841,7 +1852,8 @@
           const response = await fetch(`/posts/edit/${postId}`, {
             method: 'POST',
             headers: {
-              'X-Requested-With': 'XMLHttpRequest'
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-Token': getCsrfToken()
             },
             body: formData
           });
@@ -1901,7 +1913,8 @@
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-Token': getCsrfToken()
             }
           });
           

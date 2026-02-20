@@ -17,7 +17,7 @@
             <i data-lucide="sun" class="w-5 h-5 text-yellow-500"></i>
             <span class="font-medium dark:text-white">Light</span>
           </div>
-          <div v-if="theme === 'light'" class="text-blue-600 dark:text-blue-400">
+          <div v-show="theme === 'light'" class="text-blue-600 dark:text-blue-400">
             <i data-lucide="check-circle" class="w-5 h-5"></i>
           </div>
         </div>
@@ -41,7 +41,7 @@
             <i data-lucide="moon" class="w-5 h-5 text-indigo-500"></i>
             <span class="font-medium dark:text-white">Dark</span>
           </div>
-          <div v-if="theme === 'dark'" class="text-blue-600 dark:text-blue-400">
+          <div v-show="theme === 'dark'" class="text-blue-600 dark:text-blue-400">
             <i data-lucide="check-circle" class="w-5 h-5"></i>
           </div>
         </div>

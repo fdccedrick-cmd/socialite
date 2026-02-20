@@ -7,6 +7,12 @@ use Authentication\PasswordHasher\DefaultPasswordHasher;
 
 class SettingsController extends AppController
 {
+    public function initialize(): void
+    {
+        parent::initialize();
+        error_log('SettingsController::initialize() called');
+    }
+    
     public function index()
     {
         $result = $this->Authentication->getResult();
@@ -93,91 +99,118 @@ class SettingsController extends AppController
 
     public function updatePassword()
     {
-        $this->request->allowMethod(['post']);
-        $this->viewBuilder()->disableAutoLayout();
+        error_log('=== updatePassword called ===');
+        
+        try {
+            $this->request->allowMethod(['post']);
+            $this->viewBuilder()->disableAutoLayout();
 
-        $result = $this->Authentication->getResult();
-        if (!($result && $result->isValid())) {
-            return $this->response
-                ->withType('application/json')
-                ->withStringBody(json_encode([
-                    'success' => false,
-                    'message' => 'Unauthorized access'
-                ]));
-        }
+            $result = $this->Authentication->getResult();
+            if (!($result && $result->isValid())) {
+                error_log('updatePassword: Authentication failed');
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([
+                        'success' => false,
+                        'message' => 'Unauthorized access'
+                    ]));
+            }
 
-        $identity = $this->Authentication->getIdentity();
-        $userId = null;
-        if (is_object($identity)) {
-            if (method_exists($identity, 'getOriginalData')) {
-                $orig = $identity->getOriginalData();
-                if (is_object($orig) && isset($orig->id)) {
-                    $userId = $orig->id;
-                } elseif (is_array($orig) && isset($orig['id'])) {
-                    $userId = $orig['id'];
+            $identity = $this->Authentication->getIdentity();
+            $userId = null;
+            if (is_object($identity)) {
+                if (method_exists($identity, 'getOriginalData')) {
+                    $orig = $identity->getOriginalData();
+                    if (is_object($orig) && isset($orig->id)) {
+                        $userId = $orig->id;
+                    } elseif (is_array($orig) && isset($orig['id'])) {
+                        $userId = $orig['id'];
+                    }
+                } elseif (isset($identity->id)) {
+                    $userId = $identity->id;
                 }
-            } elseif (isset($identity->id)) {
-                $userId = $identity->id;
+            } elseif (is_array($identity) && isset($identity['id'])) {
+                $userId = $identity['id'];
             }
-        } elseif (is_array($identity) && isset($identity['id'])) {
-            $userId = $identity['id'];
-        }
 
-        if (!$userId) {
+            if (!$userId) {
+                error_log('updatePassword: User ID not found');
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([
+                        'success' => false,
+                        'message' => 'User not found'
+                    ]));
+            }
+
+            error_log('updatePassword: User ID: ' . $userId);
+            $usersTable = $this->getTableLocator()->get('Users');
+            $user = $usersTable->get($userId);
+            error_log('updatePassword: User loaded successfully');
+
+            $currentPassword = $this->request->getData('current_password');
+            $newPassword = $this->request->getData('new_password');
+            error_log('updatePassword: Received current_password: ' . ($currentPassword ? 'yes' : 'no'));
+            error_log('updatePassword: Received new_password: ' . ($newPassword ? 'yes' : 'no'));
+
+            $errors = [];
+
+            if (empty($currentPassword)) {
+                $errors['current_password'] = 'Current password is required to change password.';
+            }
+            if (empty($newPassword)) {
+                $errors['new_password'] = 'New password is required.';
+            } elseif (strlen($newPassword) < 6) {
+                $errors['new_password'] = 'Password must be at least 6 characters.';
+            }
+
+            if (empty($errors)) {
+                error_log('updatePassword: No validation errors, checking current password');
+                $hasher = new DefaultPasswordHasher();
+                if (!$hasher->check($currentPassword, $user->password_hash)) {
+                    error_log('updatePassword: Current password check failed');
+                    $errors['current_password'] = 'Current password is incorrect.';
+                } else {
+                    error_log('updatePassword: Current password verified, setting new password');
+                    $user->password_hash = $newPassword;
+                }
+            }
+
+            if (!empty($errors)) {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([
+                        'success' => false,
+                        'errors' => $errors
+                    ]));
+            }
+
+            error_log('updatePassword: Attempting to save user');
+            $user = $usersTable->patchEntity($user, ['password_hash' => $user->password_hash]);
+            if ($usersTable->save($user)) {
+                error_log('updatePassword: Password updated successfully');
+                $this->Authentication->setIdentity($user);
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode(['success' => true]));
+            }
+
+            error_log('updatePassword: Failed to save user');
+            $errors = $user->getErrors();
+            error_log('updatePassword: Validation errors: ' . json_encode($errors));
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode(['success' => false, 'message' => 'Failed to update password', 'errors' => $errors]));
+        } catch (\Exception $e) {
+            error_log('updatePassword: Exception caught - ' . $e->getMessage());
+            error_log('updatePassword: Stack trace - ' . $e->getTraceAsString());
             return $this->response
                 ->withType('application/json')
                 ->withStringBody(json_encode([
                     'success' => false,
-                    'message' => 'User not found'
+                    'message' => 'An error occurred while updating password'
                 ]));
         }
-
-        $usersTable = $this->getTableLocator()->get('Users');
-        $user = $usersTable->get($userId);
-
-        $currentPassword = $this->request->getData('current_password');
-        $newPassword = $this->request->getData('new_password');
-
-        $errors = [];
-
-        if (empty($currentPassword)) {
-            $errors['current_password'] = 'Current password is required to change password.';
-        }
-        if (empty($newPassword)) {
-            $errors['new_password'] = 'New password is required.';
-        } elseif (strlen($newPassword) < 6) {
-            $errors['new_password'] = 'Password must be at least 6 characters.';
-        }
-
-        if (empty($errors)) {
-            $hasher = new DefaultPasswordHasher();
-            if (!$hasher->check($currentPassword, $user->password_hash)) {
-                $errors['current_password'] = 'Current password is incorrect.';
-            } else {
-                $user->password_hash = $newPassword;
-            }
-        }
-
-        if (!empty($errors)) {
-            return $this->response
-                ->withType('application/json')
-                ->withStringBody(json_encode([
-                    'success' => false,
-                    'errors' => $errors
-                ]));
-        }
-
-        $user = $usersTable->patchEntity($user, ['password_hash' => $user->password_hash]);
-        if ($usersTable->save($user)) {
-            $this->Authentication->setIdentity($user);
-            return $this->response
-                ->withType('application/json')
-                ->withStringBody(json_encode(['success' => true]));
-        }
-
-        return $this->response
-            ->withType('application/json')
-            ->withStringBody(json_encode(['success' => false, 'message' => 'Failed to update password']));
     }
 
     public function updateTheme()
