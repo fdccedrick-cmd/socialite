@@ -292,63 +292,39 @@
         openProfilePhotoView() {
           if (!this.user?.avatar || this.isUsingDefaultAvatar()) return;
           
-          // Create a temporary post object for the profile photo
-          const tempPost = {
-            id: 'profile-photo-view',
-            user: {
-              id: window.profileData?.profileUserId,
-              full_name: this.user.full_name,
-              username: this.user.username,
-              profile_photo_path: this.user.avatar,
-              avatar: this.user.avatar
-            },
-            content: 'Profile Photo',
-            content_text: 'Profile Photo',
-            post_images: [{
-              id: 'profile-photo',
-              image_path: this.user.avatar,
-              created: new Date().toISOString()
-            }],
-            created: new Date().toISOString(),
-            like_count: 0,
-            comment_count: 0,
-            is_liked: false,
-            comments: [],
-            showComments: false
-          };
+          // Find the actual post that was created when the profile photo was uploaded
+          // These posts have content like "John Doe uploaded a new profile picture"
+          const profilePhotoPost = this.posts.find(post => 
+            post.content_text && 
+            post.content_text.toLowerCase().includes('uploaded a new profile picture')
+          );
           
-          this.openPostDetailView(tempPost, 0);
+          if (profilePhotoPost) {
+            // Open the real post which has likes and comments
+            this.openPostDetailView(profilePhotoPost, 0);
+          } else {
+            // Fallback: if no post found (e.g., very old profile photo or manually set)
+            console.warn('No profile photo post found - user may have uploaded photo before post creation was implemented');
+          }
         },
         
         openCoverPhotoView() {
           if (!this.user?.coverPhoto) return;
           
-          // Create a temporary post object for the cover photo
-          const tempPost = {
-            id: 'cover-photo-view',
-            user: {
-              id: window.profileData?.profileUserId,
-              full_name: this.user.full_name,
-              username: this.user.username,
-              profile_photo_path: this.user.avatar,
-              avatar: this.user.avatar
-            },
-            content: 'Cover Photo',
-            content_text: 'Cover Photo',
-            post_images: [{
-              id: 'cover-photo',
-              image_path: this.user.coverPhoto,
-              created: new Date().toISOString()
-            }],
-            created: new Date().toISOString(),
-            like_count: 0,
-            comment_count: 0,
-            is_liked: false,
-            comments: [],
-            showComments: false
-          };
+          // Find the actual post that was created when the cover photo was uploaded
+          // These posts have content like "John Doe uploaded a new cover photo"
+          const coverPhotoPost = this.posts.find(post => 
+            post.content_text && 
+            post.content_text.toLowerCase().includes('uploaded a new cover photo')
+          );
           
-          this.openPostDetailView(tempPost, 0);
+          if (coverPhotoPost) {
+            // Open the real post which has likes and comments
+            this.openPostDetailView(coverPhotoPost, 0);
+          } else {
+            // Fallback: if no post found (e.g., very old cover photo or manually set)
+            console.warn('No cover photo post found - user may have uploaded photo before post creation was implemented');
+          }
         },
         
         async loadImageComments(postImageId) {
