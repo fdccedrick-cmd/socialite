@@ -8,7 +8,7 @@ class SeedPostsWithImages extends BaseMigration
     /**
      * Change Method.
      * 
-     * Seeds 50 posts divided among users 1, 4, and 5
+     * Seeds 50 posts divided among existing users
      * Posts can have text, images, or both
      * Images are URLs from picsum.photos (1000x1000 minimum for scenery)
      */
@@ -17,7 +17,14 @@ class SeedPostsWithImages extends BaseMigration
         $posts = $this->table('posts');
         $postImages = $this->table('post_images');
         
-        $userIds = [1, 4, 5];
+        // Dynamically fetch user IDs instead of hardcoding
+        $userRows = $this->fetchAll('SELECT id FROM users ORDER BY id ASC LIMIT 10');
+        $userIds = array_column($userRows, 'id');
+        
+        // Fallback if no users exist (shouldn't happen if migrations run in order)
+        if (empty($userIds)) {
+            return;
+        }
         $postType = ['text', 'image', 'both'];
         
         // Sample post texts

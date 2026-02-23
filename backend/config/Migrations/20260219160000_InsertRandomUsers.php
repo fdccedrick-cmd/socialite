@@ -8,8 +8,9 @@ class InsertRandomUsers extends BaseMigration
     /**
      * Change Method.
      *
-     * Inserts 10 random users with predefined data.
-     * Password for all users: admin123
+     * Inserts sample users with predefined data.
+     * Fixed users: johndoe (password: admin123), shane (password: shane123)
+     * Additional random users (password: admin123)
      *
      * @return void
      */
@@ -17,18 +18,49 @@ class InsertRandomUsers extends BaseMigration
     {
         $table = $this->table('users');
         
-        // Hash the password 'admin123' for all users
-        $passwordHash = password_hash('admin123', PASSWORD_DEFAULT);
+        // Hash passwords
+        $passwordHashAdmin = password_hash('admin123', PASSWORD_DEFAULT);
+        $passwordHashShane = password_hash('shane123', PASSWORD_DEFAULT);
         
-        // Use timestamp to ensure unique usernames
+        // Use timestamp to ensure unique usernames for additional users
         $timestamp = time();
         $now = date('Y-m-d H:i:s');
         
         $users = [
+            // Fixed users for testing
+            [
+                'full_name' => 'John Dee',
+                'username' => 'johndoe',
+                'password_hash' => $passwordHashAdmin,
+                'profile_photo_path' => null,
+                'cover_photo_path' => null,
+                'bio' => null,
+                'theme' => 'dark',
+                'address' => null,
+                'relationship_status' => null,
+                'contact_links' => null,
+                'created' => $now,
+                'modified' => $now,
+            ],
+            [
+                'full_name' => 'Shane Gamboa',
+                'username' => 'shane',
+                'password_hash' => $passwordHashShane,
+                'profile_photo_path' => null,
+                'cover_photo_path' => null,
+                'bio' => null,
+                'theme' => 'dark',
+                'address' => null,
+                'relationship_status' => null,
+                'contact_links' => null,
+                'created' => $now,
+                'modified' => $now,
+            ],
+            // Additional random users
             [
                 'full_name' => 'Alex Johnson',
                 'username' => 'alex_johnson_' . $timestamp . '1',
-                'password_hash' => $passwordHash,
+                'password_hash' => $passwordHashAdmin,
                 'profile_photo_path' => null,
                 'cover_photo_path' => null,
                 'bio' => null,
@@ -42,7 +74,7 @@ class InsertRandomUsers extends BaseMigration
             [
                 'full_name' => 'Sam Martinez',
                 'username' => 'sam_martinez_' . $timestamp . '2',
-                'password_hash' => $passwordHash,
+                'password_hash' => $passwordHashAdmin,
                 'profile_photo_path' => null,
                 'cover_photo_path' => null,
                 'bio' => null,
@@ -56,7 +88,7 @@ class InsertRandomUsers extends BaseMigration
             [
                 'full_name' => 'Jordan Lee',
                 'username' => 'jordan_lee_' . $timestamp . '3',
-                'password_hash' => $passwordHash,
+                'password_hash' => $passwordHashAdmin,
                 'profile_photo_path' => null,
                 'cover_photo_path' => null,
                 'bio' => null,
@@ -70,7 +102,7 @@ class InsertRandomUsers extends BaseMigration
             [
                 'full_name' => 'Taylor Brown',
                 'username' => 'taylor_brown_' . $timestamp . '4',
-                'password_hash' => $passwordHash,
+                'password_hash' => $passwordHashAdmin,
                 'profile_photo_path' => null,
                 'cover_photo_path' => null,
                 'bio' => null,
@@ -84,7 +116,7 @@ class InsertRandomUsers extends BaseMigration
             [
                 'full_name' => 'Morgan Davis',
                 'username' => 'morgan_davis_' . $timestamp . '5',
-                'password_hash' => $passwordHash,
+                'password_hash' => $passwordHashAdmin,
                 'profile_photo_path' => null,
                 'cover_photo_path' => null,
                 'bio' => null,
@@ -98,7 +130,7 @@ class InsertRandomUsers extends BaseMigration
             [
                 'full_name' => 'Casey Wilson',
                 'username' => 'casey_wilson_' . $timestamp . '6',
-                'password_hash' => $passwordHash,
+                'password_hash' => $passwordHashAdmin,
                 'profile_photo_path' => null,
                 'cover_photo_path' => null,
                 'bio' => null,
@@ -112,7 +144,7 @@ class InsertRandomUsers extends BaseMigration
             [
                 'full_name' => 'Riley Anderson',
                 'username' => 'riley_anderson_' . $timestamp . '7',
-                'password_hash' => $passwordHash,
+                'password_hash' => $passwordHashAdmin,
                 'profile_photo_path' => null,
                 'cover_photo_path' => null,
                 'bio' => null,
@@ -126,7 +158,7 @@ class InsertRandomUsers extends BaseMigration
             [
                 'full_name' => 'Avery Thomas',
                 'username' => 'avery_thomas_' . $timestamp . '8',
-                'password_hash' => $passwordHash,
+                'password_hash' => $passwordHashAdmin,
                 'profile_photo_path' => null,
                 'cover_photo_path' => null,
                 'bio' => null,
@@ -140,7 +172,7 @@ class InsertRandomUsers extends BaseMigration
             [
                 'full_name' => 'Quinn Jackson',
                 'username' => 'quinn_jackson_' . $timestamp . '9',
-                'password_hash' => $passwordHash,
+                'password_hash' => $passwordHashAdmin,
                 'profile_photo_path' => null,
                 'cover_photo_path' => null,
                 'bio' => null,
@@ -154,7 +186,7 @@ class InsertRandomUsers extends BaseMigration
             [
                 'full_name' => 'Cameron White',
                 'username' => 'cameron_white_' . $timestamp . '10',
-                'password_hash' => $passwordHash,
+                'password_hash' => $passwordHashAdmin,
                 'profile_photo_path' => null,
                 'cover_photo_path' => null,
                 'bio' => null,
