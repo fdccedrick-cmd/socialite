@@ -999,10 +999,14 @@
             this.user.address = data.user.address;
             this.user.relationship_status = data.user.relationship_status;
             this.user.contact_links = data.user.contact_links;
-            if (data.user.cover_photo_path) {
+            
+            // Only update cover photo if it was actually changed
+            if (data.user.cover_photo_path !== undefined && data.user.cover_photo_path !== null) {
               this.user.coverPhoto = data.user.cover_photo_path;
             }
-            if (data.user.profile_photo_path) {
+            
+            // Only update profile photo if it was actually changed
+            if (data.user.profile_photo_path !== undefined && data.user.profile_photo_path !== null) {
               this.user.avatar = data.user.profile_photo_path;
               this.user.profile_photo_path = data.user.profile_photo_path;
             }

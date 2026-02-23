@@ -76,9 +76,6 @@ class ProfileController extends AppController
         $user['address'] = $user['address'] ?? null;
         $user['relationship_status'] = $user['relationship_status'] ?? null;
         $user['contact_links'] = $user['contact_links'] ?? null;
-       
-        $user['avatar'] = $user['profile_photo_path'] ?? '/img/default/default_avatar.jpg';
-        $user['coverPhoto'] = $user['cover_photo_path'];
         
         $postsTable = $this->getTableLocator()->get('Posts');
         
@@ -165,6 +162,48 @@ class ProfileController extends AppController
                 ])
                 ->first();
             $isFriend = !empty($friendship);
+        }
+        
+        // Apply privacy filtering to profile photo and cover photo
+        // First, set default avatar and cover photo
+        $user['avatar'] = '/img/default/default_avatar.jpg';
+        $user['coverPhoto'] = null;
+        
+        // Then check if we can show the actual photos based on privacy
+        if (!empty($user['profile_photo_path'])) {
+            $canViewProfilePhoto = false;
+            if ($isOwnProfile) {
+                $canViewProfilePhoto = true;
+            } else {
+                // Check privacy of the profile photo
+                if ($user['profile_photo_privacy'] === 'public') {
+                    $canViewProfilePhoto = true;
+                } elseif ($user['profile_photo_privacy'] === 'friends' && $isFriend) {
+                    $canViewProfilePhoto = true;
+                }
+            }
+            
+            if ($canViewProfilePhoto) {
+                $user['avatar'] = $user['profile_photo_path'];
+            }
+        }
+        
+        if (!empty($user['cover_photo_path'])) {
+            $canViewCoverPhoto = false;
+            if ($isOwnProfile) {
+                $canViewCoverPhoto = true;
+            } else {
+                // Check privacy of the cover photo
+                if ($user['cover_photo_privacy'] === 'public') {
+                    $canViewCoverPhoto = true;
+                } elseif ($user['cover_photo_privacy'] === 'friends' && $isFriend) {
+                    $canViewCoverPhoto = true;
+                }
+            }
+            
+            if ($canViewCoverPhoto) {
+                $user['coverPhoto'] = $user['cover_photo_path'];
+            }
         }
         
         $posts = $postsTable->find()
@@ -679,6 +718,9 @@ class ProfileController extends AppController
         
         $oldProfilePath = $user->profile_photo_path;
         $oldCoverPath = $user->cover_photo_path;
+        
+        // Patch entity with only the fields we want to update
+        // CakePHP's patchEntity should only update fields present in $data
         $user = $usersTable->patchEntity($user, $data);
 
         try {

@@ -14,7 +14,7 @@ A full-featured social networking platform built with modern web technologies, f
 - **Password Hashing**: Bcrypt
 - **Image Processing**: PHP GD Library with sharpening (resize, compress, optimize)
 
-### Frontend
+### Frontend - cdn
 - **Framework**: Vue.js 3 (Progressive JavaScript Framework)
 - **CSS Framework**: Tailwind CSS (Utility-first CSS)
 - **Icons**: Lucide Icons
