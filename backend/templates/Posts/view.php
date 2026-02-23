@@ -134,6 +134,9 @@ $currentUserJson = $currentUserArray !== null ? json_encode($currentUserArray, J
 </script>
 
 <?php $this->start('script'); ?>
+<!-- Shared Utilities -->
+<script src="/js/shared-post-utils.js?v=<?= time() ?>"></script>
+<script src="/js/shared-post-editing-utils.js?v=<?= time() ?>"></script>
 <script src="/js/profile.js?v=<?= time() ?>"></script>
 <?php $this->end(); ?>
 

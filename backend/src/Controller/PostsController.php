@@ -664,17 +664,9 @@ class PostsController extends AppController
                     ]));
             }
             
-            // Check if this post is a profile/cover photo post
-            $isProfilePhotoPost = false;
-            $isCoverPhotoPost = false;
-            
-            if (!empty($post->content_text)) {
-                if (strpos($post->content_text, 'uploaded a new profile picture') !== false) {
-                    $isProfilePhotoPost = true;
-                } elseif (strpos($post->content_text, 'uploaded a new cover photo') !== false) {
-                    $isCoverPhotoPost = true;
-                }
-            }
+            // Check if this post is a profile/cover photo post using post_type field
+            $isProfilePhotoPost = !empty($post->post_type) && $post->post_type === 'profile_photo';
+            $isCoverPhotoPost = !empty($post->post_type) && $post->post_type === 'cover_photo';
             
             // If it's a profile or cover photo post, clear the path in users table
             if ($isProfilePhotoPost || $isCoverPhotoPost) {

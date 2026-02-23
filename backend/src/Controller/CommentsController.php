@@ -433,11 +433,30 @@ class CommentsController extends AppController
                 'post_id' => $postId,
                 'post_image_id IS' => null,
             ])
-            ->contain(['Users'])
+            ->contain(['Users' => function ($q) {
+                return $q->select([
+                    'id',
+                    'username',
+                    'full_name',
+                    'profile_photo_path',
+                    'created',
+                    'modified'
+                ]);
+            }])
             ->order(['Comments.created_at' => 'ASC'])
             ->all();
 
-        $this->set('comments', $comments);
+        // Format comments with avatar field
+        $commentsArray = [];
+        foreach ($comments as $comment) {
+            $commentData = $comment->toArray();
+            if (!empty($commentData['user'])) {
+                $commentData['user']['avatar'] = $commentData['user']['profile_photo_path'] ?? '/img/default/default_avatar.jpg';
+            }
+            $commentsArray[] = $commentData;
+        }
+
+        $this->set('comments', $commentsArray);
         $this->viewBuilder()->setOption('serialize', ['comments']);
     }
 
@@ -455,11 +474,30 @@ class CommentsController extends AppController
 
         $comments = $this->Comments->find('active')
             ->where(['post_image_id' => $postImageId])
-            ->contain(['Users'])
+            ->contain(['Users' => function ($q) {
+                return $q->select([
+                    'id',
+                    'username',
+                    'full_name',
+                    'profile_photo_path',
+                    'created',
+                    'modified'
+                ]);
+            }])
             ->order(['Comments.created_at' => 'ASC'])
             ->all();
 
-        $this->set('comments', $comments);
+        // Format comments with avatar field
+        $commentsArray = [];
+        foreach ($comments as $comment) {
+            $commentData = $comment->toArray();
+            if (!empty($commentData['user'])) {
+                $commentData['user']['avatar'] = $commentData['user']['profile_photo_path'] ?? '/img/default/default_avatar.jpg';
+            }
+            $commentsArray[] = $commentData;
+        }
+
+        $this->set('comments', $commentsArray);
         $this->viewBuilder()->setOption('serialize', ['comments']);
     }
 }

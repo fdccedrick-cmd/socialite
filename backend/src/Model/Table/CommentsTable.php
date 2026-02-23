@@ -178,13 +178,27 @@ class CommentsTable extends Table
                 'deleted_at IS' => null,
                 'post_image_id IS' => null  // Exclude image-specific comments
             ])
-            ->contain(['Users'])
+            ->contain(['Users' => function ($q) {
+                return $q->select([
+                    'id',
+                    'username',
+                    'full_name',
+                    'profile_photo_path',
+                    'created',
+                    'modified'
+                ]);
+            }])
             ->order(['Comments.created_at' => 'ASC'])
             ->toArray();
         
         $commentsArray = [];
         foreach ($comments as $comment) {
             $commentData = $comment->toArray();
+            
+            // Ensure comment user data has avatar field for JavaScript compatibility
+            if (!empty($commentData['user'])) {
+                $commentData['user']['avatar'] = $commentData['user']['profile_photo_path'] ?? '/img/default/default_avatar.jpg';
+            }
             
             // Format comment dates
             if (!empty($commentData['created_at']) && $commentData['created_at'] instanceof \DateTimeInterface) {

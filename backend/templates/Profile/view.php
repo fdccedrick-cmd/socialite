@@ -19,11 +19,14 @@ window.profileData = {
         avatar: <?= json_encode($commentUser['avatar'] ?? '/img/default/default_avatar.jpg') ?>
     },
     user: {
+        id: <?= json_encode($user['id'] ?? null) ?>,
         full_name: <?= json_encode(!empty($user['full_name']) ? $user['full_name'] : (!empty($user['username']) ? $user['username'] : 'User')) ?>,
         username: <?= json_encode(!empty($user['username']) ? $user['username'] : 'user') ?>,
         profile_photo_path: <?= json_encode(!empty($user['profile_photo_path']) ? $user['profile_photo_path'] : null) ?>,
         avatar: <?= json_encode(!empty($user['profile_photo_path']) ? $user['profile_photo_path'] : '/img/default/default_avatar.jpg') ?>,
         coverPhoto: <?= json_encode(!empty($user['cover_photo_path']) ? $user['cover_photo_path'] : null) ?>,
+        profile_photo_privacy: <?= json_encode($user['profile_photo_privacy'] ?? 'public') ?>,
+        cover_photo_privacy: <?= json_encode($user['cover_photo_privacy'] ?? 'public') ?>,
         joinedDate: <?php 
           $joinedDate = 'Joined recently';
           if (!empty($user['created'])) {
@@ -49,16 +52,6 @@ window.profileData = {
     postCount: <?= json_encode($postCount ?? 0) ?>,
     likes: <?= json_encode($userLikeCount ?? 0) ?>
 };
-
-// Debug: Log the profileData immediately
-console.log('🔍 Profile Data Debug:', {
-    likes: window.profileData.likes,
-    'typeof likes': typeof window.profileData.likes,
-    postCount: window.profileData.postCount,
-    postsLength: window.profileData.posts?.length,
-    firstPostLikeCount: window.profileData.posts?.[0]?.like_count,
-    bio: window.profileData.user.bio
-});
 </script>
 
 <div id="profileApp" class="space-y-2 sm:space-y-3 md:space-y-3" v-cloak>
@@ -157,7 +150,7 @@ console.log('🔍 Profile Data Debug:', {
             </button>
 
             <!-- Accept/Reject Buttons (Pending - Other User Sent) -->
-            <template v-if="friendshipStatus === 'pending' && !isSender">
+            <div v-if="friendshipStatus === 'pending' && !isSender" class="flex gap-2">
               <button 
                 @click="acceptFriendRequest"
                 class="flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-xs sm:text-sm"
@@ -172,10 +165,10 @@ console.log('🔍 Profile Data Debug:', {
                 <i data-lucide="x" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
                 <span>Reject</span>
               </button>
-            </template>
+            </div>
 
             <!-- Friends Button with Dropdown -->
-            <div v-if="friendshipStatus === 'accepted'" class="relative z-[9999]">
+            <div v-if="friendshipStatus === 'accepted'" class="relative z-30">
               <button 
                 @click.stop="showFriendsMenu = !showFriendsMenu"
                 class="flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors font-medium text-xs sm:text-sm"
@@ -189,7 +182,7 @@ console.log('🔍 Profile Data Debug:', {
               <div 
                 v-if="showFriendsMenu"
                 v-click-outside="closeFriendsMenu"
-                class="absolute right-0 mt-2 w-40 sm:w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-[9999]"
+                class="absolute right-0 mt-2 w-40 sm:w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-30"
               >
                 <button 
                   @click.stop="unfriend"
@@ -411,5 +404,8 @@ console.log('🔍 Profile Data Debug:', {
 <?php $this->start('script'); ?>
 <!-- WebSocket Manager for real-time updates -->
 <script src="/js/websocket-manager.js?v=<?= time() ?>"></script>
+<!-- Shared Utilities -->
+<script src="/js/shared-post-utils.js?v=<?= time() ?>"></script>
+<script src="/js/shared-post-editing-utils.js?v=<?= time() ?>"></script>
 <script src="/js/profile.js?v=<?= time() ?>"></script>
 <?php $this->end(); ?>

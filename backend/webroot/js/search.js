@@ -769,6 +769,13 @@ const app = createApp({
     mounted() {
         console.log('[Search] App mounted with', this.posts.length, 'posts');
         
+        // Detect profile/cover photos in posts
+        if (this.posts && this.posts.length > 0) {
+            this.posts.forEach(post => {
+                this.detectProfileCoverPhoto(post);
+            });
+        }
+        
         // Initialize Lucide icons
         if (window.lucide) {
             lucide.createIcons();

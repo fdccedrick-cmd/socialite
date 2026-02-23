@@ -93,6 +93,9 @@ window.dashboardData = {
 </script>
 
 <?php $this->start('script'); ?>
+<!-- Shared Utilities -->
+<script src="/js/shared-post-utils.js?v=<?= time() ?>"></script>
+<script src="/js/shared-post-editing-utils.js?v=<?= time() ?>"></script>
 <!-- WebSocket Manager for real-time updates -->
 <script src="/js/websocket-manager.js?v=<?= time() ?>"></script>
 <script src="/js/dashboard.js?v=<?= time() ?>"></script>

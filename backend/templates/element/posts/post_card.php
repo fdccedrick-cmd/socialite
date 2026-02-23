@@ -14,7 +14,7 @@ $currentUser = $currentUser ?? [];
   <div class="p-3 sm:p-4 pb-2 sm:pb-3">
     <div class="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
       <img 
-        :src="post.user.profile_photo_path || '/img/default/default_avatar.jpg'" 
+        :src="post.user.avatar || post.user.profile_photo_path || '/img/default/default_avatar.jpg'" 
         :alt="post.user.full_name" 
         class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600 flex-shrink-0"
       />
@@ -70,6 +70,12 @@ $currentUser = $currentUser ?? [];
     
     <!-- Edit Mode -->
     <div v-if="post.isEditing" class="space-y-3">
+      <!-- Info message for profile/cover photos -->
+      <div v-if="post.is_profile_photo || post.is_cover_photo" class="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg text-xs sm:text-sm text-blue-800 dark:text-blue-200">
+        <i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+        <span>{{ post.is_profile_photo ? 'Profile photo:' : 'Cover photo:' }} You can only edit the caption. To change the photo, upload a new one from your profile.</span>
+      </div>
+      
       <!-- Edit Caption -->
       <textarea 
         v-model="post.editContent"
@@ -95,7 +101,9 @@ $currentUser = $currentUser ?? [];
       <div v-if="post.editImages && post.editImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <div v-for="(image, index) in post.editImages" :key="image.id" class="relative">
           <img :src="image.image_path" alt="Post image" class="w-full h-24 sm:h-32 object-cover rounded-lg">
+          <!-- Only show remove button if NOT a profile/cover photo -->
           <button
+            v-if="!post.is_profile_photo && !post.is_cover_photo"
             @click="removeExistingImage(post.id, image.id, index)"
             class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
           >
@@ -104,8 +112,8 @@ $currentUser = $currentUser ?? [];
         </div>
       </div>
       
-      <!-- New Images Preview -->
-      <div v-if="post.newEditImages && post.newEditImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <!-- New Images Preview - Only for regular posts, not profile/cover photos -->
+      <div v-if="!post.is_profile_photo && !post.is_cover_photo && post.newEditImages && post.newEditImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <div v-for="(preview, index) in post.newEditImagePreviews" :key="'new-' + index" class="relative">
           <img :src="preview" alt="New image" class="w-full h-24 sm:h-32 object-cover rounded-lg">
           <button
@@ -117,8 +125,8 @@ $currentUser = $currentUser ?? [];
         </div>
       </div>
       
-      <!-- Add Photos Button -->
-      <div class="flex gap-2">
+      <!-- Add Photos Button - Only for regular posts, not profile/cover photos -->
+      <div v-if="!post.is_profile_photo && !post.is_cover_photo" class="flex gap-2">
         <input 
           :id="'edit-images-' + post.id"
           type="file"
@@ -128,7 +136,7 @@ $currentUser = $currentUser ?? [];
           class="hidden"
         />
         <button
-          @click="document.getElementById('edit-images-' + post.id).click()"
+          @click="triggerEditImageInput(post.id)"
           class="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
         >
           <i data-lucide="image" class="w-3.5 h-3.5"></i>
@@ -295,8 +303,8 @@ $currentUser = $currentUser ?? [];
     </div>
   </div>
   
-  <!-- Post Actions (Likes & Comments) - Hide when editing -->
-  <div v-if="!post.isEditing" class="relative w-full">
+  <!-- Post Actions (Likes & Comments) - Hide when editing or if private profile/cover photo -->
+  <div v-if="!post.isEditing && !isPrivateProfileCoverPhoto(post)" class="relative w-full">
     <?= $this->element('likes/like_button', ['post' => $post ?? []]) ?>
   
     <!-- Comment Section -->

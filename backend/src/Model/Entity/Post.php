@@ -11,6 +11,7 @@ class Post extends Entity
         'user_id' => true,
         'content_text' => true,
         'privacy' => true,
+        'post_type' => true,
         'created' => true,
         'modified' => true,
         'deleted' => true,

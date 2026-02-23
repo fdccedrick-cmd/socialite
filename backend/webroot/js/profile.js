@@ -1,6 +1,4 @@
 (function () {
-  console.log('=== profile.js v2.1 LOADED (with image comment debugging) ===');
-  try { console.log('profile.js loaded - window.profileData:', window.profileData); } catch(e){}
   const el = document.getElementById('profileApp');
   if (!el) return;
   
@@ -54,6 +52,8 @@
           profile_photo_path: window.profileData?.user?.profile_photo_path || null,
           avatar: window.profileData?.user?.avatar || '/img/default/default_avatar.jpg',
           coverPhoto: window.profileData?.user?.coverPhoto || null,
+          profile_photo_privacy: window.profileData?.user?.profile_photo_privacy || 'public',
+          cover_photo_privacy: window.profileData?.user?.cover_photo_privacy || 'public',
           joinedDate: window.profileData?.user?.joinedDate || 'Joined recently',
           bio: window.profileData?.user?.bio || 'No bio yet',
           address: window.profileData?.user?.address || null,
@@ -128,9 +128,13 @@
       }
     },
     methods: {
+      // ============ Import Shared Post Utilities ============
+      ...window.SharedPostUtils,
+      ...window.SharedPostEditingUtils,
+      
+      // ============ Profile-Specific Methods ============
         // WebSocket Methods
         initWebSocket() {
-          console.log('[Profile] Initializing WebSocket...');
           this.wsManager = new WebSocketManager(this.currentUserId);
           
           this.wsManager.addMessageHandler((data) => {
@@ -140,8 +144,6 @@
           this.wsManager.connect();
         },
         handleWebSocketMessage(data) {
-          console.log('[Profile] WebSocket message:', data);
-          
           switch(data.type) {
             case 'connection':
               this.wsConnected = data.status === 'connected';
@@ -149,21 +151,15 @@
               
             case 'like_added':
             case 'like_removed':
-              console.log('[WS-Profile]', data.type, 'FIRED');
-              console.log('[WS-Profile]   data.user_id:', data.user_id, 'type:', typeof data.user_id);
-              console.log('[WS-Profile]   this.currentUserId:', this.currentUserId, 'type:', typeof this.currentUserId);
-              
               // Handle post image likes
               if (data.target_type === 'PostImage' && data.post_image_id) {
                 // Skip if current user triggered this
                 if (data.user_id && this.currentUserId && Number(data.user_id) === Number(this.currentUserId)) {
-                  console.log('[WS-Profile] ✓ Skipping image like refresh - current user action');
                   break;
                 }
                 
                 // Refresh image like if viewing this image
                 if (this.postDetailView.isOpen && this.postDetailView.currentImageId === data.post_image_id) {
-                  console.log('[WS-Profile] Refreshing image like for image:', data.post_image_id);
                   this.loadImageLikeStatus(data.post_image_id);
                 }
                 break;
@@ -172,14 +168,11 @@
               // Handle regular post likes
               // Skip if current user triggered this (already updated optimistically)
               if (data.user_id && this.currentUserId && Number(data.user_id) === Number(this.currentUserId)) {
-                console.log('[WS-Profile] ✓ Skipping refresh - current user action');
                 break;
               }
               
-              console.log('[WS-Profile] × Will refresh - different user');
               const post = this.posts.find(p => p.id === data.target_id);
               if (post && data.target_type === 'Post') {
-                console.log('[WS-Profile] Refreshing post likes for post:', data.target_id);
                 this.refreshPostLikes(post.id);
               }
               break;
@@ -190,7 +183,6 @@
                 // Handle image comments
                 if (data.post_image_id && this.postDetailView.isOpen && 
                     this.postDetailView.currentImageId === data.post_image_id) {
-                  console.log('[WS-Profile] Refreshing image comments for image:', data.post_image_id);
                   this.loadImageComments(data.post_image_id);
                 } else if (!data.post_image_id) {
                   // Handle regular post comments
@@ -204,8 +196,6 @@
               break;
               
             case 'friendship_change':
-              console.log('[WS-Profile] Friendship change:', data.action, 'userId:', data.user_id, 'friendId:', data.friend_id);
-              
               // Only update if one of the involved users is the profile being viewed
               if (Number(data.user_id) === Number(this.profileUserId) || Number(data.friend_id) === Number(this.profileUserId)) {
                 this.handleFriendshipUpdate(data);
@@ -220,17 +210,14 @@
           }
         },
         async refreshPostLikes(postId) {
-          console.log('[Profile-Refresh] Fetching likes for post:', postId);
           try {
             const response = await fetch(`/likes/get-post-likes/${postId}`, {
               headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
             if (response.ok) {
               const data = await response.json();
-              console.log('[Profile-Refresh] Got data:', data);
               const post = this.posts.find(p => p.id === postId);
               if (post) {
-                console.log('[Profile-Refresh] Updating - old:', post.like_count, '/', post.is_liked, 'new:', data.like_count, '/', data.is_liked);
                 post.like_count = data.like_count;
                 post.is_liked = data.is_liked;
               }
@@ -240,40 +227,6 @@
           }
         },
         
-        openPostDetailView(post, imageIndex = 0) {
-          const p = typeof post === 'object' && post && post.id ? post : this.posts.find(ps => ps.id === post);
-          if (!p) return;
-          this.postDetailView.post = p;
-          this.postDetailView.imageIndex = Math.max(0, Math.min(imageIndex, (p.post_images && p.post_images.length) ? p.post_images.length - 1 : 0));
-          this.postDetailView.isOpen = true;
-          if (!p.showComments && (p.comment_count > 0 || p.post_images?.length)) {
-            p.showComments = true;
-            if (p.comments.length === 0) this.loadComments(p.id);
-          }
-          this.postDetailView.imageComments = [];
-          this.postDetailView.imageLikeCount = 0;
-          this.postDetailView.imageIsLiked = false;
-          this.postDetailView.currentImageId = null;
-          this.postDetailView.imageNewComment = '';
-          this.postDetailView.isExpanded = false;
-          const img = p.post_images && p.post_images[this.postDetailView.imageIndex];
-          if (p.post_images && p.post_images.length >= 2 && img && img.id) {
-            this.postDetailView.currentImageId = parseInt(img.id, 10);
-            this.loadImageComments(this.postDetailView.currentImageId);
-            this.loadImageLikeStatus(this.postDetailView.currentImageId);
-          }
-          document.body.style.overflow = 'hidden';
-          this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-        },
-        closePostDetailView() {
-          this.postDetailView.isOpen = false;
-          this.postDetailView.post = null;
-          this.postDetailView.imageIndex = 0;
-          this.postDetailView.currentImageId = null;
-          this.postDetailView.imageComments = [];
-          document.body.style.overflow = '';
-          this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-        },
         
         isUsingDefaultAvatar() {
           return this.user?.avatar === '/img/default/default_avatar.jpg';
@@ -292,203 +245,117 @@
         openProfilePhotoView() {
           if (!this.user?.avatar || this.isUsingDefaultAvatar()) return;
           
-          // Find the actual post that was created when the profile photo was uploaded
-          // These posts have content like "John Doe uploaded a new profile picture"
-          const profilePhotoPost = this.posts.find(post => 
-            post.content_text && 
-            post.content_text.toLowerCase().includes('uploaded a new profile picture')
-          );
-          
-          if (profilePhotoPost) {
-            // Open the real post which has likes and comments
-            this.openPostDetailView(profilePhotoPost, 0);
-          } else {
-            // Fallback: if no post found (e.g., very old profile photo or manually set)
-            console.warn('No profile photo post found - user may have uploaded photo before post creation was implemented');
+          // If viewing own profile, find the actual post (most recent)
+          if (this.isOwnProfile) {
+            const profilePhotoPosts = this.posts.filter(post => 
+              post.post_type === 'profile_photo' && 
+              post.user_id === (this.user?.id || this.profileUserId)
+            );
+            
+            // Use the most recent profile photo post
+            if (profilePhotoPosts.length > 0) {
+              const profilePhotoPost = profilePhotoPosts.sort((a, b) => 
+                new Date(b.created) - new Date(a.created)
+              )[0];
+              this.openPostDetailView(profilePhotoPost, 0);
+              return;
+            }
           }
+          
+          // For non-owners or if no post found, always show current avatar as temporary post
+          // This ensures they see the correct current profile photo, not an old one
+          const tempPost = {
+            id: `temp-profile-${Date.now()}`,
+            user_id: this.user?.id || this.profileUserId,
+            content_text: `${this.user?.full_name || 'User'}'s profile picture`,
+            created: new Date().toISOString(),
+            user: {
+              id: this.user?.id || this.profileUserId,
+              full_name: this.user?.full_name || 'User',
+              username: this.user?.username || 'user',
+              avatar: this.user?.avatar || '/img/default/default_avatar.jpg'
+            },
+            post_images: [{
+              id: `temp-img-${Date.now()}`,
+              image_path: this.user.avatar,
+              created: new Date().toISOString()
+            }],
+            like_count: 0,
+            is_liked: false,
+            comment_count: 0,
+            comments: [],
+            showComments: false,
+            is_profile_photo: true,
+            is_cover_photo: false,
+            is_temporary: true,
+            post_type: 'profile_photo',
+            privacy: this.user?.profile_photo_privacy || 'public' // Use actual privacy from backend
+          };
+          
+          console.log('Opening profile photo - tempPost:', tempPost);
+          console.log('Privacy:', tempPost.privacy);
+          console.log('Is profile photo:', tempPost.is_profile_photo);
+          
+          this.openPostDetailView(tempPost, 0);
         },
         
         openCoverPhotoView() {
           if (!this.user?.coverPhoto) return;
           
-          // Find the actual post that was created when the cover photo was uploaded
-          // These posts have content like "John Doe uploaded a new cover photo"
-          const coverPhotoPost = this.posts.find(post => 
-            post.content_text && 
-            post.content_text.toLowerCase().includes('uploaded a new cover photo')
-          );
-          
-          if (coverPhotoPost) {
-            // Open the real post which has likes and comments
-            this.openPostDetailView(coverPhotoPost, 0);
-          } else {
-            // Fallback: if no post found (e.g., very old cover photo or manually set)
-            console.warn('No cover photo post found - user may have uploaded photo before post creation was implemented');
+          // If viewing own profile, find the actual post (most recent)
+          if (this.isOwnProfile) {
+            const coverPhotoPosts = this.posts.filter(post => 
+              post.post_type === 'cover_photo' && 
+              post.user_id === (this.user?.id || this.profileUserId)
+            );
+            
+            // Use the most recent cover photo post
+            if (coverPhotoPosts.length > 0) {
+              const coverPhotoPost = coverPhotoPosts.sort((a, b) => 
+                new Date(b.created) - new Date(a.created)
+              )[0];
+              this.openPostDetailView(coverPhotoPost, 0);
+              return;
+            }
           }
+          
+          // For non-owners or if no post found, always show current cover as temporary post
+          // This ensures they see the correct current cover photo, not an old one
+          const tempPost = {
+            id: `temp-cover-${Date.now()}`,
+            user_id: this.user?.id || this.profileUserId,
+            content_text: `${this.user?.full_name || 'User'}'s cover photo`,
+            created: new Date().toISOString(),
+            user: {
+              id: this.user?.id || this.profileUserId,
+              full_name: this.user?.full_name || 'User',
+              username: this.user?.username || 'user',
+              avatar: this.user?.avatar || '/img/default/default_avatar.jpg'
+            },
+            post_images: [{
+              id: `temp-img-${Date.now()}`,
+              image_path: this.user.coverPhoto,
+              created: new Date().toISOString()
+            }],
+            like_count: 0,
+            is_liked: false,
+            comment_count: 0,
+            comments: [],
+            showComments: false,
+            is_profile_photo: false,
+            is_cover_photo: true,
+            is_temporary: true,
+            post_type: 'cover_photo',
+            privacy: this.user?.cover_photo_privacy || 'public' // Use actual privacy from backend
+          };
+          
+          console.log('Opening cover photo - tempPost:', tempPost);
+          console.log('Privacy:', tempPost.privacy);
+          console.log('Is cover photo:', tempPost.is_cover_photo);
+          
+          this.openPostDetailView(tempPost, 0);
         },
         
-        async loadImageComments(postImageId) {
-          const imageId = parseInt(postImageId, 10);
-          try {
-            const response = await fetch(`/comments/get-by-post-image/${imageId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-            if (!response.ok) return;
-            const data = await response.json();
-            this.postDetailView.imageComments = (data.comments || data || []).map(c => ({ ...c, is_liked: false, like_count: 0 }));
-            for (let i = 0; i < this.postDetailView.imageComments.length; i++) {
-              const c = this.postDetailView.imageComments[i];
-              const likeRes = await fetch(`/likes/comment/${c.id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-              if (likeRes.ok) {
-                const likeData = await likeRes.json();
-                this.postDetailView.imageComments[i].like_count = likeData.count || 0;
-                this.postDetailView.imageComments[i].is_liked = likeData.is_liked || false;
-              }
-            }
-          } catch (e) { console.error('Error loading image comments:', e); }
-        },
-        async loadImageLikeStatus(postImageId) {
-          const imageId = parseInt(postImageId, 10);
-          try {
-            const response = await fetch(`/likes/post-image/${imageId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-            if (!response.ok) return;
-            const data = await response.json();
-            this.postDetailView.imageLikeCount = data.count ?? 0;
-            this.postDetailView.imageIsLiked = data.is_liked ?? false;
-          } catch (e) { console.error('Error loading image like status:', e); }
-        },
-        async toggleImageLike() {
-          if (!this.postDetailView.currentImageId) return;
-          
-          // Ensure ID is a plain number (not a reactive proxy)
-          const imageId = parseInt(this.postDetailView.currentImageId, 10);
-          if (isNaN(imageId)) {
-            console.error('[Profile-Image-Like] Invalid image ID:', this.postDetailView.currentImageId);
-            return;
-          }
-          
-          // Optimistic update - update UI immediately
-          const wasLiked = this.postDetailView.imageIsLiked;
-          const oldLikeCount = this.postDetailView.imageLikeCount || 0;
-          
-          this.postDetailView.imageIsLiked = !wasLiked;
-          this.postDetailView.imageLikeCount = wasLiked ? oldLikeCount - 1 : oldLikeCount + 1;
-          
-          console.log('[Profile-Image-Like] Optimistic update - imageId:', imageId, 'liked:', this.postDetailView.imageIsLiked, 'count:', this.postDetailView.imageLikeCount);
-          
-          try {
-            const response = await fetch(`/likes/toggle-post-image/${imageId}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() },
-              credentials: 'same-origin'
-            });
-            
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log('[Profile-Image-Like] Server response:', data);
-            
-            if (data.success) {
-              this.postDetailView.imageLikeCount = data.likeCount;
-              this.postDetailView.imageIsLiked = data.liked;
-              console.log('[Profile-Image-Like] Updated - liked:', this.postDetailView.imageIsLiked, 'count:', this.postDetailView.imageLikeCount);
-            } else {
-              // Revert on failure
-              this.postDetailView.imageIsLiked = wasLiked;
-              this.postDetailView.imageLikeCount = oldLikeCount;
-            }
-          } catch (e) {
-            console.error('Error toggling image like:', e);
-            // Revert optimistic update
-            this.postDetailView.imageIsLiked = wasLiked;
-            this.postDetailView.imageLikeCount = oldLikeCount;
-          }
-        },
-        async submitImageComment() {
-          const v = this.postDetailView;
-          if (!v.post || !v.currentImageId) return;
-          const text = (v.imageNewComment || '').trim();
-          if (!text) return;
-          
-          // Ensure IDs are plain integers
-          const postId = parseInt(v.post.id, 10);
-          const imageId = parseInt(v.currentImageId, 10);
-          
-          const formData = new FormData();
-          formData.append('post_id', postId);
-          formData.append('post_image_id', imageId);
-          formData.append('content_text', text);
-          
-          // Log all FormData entries
-          console.log('FormData contents:');
-          for (let [key, value] of formData.entries()) {
-            console.log(`  ${key}:`, value);
-          }
-          
-          try {
-            const response = await fetch('/comments/add', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': getCsrfToken() }, body: formData });
-            const data = await response.json();
-            console.log('submitImageComment response:', { ok: response.ok, data });
-            if (response.ok && data.success) {
-              v.imageNewComment = '';
-              v.imageComments.push({ ...data.comment, is_liked: false, like_count: 0 });
-            } else {
-              console.error('Failed to submit image comment:', data);
-            }
-          } catch (e) { console.error('Error submitting image comment:', e); }
-        },
-        postDetailPrevImage() {
-          if (!this.postDetailView.post || !this.postDetailView.post.post_images?.length) return;
-          const imgs = this.postDetailView.post.post_images;
-          const totalImages = imgs.length;
-          console.log('postDetailPrevImage - BEFORE: imageIndex=', this.postDetailView.imageIndex, 'totalImages=', totalImages);
-          
-          // Loop navigation: go to last image if at first, otherwise go to previous
-          if (this.postDetailView.imageIndex === 0) {
-            this.postDetailView.imageIndex = totalImages - 1;
-          } else {
-            this.postDetailView.imageIndex--;
-          }
-          
-          console.log('postDetailPrevImage - AFTER: imageIndex=', this.postDetailView.imageIndex);
-          const img = imgs[this.postDetailView.imageIndex];
-          
-          if (totalImages >= 2 && img && img.id) {
-            this.postDetailView.currentImageId = parseInt(img.id, 10);
-            this.loadImageComments(this.postDetailView.currentImageId);
-            this.loadImageLikeStatus(this.postDetailView.currentImageId);
-          } else {
-            this.postDetailView.currentImageId = null;
-          }
-          
-          this.$forceUpdate();
-        },
-        postDetailNextImage() {
-          if (!this.postDetailView.post || !this.postDetailView.post.post_images?.length) return;
-          const imgs = this.postDetailView.post.post_images;
-          const totalImages = imgs.length;
-          console.log('postDetailNextImage - BEFORE: imageIndex=', this.postDetailView.imageIndex, 'totalImages=', totalImages);
-          
-          // Loop navigation: go to first image if at last, otherwise go to next
-          if (this.postDetailView.imageIndex === totalImages - 1) {
-            this.postDetailView.imageIndex = 0;
-          } else {
-            this.postDetailView.imageIndex++;
-          }
-          
-          console.log('postDetailNextImage - AFTER: imageIndex=', this.postDetailView.imageIndex);
-          const img = imgs[this.postDetailView.imageIndex];
-          
-          if (totalImages >= 2 && img && img.id) {
-            this.postDetailView.currentImageId = parseInt(img.id, 10);
-            this.loadImageComments(this.postDetailView.currentImageId);
-            this.loadImageLikeStatus(this.postDetailView.currentImageId);
-          } else {
-            this.postDetailView.currentImageId = null;
-          }
-          
-          this.$forceUpdate();
-        },
       ensureCropperLoaded() {
         if (window.Cropper) return Promise.resolve();
         const cssHref = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css';
@@ -529,108 +396,7 @@
         });
       },
       noop() {},
-      formatDate(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-        
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays < 7) return `${diffDays}d ago`;
-        
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      },
-      async toggleLike(postId) {
-        console.debug('toggleLike called for', postId);
-        
-        // Find the post
-        const postIndex = this.posts.findIndex(p => p.id === postId);
-        if (postIndex === -1) return;
-        
-        const post = this.posts[postIndex];
-        
-        // Optimistic update - update UI immediately
-        const wasLiked = post.is_liked;
-        const oldLikeCount = post.like_count || 0;
-        
-        post.is_liked = !wasLiked;
-        post.like_count = wasLiked ? oldLikeCount - 1 : oldLikeCount + 1;
-        
-        // Update stats optimistically
-        const likeDelta = wasLiked ? -1 : 1;
-        this.user.stats.likes = Math.max(0, this.user.stats.likes + likeDelta);
-        
-        try {
-          const response = await fetch(`/likes/toggle-post/${postId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-Token': getCsrfToken()
-            },
-            credentials: 'same-origin'
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-          const data = await response.json();
-          console.log('[Profile-Like] Server response:', data);
-
-          if (data.success) {
-            // Update with server response to ensure accuracy
-            post.is_liked = data.liked;
-            post.like_count = data.likeCount;
-            console.log('[Profile-Like] Updated - liked:', post.is_liked, 'count:', post.like_count);
-          } else {
-            // Revert on failure
-            post.is_liked = wasLiked;
-            post.like_count = oldLikeCount;
-            this.user.stats.likes = Math.max(0, this.user.stats.likes - likeDelta);
-          }
-        } catch (error) {
-          console.error('Error toggling like:', error);
-          // Revert optimistic update
-          post.is_liked = wasLiked;
-          post.like_count = oldLikeCount;
-          this.user.stats.likes = Math.max(0, this.user.stats.likes - likeDelta);
-        }
-      },
-      openImageViewer(images, index = 0) {
-        if (!Array.isArray(images)) {
-          images = [images];
-          index = 0;
-        }
-        images = images.map(img => (typeof img === 'string' ? { image_path: img } : img));
-        this.imageViewer.images = images;
-        this.imageViewer.currentIndex = Math.max(0, Math.min(index, images.length - 1));
-        this.imageViewer.isOpen = true;
-        document.body.style.overflow = 'hidden';
-        this.$nextTick(() => {
-          if (window.lucide) lucide.createIcons();
-        });
-      },
       
-      closeImageViewer() {
-        this.imageViewer.isOpen = false;
-        document.body.style.overflow = '';
-      },
-      nextImage() {
-        if (this.imageViewer.currentIndex < this.imageViewer.images.length - 1) {
-          this.imageViewer.currentIndex++;
-        }
-      },
-      prevImage() {
-        if (this.imageViewer.currentIndex > 0) {
-          this.imageViewer.currentIndex--;
-        }
-      },
       openEditModal() {
         // Parse contact links if available
         let contactLinksArray = [];
@@ -644,13 +410,6 @@
             console.error('Failed to parse contact_links:', e);
           }
         }
-        
-        console.log('[TRACK] openEditModal - user data:', {
-          address: this.user.address,
-          relationship_status: this.user.relationship_status,
-          contact_links: this.user.contact_links,
-          parsed_contact_links: contactLinksArray
-        });
         
         this.editForm = {
           full_name: this.user.full_name,
@@ -666,15 +425,9 @@
           confirm_password: ''
         };
         
-        console.log('[TRACK] openEditModal - editForm initialized:', {
-          address: this.editForm.address,
-          relationship_status: this.editForm.relationship_status,
-          contactLinksArray: this.editForm.contactLinksArray
-        });
         this.croppedFile = null;
         this.croppedDataURL = null;
         this.errors = {};
-        console.log('[TRACK] openEditModal - editForm initialized', { full_name: this.editForm.full_name, bio: this.editForm.bio, username: this.editForm.username });
         this.uploadError = '';
         this.showEditModal = true;
         this.$nextTick(() => {
@@ -700,7 +453,6 @@
         this.croppedDataURL = null;
         this.errors = {};
         this.uploadError = '';
-        console.log('[TRACK] closeEditModal - form cleared');
       },
       
       // Friendship methods
@@ -854,7 +606,6 @@
       },
       async acceptFriendRequest() {
         try {
-          console.log('Accepting friend request, friendshipId:', this.friendshipId);
           const response = await fetch('/friendships/accept/' + this.friendshipId, {
             method: 'POST',
             headers: {
@@ -864,14 +615,12 @@
           });
           
           const data = await response.json();
-          console.log('Accept response:', data);
           
           if (data.success) {
             this.friendshipStatus = 'accepted';
             this.isSender = false;
             this.user.stats.friends += 1;
             this.$forceUpdate();
-            console.log('Friendship status updated to:', this.friendshipStatus);
             window.showToast('Friend request accepted', 'success');
           } else {
             window.showToast(data.message || 'Failed to accept request', 'error');
@@ -927,7 +676,6 @@
         if (!confirmed) return;
         
         try {
-          console.log('Unfriending user:', this.profileUserId);
           const response = await fetch('/friendships/remove', {
             method: 'POST',
             headers: {
@@ -937,9 +685,7 @@
             body: JSON.stringify({ friend_id: this.profileUserId })
           });
           
-          console.log('Unfriend response status:', response.status);
           const data = await response.json();
-          console.log('Unfriend response data:', data);
           
           if (data.success) {
             // Update friendship status to show Add Friend button
@@ -951,7 +697,6 @@
             // Force re-render
             this.$forceUpdate();
             
-            console.log('Friendship status updated to:', this.friendshipStatus);
             window.showToast('Friend removed', 'success');
           } else {
             window.showToast(data.message || 'Failed to remove friend', 'error');
@@ -963,12 +708,9 @@
       },
       
       handleFriendshipUpdate(data) {
-        console.log('[Profile] Handling friendship update:', data);
-        
         const isCurrentUserInvolved = Number(data.user_id) === Number(this.currentUserId) || Number(data.friend_id) === Number(this.currentUserId);
         
         if (!isCurrentUserInvolved) {
-          console.log('[Profile] Skipping - current user not involved');
           return;
         }
 
@@ -982,11 +724,7 @@
                 this.friendshipStatus = 'pending';
                 this.isSender = false;
                 this.friendshipId = data.friendship_id;
-                console.log('[Profile] Friend request received from this profile');
               }
-            } else if (Number(data.user_id) === Number(this.currentUserId)) {
-              // Current user sent a friend request (shouldn't need update as it's optimistic)
-              console.log('[Profile] Friend request sent confirmed');
             }
             break;
 
@@ -995,7 +733,6 @@
             this.friendshipStatus = 'accepted';
             this.isSender = false;
             this.user.stats.friends = (this.user.stats.friends || 0) + 1;
-            console.log('[Profile] Friend request accepted');
             break;
 
           case 'cancelled':
@@ -1006,7 +743,6 @@
               this.isSender = false;
               this.friendshipId = null;
               this.showRequestSent = false;
-              console.log('[Profile] Friend request cancelled by profile user');
             }
             break;
 
@@ -1018,7 +754,6 @@
               this.isSender = false;
               this.friendshipId = null;
               this.showRequestSent = false;
-              console.log('[Profile] Friend request rejected by profile user');
             }
             break;
 
@@ -1028,7 +763,6 @@
             this.isSender = false;
             this.friendshipId = null;
             this.user.stats.friends = Math.max(0, (this.user.stats.friends || 0) - 1);
-            console.log('[Profile] Friendship removed');
             break;
         }
 
@@ -1116,19 +850,14 @@
 
       cropAndUse() {
         if (!this.cropperInstance) return;
-        console.log('[TRACK] cropAndUse - starting crop process');
         try {
           const canvas = this.cropperInstance.getCroppedCanvas({ width: 400, height: 400, imageSmoothingQuality: 'high' });
-          console.log('[TRACK] cropAndUse - canvas created:', canvas.width, 'x', canvas.height);
           canvas.toBlob((blob) => {
-            console.log('[TRACK] cropAndUse - blob callback fired, blob:', blob);
             if (!blob) {
-              console.error('[TRACK] cropAndUse - blob is null');
               this.uploadError = 'Failed to crop image';
               return;
             }
             const file = new File([blob], 'profile_' + Date.now() + '.png', { type: 'image/png' });
-            console.log('[TRACK] cropAndUse - File created:', file.name, file.type, file.size, 'bytes');
             
             // Store file in both locations for redundancy
             this.croppedFile = file;
@@ -1139,12 +868,6 @@
             this.croppedDataURL = dataURL;
             this.editForm.avatar = dataURL;
             
-            console.log('[TRACK] cropAndUse - Stored file:', {
-              croppedFile: this.croppedFile ? this.croppedFile.name : 'NULL',
-              editFormFile: this.editForm.profile_picture_file ? this.editForm.profile_picture_file.name : 'NULL',
-              hasDataURL: !!this.croppedDataURL
-            });
-            
             this.showCropper = false;
             try { this.cropperInstance.destroy(); } catch(e){}
             this.cropperInstance = null;
@@ -1153,7 +876,6 @@
             // clear file input value to keep behavior consistent
             const input = document.getElementById('profilePictureInput');
             if (input) input.value = '';
-            console.log('[TRACK] cropAndUse - completed successfully');
           }, 'image/png');
         } catch (e) {
           console.error('[TRACK] cropAndUse error', e);
@@ -1161,7 +883,6 @@
       },
 
       cancelCrop() {
-        console.log('[TRACK] cancelCrop - clearing cropper');
         this.showCropper = false;
         this.editForm.profile_picture_file = null;
         this.croppedFile = null;
@@ -1178,16 +899,6 @@
       async handleSubmit() {
         this.errors = {};
         this.isSubmitting = true;
-
-        // Debug: log what is about to be submitted
-        console.log('[TRACK] === handleSubmit START ===');
-        console.log('[TRACK] State check:', {
-          croppedFile: this.croppedFile ? this.croppedFile.name : 'NULL',
-          editFormFile: this.editForm.profile_picture_file ? this.editForm.profile_picture_file.name : 'NULL',
-          hasDataURL: !!this.croppedDataURL,
-          avatarType: typeof this.editForm.avatar,
-          avatarPrefix: this.editForm.avatar ? this.editForm.avatar.substring(0, 20) : 'NULL'
-        });
 
         // Validate form
         if (!this.editForm.full_name || this.editForm.full_name.trim() === '') {
@@ -1219,23 +930,13 @@
           formData.append('contact_links', '');
         }
         
-        // Debug log the new fields
-        console.log('[TRACK] Personal details to submit:', {
-          address: this.editForm.address,
-          relationship_status: this.editForm.relationship_status,
-          contactLinksArray: this.editForm.contactLinksArray,
-          validContactLinks: validContactLinks
-        });
-        
         // Try multiple sources for the file, with priority order
         let fileToUpload = this.croppedFile || this.editForm.profile_picture_file;
         
         if (fileToUpload) {
-          console.log('[TRACK] Appending file to FormData:', fileToUpload.name, fileToUpload.type, fileToUpload.size);
           formData.append('profile_picture', fileToUpload);
         } else if (this.croppedDataURL || (this.editForm.avatar && typeof this.editForm.avatar === 'string' && this.editForm.avatar.indexOf('data:') === 0)) {
           // Fallback: if cropped image is stored as data URL but File not present, convert to blob
-          console.log('[TRACK] Using dataURL fallback');
           try {
             const dataUrl = this.croppedDataURL || this.editForm.avatar;
             const arr = dataUrl.split(',');
@@ -1253,8 +954,6 @@
           } catch (e) {
             console.error('[TRACK] Failed to convert dataURL to blob fallback', e);
           }
-        } else {
-          console.log('[TRACK] No profile picture to upload');
         }
         
         
@@ -1263,19 +962,6 @@
           const headers = { 'X-Requested-With': 'XMLHttpRequest' };
           const meta = document.querySelector('meta[name="csrf-token"]');
           if (meta && meta.getAttribute('content')) headers['X-CSRF-Token'] = meta.getAttribute('content');
-
-          // Debug: log formData contents
-          try {
-            console.log('[TRACK] Submitting FormData entries:');
-            for (const entry of formData.entries()) {
-              const [k, v] = entry;
-              if (v instanceof File) {
-                console.log('[TRACK] FormData entry file:', k, v.name, v.type, v.size);
-              } else {
-                console.log('[TRACK] FormData entry:', k, v);
-              }
-            }
-          } catch (e) { console.error('[TRACK] FormData debug error', e); }
 
           const response = await fetch('/profile/update', {
             method: 'POST',
@@ -1291,12 +977,8 @@
             const text = await response.text().catch(() => '');
             console.error('[TRACK] Profile update: failed to parse JSON response', e, text);
           }
-          console.log('[TRACK] Profile update response from backend:', data);
-          console.log('[TRACK] Profile update - reached_controller:', data.reached_controller === true);
           
           if (data.success) {
-            console.log('[TRACK] Profile update SUCCESS');
-            console.log('[TRACK] Received user data:', data.user);
             // Update user data with response
             this.user.full_name = data.user.full_name;
             this.user.username = data.user.username;
@@ -1307,14 +989,7 @@
             if (data.user.cover_photo_path) {
               this.user.coverPhoto = data.user.cover_photo_path;
             }
-            console.log('[TRACK] Updated local user object:', {
-              address: this.user.address,
-              relationship_status: this.user.relationship_status,
-              contact_links: this.user.contact_links,
-              coverPhoto: this.user.coverPhoto
-            });
             if (data.user.profile_photo_path) {
-              console.log('[TRACK] Updating avatar to:', data.user.profile_photo_path);
               this.user.avatar = data.user.profile_photo_path;
               this.user.profile_photo_path = data.user.profile_photo_path;
             }
@@ -1326,7 +1001,6 @@
             window.location.reload();
           } else {
             // Handle validation errors - reload to show Flash error message
-            console.log('[TRACK] Profile update FAILED:', data.errors || 'unknown error');
             if (data.errors) {
               this.errors = data.errors;
             }
@@ -1340,449 +1014,13 @@
           this.isSubmitting = false;
         }
       },
-      async toggleComments(postId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        post.showComments = !post.showComments;
-        
-        if (post.showComments && post.comments.length === 0) {
-          await this.loadComments(postId);
-        }
-      },
-      async openCommentInput(postId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-
-        post.showComments = true;
-
-        if (post.comments.length === 0) {
-          try {
-            await this.loadComments(postId);
-          } catch (e) {
-            console.error('Error loading comments for openCommentInput:', e);
-          }
-        }
-
-        this.$nextTick(() => {
-          const input = document.getElementById('comment-input-' + postId);
-          if (input) input.focus();
-        });
-      },
       // Safe delegator used by templates to avoid "not a function" errors
         handleOpenComment(postId) {
           if (typeof this.openCommentInput === 'function') return this.openCommentInput(postId);
           if (typeof window.openCommentInput === 'function') return window.openCommentInput(postId);
           console.warn('openCommentInput not available on profile instance');
         },
-      async loadComments(postId) {
-        try {
-          const response = await fetch(`/comments/get-by-post/${postId}`, {
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            }
-          });
-          
-          if (!response.ok) throw new Error('Failed to load comments');
-          
-          const data = await response.json();
-          const post = this.posts.find(p => p.id === postId);
-          if (post && data.comments) {
-            post.comments = data.comments.map(comment => ({
-              ...comment,
-              is_liked: false,
-              like_count: 0
-            }));
-            
-            for (const comment of post.comments) {
-              await this.loadCommentLikeStatus(postId, comment.id);
-            }
-          }
-        } catch (error) {
-          console.error('Error loading comments:', error);
-        }
-      },
-      async loadCommentLikeStatus(postId, commentId) {
-        try {
-          const response = await fetch(`/likes/comment/${commentId}`, {
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            const post = this.posts.find(p => p.id === postId);
-            if (post) {
-              const comment = post.comments.find(c => c.id === commentId);
-              if (comment && data) {
-                comment.like_count = data.count || 0;
-                comment.is_liked = data.is_liked || false;
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error loading comment like status:', error);
-        }
-      },
-      async submitComment(postId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        const text = post.newComment?.trim();
-        if (!text && !post.commentImage) {
-          return;
-        }
-        
-        const formData = new FormData();
-        formData.append('post_id', postId);
-        if (text) formData.append('content_text', text);
-        if (post.commentImage) formData.append('content_image', post.commentImage);
-        
-        try {
-          const response = await fetch('/comments/add', {
-            method: 'POST',
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-Token': getCsrfToken()
-            },
-            body: formData
-          });
-          
-          const data = await response.json();
-          
-          if (response.ok && data.success) {
-            post.newComment = '';
-            post.commentImage = null;
-            post.commentImagePreview = null;
-            
-            const fileInput = document.getElementById('comment-image-' + postId);
-            if (fileInput) fileInput.value = '';
-            
-            post.comment_count = (post.comment_count || 0) + 1;
-            
-            if (post.showComments && data.comment) {
-              const newComment = {
-                ...data.comment,
-                is_liked: false,
-                like_count: 0
-              };
-              post.comments.push(newComment);
-            } else {
-              post.showComments = true;
-              await this.loadComments(postId);
-            }
-            
-            if (window.lucide) {
-              this.$nextTick(() => lucide.createIcons());
-            }
-          } else {
-            console.error('Error posting comment:', data.message);
-            if (typeof window.showFlash === 'function') window.showFlash(data.message || 'Failed to post comment. Please try again.', 'error');
-            else alert(data.message || 'Failed to post comment. Please try again.');
-          }
-        } catch (error) {
-          console.error('Error submitting comment:', error);
-          if (typeof window.showFlash === 'function') window.showFlash('Failed to post comment. Please try again.', 'error');
-          else alert('Failed to post comment. Please try again.');
-        }
-      },
-      async toggleCommentLike(postId, commentId) {
-        try {
-          const response = await fetch(`/likes/toggle-comment/${commentId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-Token': getCsrfToken()
-            }
-          });
-          
-          if (!response.ok) throw new Error('Failed to toggle like');
-          
-          const data = await response.json();
-          if (data.success) {
-            const post = this.posts.find(p => p.id === postId);
-            if (post) {
-              const comment = post.comments.find(c => c.id === commentId);
-              if (comment) {
-                comment.is_liked = data.liked;
-                comment.like_count = data.likeCount;
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error toggling comment like:', error);
-        }
-      },
-      async deleteComment(postId, commentId) {
-        const confirmed = typeof window.showConfirmModal === 'function'
-            ? await window.showConfirmModal('Are you sure you want to delete this comment?')
-            : confirm('Delete this comment?');
-        if (!confirmed) return;
-        
-        try {
-          const response = await fetch(`/comments/delete/${commentId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-Token': getCsrfToken()
-            },
-            credentials: 'same-origin'
-          });
-
-          if (!response.ok) throw new Error('Failed to delete comment');
-
-          const data = await response.json();
-          // On success, remove comment from local state
-          const post = this.posts.find(p => p.id === postId);
-          if (post) {
-            const idx = post.comments.findIndex(c => c.id === commentId);
-            if (idx !== -1) {
-              post.comments.splice(idx, 1);
-              post.comment_count = Math.max(0, (post.comment_count || 1) - 1);
-            }
-          }
-        } catch (error) {
-          console.error('Error deleting comment:', error);
-          const errorMsg = 'Failed to delete comment.';
-          if (typeof window.showFlash === 'function') {
-            window.showFlash(errorMsg, 'error');
-          } else {
-            alert(errorMsg);
-          }
-        }
-      },
-      editComment(postId, commentId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        const comment = post.comments.find(c => c.id === commentId);
-        if (!comment) return;
-        
-        // Set editing state
-        comment.isEditing = true;
-        comment.editContent = comment.content_text || '';
-        this.$forceUpdate();
-      },
-      async saveCommentEdit(postId, commentId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        const comment = post.comments.find(c => c.id === commentId);
-        if (!comment || !comment.isEditing) return;
-        
-        const newContent = (comment.editContent || '').trim();
-        if (!newContent) {
-          alert('Comment cannot be empty.');
-          return;
-        }
-        
-        try {
-          const response = await fetch(`/comments/edit/${commentId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-Token': getCsrfToken()
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({
-              content_text: newContent
-            })
-          });
-
-          if (!response.ok) throw new Error('Failed to update comment');
-
-          const data = await response.json();
-          
-          // Update comment in local state
-          comment.content_text = newContent;
-          comment.isEditing = false;
-          delete comment.editContent;
-          
-          this.$forceUpdate();
-        } catch (error) {
-          console.error('Error updating comment:', error);
-          alert('Failed to update comment.');
-        }
-      },
-      cancelCommentEdit(postId, commentId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        const comment = post.comments.find(c => c.id === commentId);
-        if (!comment) return;
-        
-        comment.isEditing = false;
-        delete comment.editContent;
-        this.$forceUpdate();
-      },
-      handleCommentImage(event, postId) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
-        if (!validTypes.includes(file.type)) {
-          if (typeof window.showFlash === 'function') window.showFlash('Please upload a valid image file (JPG, PNG, or GIF)', 'error');
-          else alert('Please upload a valid image file (JPG, PNG, or GIF)');
-          return;
-        }
-        
-        if (file.size > 10 * 1024 * 1024) {
-          if (typeof window.showFlash === 'function') window.showFlash('Image must be less than 10MB', 'error');
-          else alert('Image must be less than 10MB');
-          return;
-        }
-        
-        post.commentImage = file;
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          post.commentImagePreview = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      },
-      removeCommentImage(postId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (post) {
-          post.commentImage = null;
-          post.commentImagePreview = null;
-          const input = document.getElementById('comment-image-' + postId);
-          if (input) input.value = '';
-        }
-      },
-      triggerCommentImageInput(postId) {
-        const input = document.getElementById('comment-image-' + postId);
-        if (input) input.click();
-      },
-      showCommentOptions(postId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (post && !post.showComments && post.comment_count > 0) {
-          // Optionally auto-show comments when user starts typing
-        }
-      },
       // Image Comment Edit/Delete Methods
-      editImageComment(commentId) {
-        const comment = this.postDetailView.imageComments.find(c => c.id === commentId);
-        if (!comment) return;
-        
-        // Set editing state
-        comment.isEditing = true;
-        comment.editContent = comment.content_text || '';
-        this.$forceUpdate();
-      },
-      async saveImageCommentEdit(commentId) {
-        const comment = this.postDetailView.imageComments.find(c => c.id === commentId);
-        if (!comment || !comment.isEditing) return;
-        
-        const newContent = (comment.editContent || '').trim();
-        if (!newContent) {
-          alert('Comment cannot be empty.');
-          return;
-        }
-        
-        try {
-          const response = await fetch(`/comments/edit/${commentId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-Token': getCsrfToken()
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({
-              content_text: newContent
-            })
-          });
-
-          if (!response.ok) throw new Error('Failed to update comment');
-
-          const data = await response.json();
-          
-          // Update comment in local state
-          comment.content_text = newContent;
-          comment.isEditing = false;
-          delete comment.editContent;
-          
-          this.$forceUpdate();
-        } catch (error) {
-          console.error('Error updating image comment:', error);
-          alert('Failed to update comment.');
-        }
-      },
-      cancelImageCommentEdit(commentId) {
-        const comment = this.postDetailView.imageComments.find(c => c.id === commentId);
-        if (!comment) return;
-        
-        comment.isEditing = false;
-        delete comment.editContent;
-        this.$forceUpdate();
-      },
-      async deleteImageComment(commentId) {
-        const confirmed = typeof window.showConfirmModal === 'function'
-            ? await window.showConfirmModal('Are you sure you want to delete this comment?')
-            : confirm('Delete this comment?');
-        if (!confirmed) return;
-        
-        try {
-          const response = await fetch(`/comments/delete/${commentId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-Token': getCsrfToken()
-            },
-            credentials: 'same-origin'
-          });
-
-          if (!response.ok) throw new Error('Failed to delete comment');
-
-          const data = await response.json();
-          // On success, remove comment from imageComments array
-          const idx = this.postDetailView.imageComments.findIndex(c => c.id === commentId);
-          if (idx !== -1) {
-            this.postDetailView.imageComments.splice(idx, 1);
-          }
-        } catch (error) {
-          console.error('Error deleting image comment:', error);
-          const errorMsg = 'Failed to delete comment.';
-          if (typeof window.showFlash === 'function') {
-            window.showFlash(errorMsg, 'error');
-          } else {
-            alert(errorMsg);
-          }
-        }
-      },
-      async toggleImageCommentLike(commentId) {
-        try {
-          const response = await fetch(`/likes/toggle-comment/${commentId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-Token': getCsrfToken()
-            }
-          });
-          
-          if (!response.ok) throw new Error('Failed to toggle like');
-          
-          const data = await response.json();
-          if (data.success) {
-            const comment = this.postDetailView.imageComments.find(c => c.id === commentId);
-            if (comment) {
-              comment.is_liked = data.liked;
-              comment.like_count = data.likeCount;
-            }
-          }
-        } catch (error) {
-          console.error('Error toggling image comment like:', error);
-        }
-      },
       canEditPost(post) {
         return this.currentUserId && post && post.user_id === this.currentUserId;
       },
@@ -1792,269 +1030,15 @@
       safeOpenPostDetailView(post, index) {
         if (typeof this.openPostDetailView === 'function') this.openPostDetailView(post, index);
       },
-      togglePostMenu(postId, event) {
-        // Stop event propagation to prevent immediate click-outside
-        if (event) {
-          event.stopPropagation();
-        }
-        
-        const post = this.posts.find(p => p.id === postId);
-        if (post) {
-          // Close all other menus first
-          this.posts.forEach(p => {
-            if (p.id !== postId) {
-              p.showMenu = false;
-            }
-          });
-          
-          // Toggle this menu
-          post.showMenu = !post.showMenu;
-          this.$nextTick(() => {
-            if (window.lucide) lucide.createIcons();
-          });
-        }
-      },
-      editPost(postId) {
-        // Close menu
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        post.showMenu = false;
-        
-        // Enter edit mode
-        post.isEditing = true;
-        post.editContent = post.content_text || '';
-        post.editPrivacy = post.privacy || 'public';
-        post.editImages = JSON.parse(JSON.stringify(post.post_images || [])); // Deep copy
-        post.removedImageIds = [];
-        post.newEditImages = [];
-        post.newEditImagePreviews = [];
-        
-        this.$nextTick(() => {
-          if (window.lucide) lucide.createIcons();
-        });
-      },
-      cancelEditPost(postId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        // Exit edit mode and reset
-        post.isEditing = false;
-        post.editContent = '';
-        post.editImages = [];
-        post.removedImageIds = [];
-        post.newEditImages = [];
-        post.newEditImagePreviews = [];
-        
-        // Clear file input
-        const fileInput = document.getElementById('edit-images-' + postId);
-        if (fileInput) fileInput.value = '';
-      },
-      removeExistingImage(postId, imageId, index) {
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        // Add to removed list
-        post.removedImageIds.push(imageId);
-        
-        // Remove from edit images array
-        post.editImages.splice(index, 1);
-      },
-      removeNewEditImage(postId, index) {
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        // Remove from new images arrays
-        post.newEditImages.splice(index, 1);
-        post.newEditImagePreviews.splice(index, 1);
-      },
-      handleEditImageSelect(event, postId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        const files = Array.from(event.target.files);
-        
-        // Validate file count
-        const totalImages = post.editImages.length + post.newEditImages.length + files.length;
-        if (totalImages > 10) {
-          if (typeof window.showFlash === 'function') window.showFlash('Maximum 10 images per post', 'error');
-          else alert('Maximum 10 images per post');
-          event.target.value = '';
-          return;
-        }
-        
-        // Process each file
-        files.forEach(file => {
-          // Validate file type
-          const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
-          if (!validTypes.includes(file.type)) {
-            if (typeof window.showFlash === 'function') window.showFlash('Please upload valid image files (JPG, PNG, or GIF)', 'error');
-            else alert('Please upload valid image files (JPG, PNG, or GIF)');
-            return;
-          }
-          
-          // Validate file size
-          if (file.size > 10 * 1024 * 1024) {
-            if (typeof window.showFlash === 'function') window.showFlash('Each image must be less than 10MB', 'error');
-            else alert('Each image must be less than 10MB');
-            return;
-          }
-          
-          // Add to new images
-          post.newEditImages.push(file);
-          
-          // Create preview
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            post.newEditImagePreviews.push(e.target.result);
-          };
-          reader.readAsDataURL(file);
-        });
-        
-        event.target.value = '';
-        
-        this.$nextTick(() => {
-          if (window.lucide) lucide.createIcons();
-        });
-      },
-      async saveEditPost(postId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        // Validate at least content or images
-        const hasContent = post.editContent && post.editContent.trim();
-        const hasImages = (post.editImages.length + post.newEditImages.length) > 0;
-        
-        if (!hasContent && !hasImages) {
-          if (typeof window.showFlash === 'function') window.showFlash('Post must have either text or images', 'error');
-          else alert('Post must have either text or images');
-          return;
-        }
-        
-        // Create FormData
-        const formData = new FormData();
-        formData.append('content_text', post.editContent || '');
-        formData.append('privacy', post.editPrivacy || 'public');
-        
-        // Add removed image IDs
-        if (post.removedImageIds.length > 0) {
-          post.removedImageIds.forEach(id => {
-            formData.append('removed_images[]', id);
-          });
-        }
-        
-        // Add new images
-        if (post.newEditImages.length > 0) {
-          post.newEditImages.forEach(image => {
-            formData.append('new_images[]', image);
-          });
-        }
-        
-        try {
-          const response = await fetch(`/posts/edit/${postId}`, {
-            method: 'POST',
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-Token': getCsrfToken()
-            },
-            body: formData
-          });
-          
-          const data = await response.json();
-          
-          if (response.ok && data.success) {
-            // Update post with new data
-            post.content_text = data.post.content_text;
-            post.privacy = data.post.privacy || 'public';
-            post.post_images = data.post.post_images || [];
-            post.modified = data.post.modified;
-            
-            // Exit edit mode
-            post.isEditing = false;
-            post.editContent = '';
-            post.editPrivacy = 'public';
-            post.editImages = [];
-            post.removedImageIds = [];
-            post.newEditImages = [];
-            post.newEditImagePreviews = [];
-            
-            this.$nextTick(() => {
-              if (window.lucide) lucide.createIcons();
-            });
-            
-            if (typeof window.showFlash === 'function') window.showFlash('Post updated successfully!', 'success');
-            else alert('Post updated successfully!');
-          } else {
-            if (typeof window.showFlash === 'function') window.showFlash(data.message || 'Failed to update post. Please try again.', 'error');
-            else alert(data.message || 'Failed to update post. Please try again.');
-          }
-        } catch (error) {
-          console.error('Error updating post:', error);
-            if (typeof window.showFlash === 'function') window.showFlash('Failed to update post. Please try again.', 'error');
-            else alert('Failed to update post. Please try again.');
-        }
-      },
-      async deletePost(postId) {
-        const post = this.posts.find(p => p.id === postId);
-        if (post) post.showMenu = false;
-        
-        // Use the global modal helper if available, otherwise fallback to window.confirm
-        let confirmed = false;
-        if (typeof window.showConfirmModal === 'function') {
-          confirmed = await window.showConfirmModal('Are you sure you want to delete this post? This action cannot be undone.');
-        } else {
-          confirmed = confirm('Are you sure you want to delete this post? This action cannot be undone.');
-        }
-
-        if (!confirmed) {
-          return;
-        }
-        
-        try {
-          const response = await fetch(`/posts/delete/${postId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-Token': getCsrfToken()
-            }
-          });
-          
-          if (response.ok) {
-            // Remove post from array
-            this.posts = this.posts.filter(p => p.id !== postId);
-            this.user.stats.posts = this.posts.length;
-            
-            // Show success message
-            if (typeof window.showToast === 'function') {
-              console.debug('profile.js: calling showToast for deletion');
-              window.showFlash('Post deleted successfully!', 'success');
-            }
-            else alert('Post deleted successfully!');
-          } else {
-            if (typeof window.showToast === 'function') window.showToast('Failed to delete post. Please try again.', 'error');
-            else alert('Failed to delete post. Please try again.');
-          }
-        } catch (error) {
-          console.error('Error deleting post:', error);
-          if (typeof window.showToast === 'function') window.showToast('Failed to delete post. Please try again.', 'error');
-          else alert('Failed to delete post. Please try again.');
-        }
-      },
-      handleClickOutside(event) {
-        // Close all post menus when clicking outside
-        const target = event.target;
-        // Check if click is not on the menu button or inside the menu
-        if (!target.closest('[data-post-menu]') && !target.closest('button[data-menu-trigger]')) {
-          this.posts.forEach(post => {
-            if (post.showMenu) {
-              post.showMenu = false;
-            }
-          });
-        }
-      }
     },
     mounted() {
+      // Detect profile/cover photos in posts
+      if (this.posts && this.posts.length > 0) {
+        this.posts.forEach(post => {
+          this.detectProfileCoverPhoto(post);
+        });
+      }
+      
       // Parse contact links if available
       if (this.user.contact_links) {
         try {

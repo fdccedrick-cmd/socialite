@@ -111,7 +111,7 @@
           <!-- User + caption -->
           <div class="flex gap-3 p-3 bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-purple-50 dark:to-purple-900/30 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
             <img
-              :src="postDetailView.post.user?.profile_photo_path || '/img/default/default_avatar.jpg'"
+              :src="postDetailView.post.user?.avatar || postDetailView.post.user?.profile_photo_path || '/img/default/default_avatar.jpg'"
               :alt="postDetailView.post.user?.full_name"
               class="w-11 h-11 rounded-full object-cover flex-shrink-0 ring-2 ring-white dark:ring-gray-700 shadow-md"
             />
@@ -149,9 +149,16 @@
             </div>
           </div>
           
+          <!-- Privacy Notice for Private Profile/Cover Photos -->
+          <div v-if="isPrivateProfileCoverPhoto(postDetailView.post)" class="flex items-start gap-2 p-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+            <i data-lucide="lock" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+            <span>This {{ postDetailView.post.is_profile_photo ? 'profile photo' : 'cover photo' }} is private. Likes and comments are disabled.</span>
+          </div>
+          
           <!-- When viewing an image: show this image's likes & comments (separate from post) -->
           <template v-if="postDetailView.currentImageId">
-            <div class="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+            <!-- Only show like/comment if NOT a private profile/cover photo -->
+            <div v-if="!isPrivateProfileCoverPhoto(postDetailView.post)" class="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
               <button
                 @click.prevent="toggleImageLike()"
                 :class="postDetailView.imageIsLiked ? 'text-red-500 scale-110' : 'text-gray-600 dark:text-gray-400 hover:text-red-500'"
@@ -169,14 +176,15 @@
               </div>
             </div>
             
-            <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+            <!-- Only show comments section if NOT a private profile/cover photo -->
+            <div v-if="!isPrivateProfileCoverPhoto(postDetailView.post)" class="border-t border-gray-200 dark:border-gray-700 pt-3">
               <div class="flex items-center gap-2 mb-3">
                 <i data-lucide="messages-square" class="w-4 h-4 text-blue-600 dark:text-blue-400"></i>
                 <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Photo Comments</p>
               </div>
               <div class="space-y-3 max-h-[250px] overflow-y-auto mb-3 pr-2 custom-scrollbar">
                 <div v-for="comment in postDetailView.imageComments" :key="comment.id" class="flex gap-2.5 p-2.5 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                  <img :src="comment.user?.profile_photo_path || '/img/default/default_avatar.jpg'" :alt="comment.user?.full_name" class="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-2 ring-white dark:ring-gray-600 shadow-sm" />
+                  <img :src="comment.user?.avatar || comment.user?.profile_photo_path || '/img/default/default_avatar.jpg'" :alt="comment.user?.full_name" class="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-2 ring-white dark:ring-gray-600 shadow-sm" />
                   <div class="flex-1 min-w-0">
                     <!-- Edit Mode -->
                     <div v-if="comment.isEditing" class="space-y-2">
@@ -256,7 +264,8 @@
           
           <!-- When no image or post-level: show post likes & comments -->
           <template v-else>
-            <div class="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+            <!-- Only show like/comment if NOT a private profile/cover photo -->
+            <div v-if="!isPrivateProfileCoverPhoto(postDetailView.post)" class="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
               <button
                 @click.prevent="handlePostLike ? handlePostLike(postDetailView.post.id) : toggleLike(postDetailView.post.id)"
                 :class="postDetailView.post.is_liked ? 'text-red-500 scale-110' : 'text-gray-600 dark:text-gray-400 hover:text-red-500'"
@@ -276,7 +285,8 @@
               </button>
             </div>
             
-            <div class="border-t border-gray-200 dark:border-gray-700 pt-3" v-for="post in (postDetailView.post ? [postDetailView.post] : [])" :key="'modal-' + post.id">
+            <!-- Only show comments section if NOT a private profile/cover photo -->
+            <div v-if="!isPrivateProfileCoverPhoto(postDetailView.post)" class="border-t border-gray-200 dark:border-gray-700 pt-3" v-for="post in (postDetailView.post ? [postDetailView.post] : [])" :key="'modal-' + post.id">
               <?= $this->element('comments/comment_list', ['post' => []]) ?>
               <?= $this->element('comments/comment_input', ['post' => []]) ?>
             </div>

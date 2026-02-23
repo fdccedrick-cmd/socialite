@@ -106,7 +106,16 @@ class PostsTable extends Table
         $posts = $this->find()
             ->where(['Posts.deleted IS' => null])
             ->contain([
-                'Users',
+                'Users' => function ($q) {
+                    return $q->select([
+                        'id',
+                        'username',
+                        'full_name',
+                        'profile_photo_path',
+                        'created',
+                        'modified'
+                    ]);
+                },
                 'PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]
             ])
             ->order(['Posts.created' => 'DESC'])
@@ -131,6 +140,11 @@ class PostsTable extends Table
             }
             
             $postData = $post->toArray();
+            
+            // Ensure post user data has avatar field for JavaScript compatibility
+            if (!empty($postData['user'])) {
+                $postData['user']['avatar'] = $postData['user']['profile_photo_path'] ?? '/img/default/default_avatar.jpg';
+            }
             
             // Format dates
             if (!empty($postData['created']) && $postData['created'] instanceof \DateTimeInterface) {

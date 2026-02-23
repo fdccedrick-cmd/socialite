@@ -76,6 +76,49 @@ class ProfileController extends AppController
         $user['address'] = $user['address'] ?? null;
         $user['relationship_status'] = $user['relationship_status'] ?? null;
         $user['contact_links'] = $user['contact_links'] ?? null;
+        
+        // Add avatar field for JavaScript compatibility (profile.js expects user.avatar)
+        $user['avatar'] = $user['profile_photo_path'] ?? '/img/default/default_avatar.jpg';
+        $user['coverPhoto'] = $user['cover_photo_path'];
+        
+        // Get privacy settings for profile/cover photos
+        // Use the most recent profile/cover photo post's privacy setting
+        // (path matching won't work since we copy files with different names)
+        $postsTable = $this->getTableLocator()->get('Posts');
+        
+        // Find the most recent profile photo post
+        $user['profile_photo_privacy'] = 'public'; // default
+        if (!empty($user['profile_photo_path'])) {
+            $profilePhotoPost = $postsTable->find()
+                ->where([
+                    'user_id' => $userId,
+                    'post_type' => 'profile_photo',
+                    'deleted IS' => null
+                ])
+                ->order(['created' => 'DESC'])
+                ->first();
+            
+            if ($profilePhotoPost) {
+                $user['profile_photo_privacy'] = $profilePhotoPost->privacy;
+            }
+        }
+        
+        // Find the most recent cover photo post
+        $user['cover_photo_privacy'] = 'public'; // default
+        if (!empty($user['cover_photo_path'])) {
+            $coverPhotoPost = $postsTable->find()
+                ->where([
+                    'user_id' => $userId,
+                    'post_type' => 'cover_photo',
+                    'deleted IS' => null
+                ])
+                ->order(['created' => 'DESC'])
+                ->first();
+            
+            if ($coverPhotoPost) {
+                $user['cover_photo_privacy'] = $coverPhotoPost->privacy;
+            }
+        }
 
         
         foreach (['created', 'modified'] as $dtField) {
@@ -134,7 +177,16 @@ class ProfileController extends AppController
                 'Posts.deleted IS' => null
             ])
             ->contain([
-                'Users',
+                'Users' => function ($q) {
+                    return $q->select([
+                        'id',
+                        'username',
+                        'full_name',
+                        'profile_photo_path',
+                        'created',
+                        'modified'
+                    ]);
+                },
                 'PostImages' => ['sort' => ['PostImages.sort_order' => 'ASC']]
             ])
             ->order(['Posts.created' => 'DESC'])
@@ -187,6 +239,11 @@ class ProfileController extends AppController
             }
             if (!empty($postData['modified']) && $postData['modified'] instanceof \DateTimeInterface) {
                 $postData['modified'] = $postData['modified']->format(DATE_ATOM);
+            }
+            
+            // Ensure post user data has avatar field for JavaScript compatibility
+            if (!empty($postData['user'])) {
+                $postData['user']['avatar'] = $postData['user']['profile_photo_path'] ?? '/img/default/default_avatar.jpg';
             }
             
            
@@ -698,6 +755,7 @@ class ProfileController extends AppController
                         $post->user_id = $userId;
                         $post->content_text = trim($user->full_name) . ' uploaded a new profile picture';
                         $post->privacy = 'public';
+                        $post->post_type = 'profile_photo';
                         
                         if ($postsTable->save($post) && $postImagePath) {
                             $postImagesTable = $this->getTableLocator()->get('PostImages');
@@ -747,6 +805,7 @@ class ProfileController extends AppController
                         $post->user_id = $userId;
                         $post->content_text = trim($user->full_name) . ' uploaded a new cover photo';
                         $post->privacy = 'public';
+                        $post->post_type = 'cover_photo';
                         
                         if ($postsTable->save($post) && $postImagePath) {
                             $postImagesTable = $this->getTableLocator()->get('PostImages');
