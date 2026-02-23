@@ -54,6 +54,29 @@ window.SharedPostUtils = {
         return this.isProfileOrCoverPhoto(post) && post.privacy === 'private';
     },
     
+    // ============ Post Finding Helpers ============
+    // Helper to find a post in either posts or savedPosts array
+    findPost(postId) {
+        let post = this.posts ? this.posts.find(p => p.id === postId) : null;
+        if (!post && this.savedPosts) {
+            post = this.savedPosts.find(p => p.id === postId);
+        }
+        return post;
+    },
+    
+    // Helper to find post index (returns {array, index})
+    findPostIndex(postId) {
+        if (this.posts) {
+            const index = this.posts.findIndex(p => p.id === postId);
+            if (index !== -1) return { array: this.posts, index };
+        }
+        if (this.savedPosts) {
+            const index = this.savedPosts.findIndex(p => p.id === postId);
+            if (index !== -1) return { array: this.savedPosts, index };
+        }
+        return { array: null, index: -1 };
+    },
+    
     // ============ Date Formatting ============
     formatDate(dateString) {
         if (!dateString) return '';
@@ -76,10 +99,10 @@ window.SharedPostUtils = {
     async toggleLike(postId) {
         console.debug('toggleLike called for', postId);
         
-        const postIndex = this.posts.findIndex(p => p.id === postId);
-        if (postIndex === -1) return;
+        const result = this.findPostIndex(postId);
+        if (result.index === -1) return;
         
-        const post = this.posts[postIndex];
+        const post = result.array[result.index];
         
         // Optimistic update
         const wasLiked = post.is_liked;
@@ -225,7 +248,7 @@ window.SharedPostUtils = {
             if (!response.ok) throw new Error('Failed to load comments');
             
             const data = await response.json();
-            const post = this.posts.find(p => p.id === postId);
+            const post = this.findPost(postId);
             if (post && data.comments) {
                 post.comments = data.comments.map(comment => ({
                     ...comment,
@@ -252,7 +275,7 @@ window.SharedPostUtils = {
             
             if (response.ok) {
                 const data = await response.json();
-                const post = this.posts.find(p => p.id === postId);
+                const post = this.findPost(postId);
                 if (post) {
                     const comment = post.comments.find(c => c.id === commentId);
                     if (comment) {
@@ -267,7 +290,7 @@ window.SharedPostUtils = {
     },
 
     async submitComment(postId) {
-        const post = this.posts.find(p => p.id === postId);
+        const post = this.findPost(postId);
         if (!post) return;
         
         const text = post.newComment?.trim();
@@ -330,7 +353,7 @@ window.SharedPostUtils = {
     },
 
     async toggleComments(postId) {
-        const post = this.posts.find(p => p.id === postId);
+        const post = this.findPost(postId);
         if (!post) return;
         
         post.showComments = !post.showComments;
@@ -341,7 +364,7 @@ window.SharedPostUtils = {
     },
 
     async openCommentInput(postId) {
-        const post = this.posts.find(p => p.id === postId);
+        const post = this.findPost(postId);
         if (!post) return;
 
         post.showComments = true;
@@ -375,7 +398,7 @@ window.SharedPostUtils = {
             
             const data = await response.json();
             if (data.success) {
-                const post = this.posts.find(p => p.id === postId);
+                const post = this.findPost(postId);
                 if (post) {
                     const comment = post.comments.find(c => c.id === commentId);
                     if (comment) {
@@ -409,7 +432,7 @@ window.SharedPostUtils = {
             if (!response.ok) throw new Error('Failed to delete comment');
 
             const data = await response.json();
-            const post = this.posts.find(p => p.id === postId);
+            const post = this.findPost(postId);
             if (post) {
                 const idx = post.comments.findIndex(c => c.id === commentId);
                 if (idx !== -1) {
@@ -441,7 +464,7 @@ window.SharedPostUtils = {
     },
 
     async saveCommentEdit(postId, commentId) {
-        const post = this.posts.find(p => p.id === postId);
+        const post = this.findPost(postId);
         if (!post) return;
         
         const comment = post.comments.find(c => c.id === commentId);
@@ -482,7 +505,7 @@ window.SharedPostUtils = {
     },
 
     cancelCommentEdit(postId, commentId) {
-        const post = this.posts.find(p => p.id === postId);
+        const post = this.findPost(postId);
         if (!post) return;
         
         const comment = post.comments.find(c => c.id === commentId);
@@ -497,7 +520,7 @@ window.SharedPostUtils = {
         const file = event.target.files[0];
         if (!file) return;
         
-        const post = this.posts.find(p => p.id === postId);
+        const post = this.findPost(postId);
         if (!post) return;
         
         const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
@@ -521,7 +544,7 @@ window.SharedPostUtils = {
     },
 
     removeCommentImage(postId) {
-        const post = this.posts.find(p => p.id === postId);
+        const post = this.findPost(postId);
         if (post) {
             post.commentImage = null;
             post.commentImagePreview = null;
@@ -536,7 +559,7 @@ window.SharedPostUtils = {
     },
 
     showCommentOptions(postId) {
-        const post = this.posts.find(p => p.id === postId);
+        const post = this.findPost(postId);
         if (post && !post.showComments && post.comment_count > 0) {
             // Optionally auto-show comments when user starts typing
         }
@@ -579,7 +602,7 @@ window.SharedPostUtils = {
 
     // ============ Post Detail View ============
     openPostDetailView(post, imageIndex = 0) {
-        const p = typeof post === 'object' && post && post.id ? post : this.posts.find(ps => ps.id === post);
+        const p = typeof post === 'object' && post && post.id ? post : this.findPost(post);
         if (!p) return;
         
         // Detect if this is a profile/cover photo post
@@ -1006,7 +1029,7 @@ window.SharedPostUtils = {
         }
         
         console.log('[WS] × Will refresh - different user');
-        const post = this.posts.find(p => p.id === data.target_id);
+        const post = this.findPost(data.target_id);
         if (post && data.target_type === 'Post') {
             console.log('[WS] Refreshing post likes for post:', data.target_id);
             this.refreshPostLikes(post.id);
@@ -1039,7 +1062,7 @@ window.SharedPostUtils = {
         }
         
         console.log('[WS] × Will refresh - different user');
-        const post = this.posts.find(p => p.id === data.target_id);
+        const post = this.findPost(data.target_id);
         if (post && data.target_type === 'Post') {
             console.log('[WS] Refreshing post likes for post:', data.target_id);
             this.refreshPostLikes(post.id);
@@ -1047,7 +1070,7 @@ window.SharedPostUtils = {
     },
 
     handleCommentAdded(data) {
-        const post = this.posts.find(p => p.id === data.post_id);
+        const post = this.findPost(data.post_id);
         if (post) {
             // Handle image comments
             if (data.post_image_id && this.postDetailView.isOpen && 

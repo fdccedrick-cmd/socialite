@@ -11,8 +11,12 @@
   const app = Vue.createApp({
     data() {
       const userId = window.profileData?.currentUserId || null;
+      // Check URL parameters for tab
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      const initialTab = (tabParam === 'saved' || tabParam === 'posts') ? tabParam : 'posts';
       return {
-        activeTab: 'posts',
+        activeTab: initialTab,
         currentUserId: userId ? parseInt(userId, 10) : null,
         profileUserId: window.profileData?.profileUserId || null,
         isOwnProfile: window.profileData?.isOwnProfile ?? true,
@@ -136,6 +140,16 @@
       }
     },
     watch: {
+      activeTab(newTab) {
+        // Update URL parameter when tab changes
+        const url = new URL(window.location);
+        if (newTab === 'posts') {
+          url.searchParams.delete('tab'); // Default tab, no need to show in URL
+        } else {
+          url.searchParams.set('tab', newTab);
+        }
+        window.history.pushState({}, '', url);
+      },
       showFriendsMenu(newVal) {
         if (newVal) {
           this.$nextTick(() => {

@@ -195,7 +195,7 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
                 <i data-lucide="settings" class="w-4 h-4 flex-shrink-0"></i>
                 <span class="text-sm font-medium">Settings</span>
               </a>
-              <a href="/" class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <a href="/profile?tab=saved" class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <i data-lucide="bookmark" class="w-4 h-4 flex-shrink-0"></i>
                 <span class="text-sm font-medium">Saved</span>
               </a>
