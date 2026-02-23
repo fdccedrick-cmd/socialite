@@ -12,7 +12,15 @@ A full-featured social networking platform built with modern web technologies, f
 - **Real-time**: WebSocket Server (Ratchet Library)
 - **Authentication**: CakePHP Authentication Plugin
 - **Password Hashing**: Bcrypt
+- **Image Processing**: PHP GD Library with sharpening (resize, compress, optimize)
 
+### Frontend
+- **Framework**: Vue.js 3 (Progressive JavaScript Framework)
+- **CSS Framework**: Tailwind CSS (Utility-first CSS)
+- **Icons**: Lucide Icons
+- **UI Components**: Custom Vue components with Tailwind styling
+- **Image Processing**: Cropper.js (Profile photo cropping)
+- **Real-time Updates**: WebSocket client integration
 
 ### Infrastructure
 - **Containerization**: Docker & Docker Compose
