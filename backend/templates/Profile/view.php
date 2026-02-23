@@ -12,6 +12,7 @@ window.profileData = {
     mutualFriendsCount: <?= json_encode($mutualFriendsCount ?? 0) ?>,
     friendsCount: <?= json_encode($friendsCount ?? 0) ?>,
     posts: <?= json_encode($postsArray ?? []) ?>,
+    savedPosts: <?= json_encode($savedPostsArray ?? []) ?>,
     currentUser: {
         id: <?= json_encode($commentUser['id'] ?? null) ?>,
         username: <?= json_encode($commentUser['username'] ?? 'user') ?>,
@@ -304,6 +305,7 @@ window.profileData = {
         <span>Posts</span>
       </button>
       <button 
+        v-if="isOwnProfile"
         @click="activeTab = 'saved'" 
         :class="{'border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white': activeTab === 'saved', 'text-gray-500 dark:text-gray-400': activeTab !== 'saved'}"
         class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 font-medium text-xs sm:text-sm transition-colors"
@@ -327,7 +329,12 @@ window.profileData = {
     
     <!-- Saved Tab -->
     <div v-if="activeTab === 'saved'" class="p-2 sm:p-3">
-      <div class="text-center py-8 sm:py-12">
+      <div v-if="savedPosts && savedPosts.length > 0" class="space-y-2 sm:space-y-3">
+        <div v-for="post in savedPosts" :key="'saved-' + post.id">
+          <?= $this->element('posts/post_card', ['post' => []]) ?>
+        </div>
+      </div>
+      <div v-else class="text-center py-8 sm:py-12">
         <i data-lucide="bookmark" class="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 dark:text-gray-600 mx-auto mb-2 sm:mb-3"></i>
         <p class="text-gray-500 dark:text-gray-400 text-sm sm:text-base">No saved posts</p>
         <p class="text-gray-400 dark:text-gray-500 text-xs sm:text-sm mt-1">Save posts to view them later</p>

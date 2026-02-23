@@ -43,6 +43,22 @@
       <i data-lucide="message-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
       <span class="text-[10px] sm:text-xs font-semibold">{{ post.comment_count || 0 }}</span>
     </button>
+    
+    <!-- Save Button -->
+    <button 
+      @click.prevent="toggleSavePost(post.id)"
+      :class="post.is_saved ? 'text-yellow-500' : 'text-gray-700 dark:text-gray-300 hover:text-yellow-500'"
+      class="flex items-center gap-1 sm:gap-1.5 transition-all duration-200 ml-auto"
+      :title="post.is_saved ? 'Unsave' : 'Save'"
+    >
+      <i 
+        :data-lucide="post.is_saved ? 'bookmark' : 'bookmark'" 
+        :class="post.is_saved ? 'fill-current' : ''"
+        class="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform"
+        :style="post.is_saved ? 'fill: currentColor' : ''"
+      ></i>
+      <span class="text-[10px] sm:text-xs font-medium">{{ post.is_saved ? 'Saved' : 'Save' }}</span>
+    </button>
   </div>
 </div>
 

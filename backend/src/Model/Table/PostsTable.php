@@ -161,6 +161,10 @@ class PostsTable extends Table
             $postData['comments'] = $commentsTable->getCommentsForPost($post->id, $userId);
             $postData['comment_count'] = count($postData['comments']);
             
+            // Check if post is saved by current user
+            $savedPostsTable = TableRegistry::getTableLocator()->get('SavedPosts');
+            $postData['is_saved'] = $savedPostsTable->isSaved($userId, $post->id);
+            
             $postsArray[] = $postData;
         }
         

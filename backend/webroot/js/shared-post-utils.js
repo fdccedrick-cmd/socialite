@@ -142,6 +142,76 @@ window.SharedPostUtils = {
         }
     },
 
+    // ============ Post Saved ============
+    async toggleSavePost(postId) {
+        console.debug('toggleSavePost called for', postId);
+        
+        // Find post in current context
+        let post = null;
+        let postArray = null;
+        
+        // Check in main posts array
+        if (this.posts && Array.isArray(this.posts)) {
+            post = this.posts.find(p => p.id === postId);
+            postArray = this.posts;
+        }
+        
+        // Check in savedPosts array if not found in posts
+        if (!post && this.savedPosts && Array.isArray(this.savedPosts)) {
+            post = this.savedPosts.find(p => p.id === postId);
+            postArray = this.savedPosts;
+        }
+        
+        if (!post) {
+            console.error('Post not found:', postId);
+            return;
+        }
+        
+        // Optimistic update
+        const wasSaved = post.is_saved;
+        post.is_saved = !wasSaved;
+        
+        try {
+            const endpoint = wasSaved ? '/saved-posts/unsave' : '/saved-posts/save';
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': window.getCsrfToken()
+                },
+                body: JSON.stringify({ post_id: postId }),
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('[Save] Server response:', data);
+
+            if (data.success) {
+                post.is_saved = data.is_saved;
+                
+                // If unsaving from savedPosts array, remove it
+                if (!data.is_saved && postArray === this.savedPosts) {
+                    const index = this.savedPosts.findIndex(p => p.id === postId);
+                    if (index !== -1) {
+                        this.savedPosts.splice(index, 1);
+                    }
+                }
+            } else {
+                // Revert on failure
+                post.is_saved = wasSaved;
+            }
+        } catch (error) {
+            console.error('Error toggling save:', error);
+            // Revert on error
+            post.is_saved = wasSaved;
+        }
+    },
+
     // ============ Post Comments ============
     async loadComments(postId) {
         console.debug('loadComments called for', postId);

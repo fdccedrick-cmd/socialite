@@ -305,10 +305,99 @@ class ProfileController extends AppController
                 ->where(['post_id' => $post->id])
                 ->count();
             
+            // Check if post is saved by current user
+            $savedPostsTable = $this->getTableLocator()->get('SavedPosts');
+            $postData['is_saved'] = false;
+            if ($currentUserId) {
+                $postData['is_saved'] = $savedPostsTable->isSaved($currentUserId, $post->id);
+            }
+            
             $postsArray[] = $postData;
         }
         
         $postCount = count($postsArray);
+        
+        // Fetch saved posts for own profile
+        $savedPostsArray = [];
+        if ($isOwnProfile && $currentUserId) {
+            $savedPostsTable = $this->getTableLocator()->get('SavedPosts');
+            $savedPosts = $savedPostsTable->getSavedPosts($currentUserId)->all();
+            
+            foreach ($savedPosts as $savedPost) {
+                if (!empty($savedPost->post) && empty($savedPost->post->deleted)) {
+                    $post = $savedPost->post;
+                    
+                    // Apply privacy filtering for saved posts
+                    $canView = false;
+                    $postUserId = $post->user_id;
+                    
+                    if ($postUserId == $currentUserId) {
+                        $canView = true; // Own posts
+                    } else {
+                        // Check if we're friends with the post owner
+                        $postOwnerFriendship = $friendshipsTable->find()
+                            ->where([
+                                'status' => 'accepted',
+                                'OR' => [
+                                    ['user_id' => $currentUserId, 'friend_id' => $postUserId],
+                                    ['user_id' => $postUserId, 'friend_id' => $currentUserId]
+                                ]
+                            ])
+                            ->first();
+                        $isPostOwnerFriend = !empty($postOwnerFriendship);
+                        
+                        if ($post->privacy === 'public') {
+                            $canView = true;
+                        } elseif ($post->privacy === 'friends' && $isPostOwnerFriend) {
+                            $canView = true;
+                        }
+                    }
+                    
+                    if ($canView) {
+                        $postData = $post->toArray();
+                        
+                        // Format dates
+                        if (!empty($postData['created']) && $postData['created'] instanceof \DateTimeInterface) {
+                            $postData['created'] = $postData['created']->format(DATE_ATOM);
+                        }
+                        if (!empty($postData['modified']) && $postData['modified'] instanceof \DateTimeInterface) {
+                            $postData['modified'] = $postData['modified']->format(DATE_ATOM);
+                        }
+                        
+                        // Add user avatar
+                        if (!empty($postData['user'])) {
+                            $postData['user']['avatar'] = $postData['user']['profile_photo_path'] ?? '/img/default/default_avatar.jpg';
+                        }
+                        
+                        // Add counts
+                        $postData['like_count'] = (int)$likesTable->find()
+                            ->where([
+                                "LOWER(target_type) =" => 'post',
+                                'target_id' => $post->id,
+                                'post_image_id IS' => null
+                            ])
+                            ->count();
+                        
+                        $postData['is_liked'] = $likesTable->find()
+                            ->where([
+                                "LOWER(target_type) =" => 'post',
+                                'target_id' => $post->id,
+                                'user_id' => $currentUserId,
+                                'post_image_id IS' => null
+                            ])
+                            ->count() > 0;
+                        
+                        $postData['comment_count'] = $commentsTable->find('active')
+                            ->where(['post_id' => $post->id])
+                            ->count();
+                        
+                        $postData['is_saved'] = true; // Already saved since it's in the saved list
+                        
+                        $savedPostsArray[] = $postData;
+                    }
+                }
+            }
+        }
 
         
         $commentUser = null;
@@ -326,7 +415,7 @@ class ProfileController extends AppController
             }
         }
 
-        $this->set(compact('user', 'postsArray', 'postCount', 'currentUserId', 'commentUser', 'userLikeCount', 'postIds', 'isOwnProfile', 'friendshipStatus', 'friendshipId', 'friendsCount'));
+        $this->set(compact('user', 'postsArray', 'savedPostsArray', 'postCount', 'currentUserId', 'commentUser', 'userLikeCount', 'postIds', 'isOwnProfile', 'friendshipStatus', 'friendshipId', 'friendsCount'));
     }
 
     public function update()

@@ -40,6 +40,23 @@
           newEditImagePreviews: [],
           isExpanded: false
         })),
+        savedPosts: (window.profileData?.savedPosts || []).map(post => ({
+          ...post,
+          showComments: false,
+          newComment: '',
+          commentImage: null,
+          commentImagePreview: null,
+          comments: [],
+          showMenu: false,
+          isEditing: false,
+          editContent: '',
+          editPrivacy: 'public',
+          editImages: [],
+          removedImageIds: [],
+          newEditImages: [],
+          newEditImagePreviews: [],
+          isExpanded: false
+        })),
         currentUser: {
           id: window.profileData?.currentUser?.id || null,
           username: window.profileData?.currentUser?.username || 'user',
@@ -1037,6 +1054,7 @@
           if (typeof window.openCommentInput === 'function') return window.openCommentInput(postId);
           console.warn('openCommentInput not available on profile instance');
         },
+      
       // Image Comment Edit/Delete Methods
       canEditPost(post) {
         return this.currentUserId && post && post.user_id === this.currentUserId;
@@ -1052,6 +1070,13 @@
       // Detect profile/cover photos in posts
       if (this.posts && this.posts.length > 0) {
         this.posts.forEach(post => {
+          this.detectProfileCoverPhoto(post);
+        });
+      }
+      
+      // Detect profile/cover photos in saved posts
+      if (this.savedPosts && this.savedPosts.length > 0) {
+        this.savedPosts.forEach(post => {
           this.detectProfileCoverPhoto(post);
         });
       }
@@ -1084,6 +1109,7 @@
       // Expose global fallback handlers
       window.openCommentInput = this.openCommentInput.bind(this);
       window.handleOpenComment = this.handleOpenComment.bind(this);
+      window.toggleSavePost = this.toggleSavePost.bind(this);
       // Expose main image viewer globally
       if (typeof this.openImageViewer === 'function') {
         window.openImageViewer = this.openImageViewer.bind(this);
