@@ -53,8 +53,6 @@ class UsersController extends AppController
             return $this->response->withType('application/json')
                 ->withStringBody(json_encode(['available' => false, 'message' => 'Username is required']));
         }
-        
-        // Case-insensitive username check using LOWER()
         $existingUser = $this->Users->find()
             ->where(['LOWER(username)' => strtolower($username)])
             ->first();

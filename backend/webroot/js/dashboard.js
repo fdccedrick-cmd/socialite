@@ -1,12 +1,10 @@
 console.log('=== dashboard.js LOADED with image comment debugging ===');
 const { createApp } = Vue;
 
-// Ensure dashboardData exists so data() never sees undefined (e.g. script order)
 if (typeof window.dashboardData === 'undefined') {
     window.dashboardData = { user: null, posts: [] };
 }
 
-// CSRF token helper
 function getCsrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
     return meta ? meta.getAttribute('content') : '';
@@ -372,19 +370,19 @@ const app = createApp({
             
             const textContent = this.newPost.content.trim();
             
-            // Validate at least content or images
+            
             if (!textContent && this.newPost.images.length === 0) {
                 this.newPost.error = 'Please add some text or images to your post';
                 this.newPost.isSubmitting = false;
                 return;
             }
             
-            // Create FormData for file upload
+          
             const formData = new FormData();
             formData.append('content_text', textContent);
             formData.append('privacy', this.newPost.privacy);
             
-            // Append all images
+            
             this.newPost.images.forEach((image, index) => {
                 formData.append('post_images[]', image);
             });
@@ -413,7 +411,7 @@ const app = createApp({
                     // Reload to show new post and Flash success message
                     window.location.reload();
                 } else {
-                    // Error will be shown via Flash message on reload
+                    // Error 
                     window.location.reload();
                 }
             } catch (error) {

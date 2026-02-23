@@ -102,8 +102,8 @@ window.profileData = {
               :alt="user.full_name" 
               class="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-lg bg-white dark:bg-gray-800 cursor-pointer transition-all duration-200 hover:shadow-xl"
             />
-            <!-- Hover overlay for profile photo -->
-            <div class="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+            <!-- Hover overlay for profile photo (only show for owners or non-default avatars) -->
+            <div v-if="isOwnProfile || !isUsingDefaultAvatar()" class="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
               <i :data-lucide="isUsingDefaultAvatar() ? 'edit' : 'zoom-in'" class="w-6 h-6 sm:w-8 sm:h-8 text-white drop-shadow-lg"></i>
             </div>
           </div>

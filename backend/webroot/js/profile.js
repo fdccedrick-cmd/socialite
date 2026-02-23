@@ -233,13 +233,14 @@
         },
         
         handleProfilePhotoClick() {
-          // If using default avatar, open edit modal to upload a profile photo
-          if (this.isUsingDefaultAvatar()) {
+          // If using default avatar, open edit modal to upload a profile photo (only for own profile)
+          if (this.isUsingDefaultAvatar() && this.isOwnProfile) {
             this.openEditModal();
-          } else {
+          } else if (!this.isUsingDefaultAvatar()) {
             // Otherwise, open the profile photo view
             this.openProfilePhotoView();
           }
+          // For non-owners with default avatar, do nothing
         },
         
         openProfilePhotoView() {
@@ -398,6 +399,12 @@
       noop() {},
       
       openEditModal() {
+        // Only allow profile owners to open edit modal
+        if (!this.isOwnProfile) {
+          console.warn('Cannot edit profile: not the profile owner');
+          return;
+        }
+        
         // Parse contact links if available
         let contactLinksArray = [];
         if (this.user.contact_links) {
@@ -476,6 +483,12 @@
       
       // Cover Photo methods  
       openCoverPhotoUpload() {
+        // Only allow profile owners to upload cover photo
+        if (!this.isOwnProfile) {
+          console.warn('Cannot upload cover photo: not the profile owner');
+          return;
+        }
+        
         // Create a hidden file input
         const input = document.createElement('input');
         input.type = 'file';

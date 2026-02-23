@@ -64,7 +64,7 @@
     </div>
   </transition>
 
-  <!-- Post Detail View (Facebook-style: photo left, caption/comments/likes right) -->
+  
   <?= $this->element('posts/post_detail_modal') ?>
   
 </div>

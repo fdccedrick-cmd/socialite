@@ -146,16 +146,16 @@ createApp({
     },
     methods: {
         sanitizeUsername() {
-            // Force lowercase and remove invalid characters
+            
             const originalValue = this.formData.username;
-            // Convert to lowercase
+           
             let sanitized = originalValue.toLowerCase();
-            // Remove spaces
+          
             sanitized = sanitized.replace(/\s/g, '');
-            // Remove special characters (keep only lowercase letters and numbers)
+          
             sanitized = sanitized.replace(/[^a-z0-9_]/g, '');
             
-            // Update the field if sanitization changed the value
+            
             if (sanitized !== originalValue) {
                 this.formData.username = sanitized;
             }
@@ -165,13 +165,13 @@ createApp({
             e.preventDefault();
             this.errors = {};
 
-            // validation
+       
             if (!this.formData.username) {
                 this.errors.username = 'Username is required';
                 return;
             }
             
-            // Validate username format
+           
             if (!/^[a-z0-9_]+$/.test(this.formData.username)) {
                 this.errors.username = 'Username can only contain lowercase letters and numbers';
                 return;
@@ -182,11 +182,11 @@ createApp({
                 return;
             }
 
-            // Show loader and submit form
+         
             this.isSubmitting = true;
             window.showLoader('Logging you in...');
             
-            // Submit the form
+          
             e.target.submit();
         }
     },

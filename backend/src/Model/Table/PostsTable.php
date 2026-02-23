@@ -123,20 +123,19 @@ class PostsTable extends Table
         
         $postsArray = [];
         foreach ($posts as $post) {
-            // Apply privacy filtering
             $canView = false;
             if ($post->privacy === 'public') {
-                $canView = true; // Everyone can see public posts
+                $canView = true; 
             } elseif ($post->privacy === 'friends') {
-                // Only friends of the post owner or the owner can see
+               
                 $canView = ($post->user_id === $userId) || in_array($post->user_id, $friendIds);
             } elseif ($post->privacy === 'private') {
-                // Only the owner can see private posts
+               
                 $canView = ($post->user_id === $userId);
             }
             
             if (!$canView) {
-                continue; // Skip this post
+                continue;
             }
             
             $postData = $post->toArray();

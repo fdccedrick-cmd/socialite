@@ -298,35 +298,34 @@ createApp({
         },
         
         checkUsernameDebounced() {
-            // Force lowercase and remove invalid characters
+           
             const originalValue = this.formData.username;
-            // Convert to lowercase
+           
             let sanitized = originalValue.toLowerCase();
-            // Remove spaces
+            
             sanitized = sanitized.replace(/\s/g, '');
-            // Remove special characters (keep only lowercase letters and numbers)
+         
             sanitized = sanitized.replace(/[^a-z0-9_]/g, '');
             
-            // Update the field if sanitization changed the value
+           
             if (sanitized !== originalValue) {
                 this.formData.username = sanitized;
             }
             
-            // Clear previous timeout
+          
             if (this.usernameCheckTimeout) {
                 clearTimeout(this.usernameCheckTimeout);
             }
-            
-            // Reset status if username is too short or invalid
+        
             if (this.formData.username.length < 3 || !this.isAlphaNumeric(this.formData.username)) {
                 this.usernameStatus = '';
                 return;
             }
             
-            // Set timeout for debounced check
+           
             this.usernameCheckTimeout = setTimeout(() => {
                 this.checkUsername();
-            }, 500); // 500ms debounce
+            }, 500); 
         },
         
         async checkUsername() {
@@ -348,7 +347,6 @@ createApp({
                 
                 if (data.available) {
                     this.usernameStatus = 'available';
-                    // Clear any previous username errors
                     if (this.errors.username && this.errors.username.includes('taken')) {
                         delete this.errors.username;
                     }
