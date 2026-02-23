@@ -88,7 +88,7 @@ class CommentsController extends AppController
             error_log('Comment add - Entity dirty fields: ' . json_encode($comment->getDirty()));
             error_log('Comment add - Validation errors before save: ' . json_encode($comment->getErrors()));
             
-            // Try using raw SQL as a last resort
+            // backup fallback for image comment save - if post_image_id is set, use raw SQL insert to bypass potential ORM issues
             if (isset($data['post_image_id']) && $data['post_image_id'] !== null) {
                 error_log('Comment add - Using raw INSERT for image comment');
                 
@@ -143,8 +143,7 @@ class CommentsController extends AppController
             
             if ($saveResult) {
                 error_log('Comment add - Save succeeded');
-                
-                // Send notification to post owner
+        
                 try {
                     $postsTable = $this->fetchTable('Posts');
                     $post = $postsTable->find()
@@ -160,8 +159,7 @@ class CommentsController extends AppController
                             (string)$user->full_name
                         );
                     }
-                    
-                    // Broadcast comment via WebSocket
+          
                     try {
                         $ws = WebSocketClient::getInstance();
                         $ws->notifyComment(

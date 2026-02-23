@@ -17,11 +17,8 @@ class LikesController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
-        
-        // Disable auto-render for this controller (API only)
         $this->viewBuilder()->setClassName('Json');
         $this->viewBuilder()->disableAutoLayout();
-        // Load the Likes table
         $this->Likes = $this->fetchTable('Likes');
     }
     
@@ -93,7 +90,7 @@ class LikesController extends AppController
                         ])
                         ->count();
                     
-                    // Delete the like notification
+                   
                     try {
                         $postsTable = $this->fetchTable('Posts');
                         $post = $postsTable->find()
@@ -113,13 +110,13 @@ class LikesController extends AppController
                         error_log('Delete notification error: ' . $notifError->getMessage());
                     }
                     
-                    // Broadcast unlike via WebSocket
+                 
                     try {
                         $ws = WebSocketClient::getInstance();
                         $ws->notifyUnlike('Post', (int)$id, (int)$userId);
                     } catch (\Exception $e) {
                         error_log('WebSocket unlike broadcast error: ' . $e->getMessage());
-                        // Log but don't fail
+                      
                     }
 
                     return $this->response
@@ -185,8 +182,7 @@ class LikesController extends AppController
                                     (int)$id,
                                     (string)($user->full_name ?? $user->username)
                                 );
-                                
-                                // Broadcast like via WebSocket
+                           
                                 try {
                                     $ws = WebSocketClient::getInstance();
                                     $ws->notifyLike(
@@ -198,7 +194,7 @@ class LikesController extends AppController
                                     );
                                 } catch (\Exception $e) {
                                     error_log('WebSocket like broadcast error: ' . $e->getMessage());
-                                    // Log but don't fail
+                                 
                                 }
                             }
                         }
@@ -294,7 +290,7 @@ class LikesController extends AppController
                         ->where(['target_type' => 'Comment', 'target_id' => $id])
                         ->count();
                     
-                    // Delete the comment like notification
+                   
                     try {
                         $commentsTable = $this->fetchTable('Comments');
                         $comment = $commentsTable->find()
@@ -534,7 +530,7 @@ class LikesController extends AppController
             $id = (int)$id;
             error_log("Processing image like - imageId: $id, userId: $userId");
             
-            // Get the post_id from post_images table
+         
             error_log("Fetching PostImages table...");
             $postImagesTable = $this->fetchTable('PostImages');
             
@@ -582,7 +578,7 @@ class LikesController extends AppController
                     
                     error_log("New like count: $likeCount");
                     
-                    // Delete the post image like notification
+                   
                     try {
                         $postsTable = $this->fetchTable('Posts');
                         $post = $postsTable->find()
@@ -656,7 +652,7 @@ class LikesController extends AppController
                             'likeCount' => $likeCount
                         ]));
 
-                    // Create notification for the post owner
+                 
                     try {
                         $postsTable = $this->fetchTable('Posts');
                         $post = $postsTable->find()
@@ -680,7 +676,7 @@ class LikesController extends AppController
                                     (string)($user->full_name ?? $user->username)
                                 );
                                 
-                                // Broadcast like notification via WebSocket
+                                
                                 try {
                                     $ws = WebSocketClient::getInstance();
                                     $ws->notifyLike(
@@ -699,7 +695,7 @@ class LikesController extends AppController
                         error_log('Notification error: ' . $notifError->getMessage());
                     }
 
-                    // Also broadcast the like event for UI updates
+                 
                     try {
                         $ws = WebSocketClient::getInstance();
                         $ws->broadcast([
@@ -759,7 +755,6 @@ class LikesController extends AppController
         $this->request->allowMethod(['get']);
         $id = (int)$id;
         
-        // Get the post_id from post_images table
         $postImagesTable = $this->fetchTable('PostImages');
         $postImage = $postImagesTable->find()
             ->select(['post_id'])
@@ -788,7 +783,6 @@ class LikesController extends AppController
         $isLiked = false;
         $identity = $this->Authentication->getIdentity();
         if ($identity) {
-            // Robust user ID extraction
             $userId = null;
             if (is_object($identity)) {
                 if (method_exists($identity, 'getOriginalData')) {

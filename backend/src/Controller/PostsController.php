@@ -94,7 +94,6 @@ class PostsController extends AppController
                     ]));
             }
             
-            // Broadcast new post via WebSocket
             try {
                 $usersTable = $this->getTableLocator()->get('Users');
                 $user = $usersTable->get($userId);
@@ -130,7 +129,7 @@ class PostsController extends AppController
                                 ]));
                         }
 
-                        $maxSize = 50 * 1024 * 1024; // 50MB for high-res images
+                        $maxSize = 50 * 1024 * 1024; //50mb
                         if ($uploadedFile->getSize() > $maxSize) {
                             $connection->rollback();
                             $this->Flash->error('File size must be less than 50MB per image.');
@@ -142,7 +141,7 @@ class PostsController extends AppController
                                 ]));
                         }
                         
-                        // Check minimum dimensions (Facebook-style validation) - Skip for GIFs
+                        // Check minimum dimensions 
                         if ($fileType !== 'image/gif') {
                             $tempPath = $uploadedFile->getStream()->getMetadata('uri');
                             $imageInfo = @getimagesize($tempPath);
@@ -176,7 +175,6 @@ class PostsController extends AppController
                         $uploadPath = $uploadDir . DS . $filename;
                         
                         try {
-                            // First, move uploaded file to temporary location
                             $tempPath = $uploadDir . DS . 'temp_' . $filename;
                             $uploadedFile->moveTo($tempPath);
                             
@@ -190,7 +188,6 @@ class PostsController extends AppController
                                 $processSuccess = ImageProcessor::processImage($tempPath, $uploadPath);
                                 
                                 if ($processSuccess) {
-                                    // Remove temp file
                                     @unlink($tempPath);
                                     error_log("PostsController: Successfully processed image $filename");
                                 } else {
@@ -270,8 +267,6 @@ class PostsController extends AppController
                 $this->render('not_found');
                 return;
             }
-
-            // Build a post array with engagement data matching DashboardService::getPostsWithEngagement
             $postArray = $post->toArray();
             if (!empty($postArray['created']) && $postArray['created'] instanceof \DateTimeInterface) {
                 $postArray['created'] = $postArray['created']->format(DATE_ATOM);
@@ -283,7 +278,6 @@ class PostsController extends AppController
             $likesTable = $this->getTableLocator()->get('Likes');
             $commentsTable = $this->getTableLocator()->get('Comments');
 
-            // Determine current user id if available
             $identity = $this->Authentication->getIdentity();
             $currentUserId = null;
             if (is_object($identity)) {
@@ -308,13 +302,11 @@ class PostsController extends AppController
 
             $this->set(compact('post', 'postArray'));
         } catch (\Cake\Datasource\Exception\RecordNotFoundException $e) {
-            // Post doesn't exist - show not found page
             Log::info('Post not found: ' . $id);
             $this->render('not_found');
             return;
         } catch (\Exception $e) {
             Log::error('Error loading post view: ' . $e->getMessage());
-            // For other errors, also show not found page to avoid exposing system errors
             $this->render('not_found');
             return;
         }
@@ -339,7 +331,6 @@ class PostsController extends AppController
 
             $this->viewBuilder()->disableAutoLayout();
             $this->set(compact('post'));
-            // will render templates/Posts/get_any_post.php which uses the post_card element
             $this->render('get_any_post');
         } catch (\Cake\Datasource\Exception\RecordNotFoundException $e) {
             Log::info('Post not found in getAnyPost: ' . $id);
@@ -472,11 +463,11 @@ class PostsController extends AppController
                 }
             }
             
-            // Handle new images
+        
             if (!empty($newImages)) {
                 $postImagesTable = $this->getTableLocator()->get('PostImages');
                 
-                // Ensure newImages is an array
+               
                 if (!is_array($newImages)) {
                     $newImages = [$newImages];
                 }
@@ -490,7 +481,7 @@ class PostsController extends AppController
                 
                 foreach ($newImages as $uploadedFile) {
                     if (is_object($uploadedFile) && method_exists($uploadedFile, 'getError') && $uploadedFile->getError() === UPLOAD_ERR_OK) {
-                        // Validate file type
+                        // Validations
                         $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
                         $fileType = $uploadedFile->getClientMediaType();
                         
@@ -608,8 +599,7 @@ class PostsController extends AppController
     {
         $this->request->allowMethod(['post', 'delete']);
         $this->viewBuilder()->disableAutoLayout();
-        
-        // Verify authentication
+  
         $result = $this->Authentication->getResult();
         if (!($result && $result->isValid())) {
             return $this->response
@@ -624,7 +614,7 @@ class PostsController extends AppController
         $identity = $this->Authentication->getIdentity();
         $userId = null;
         
-        // Extract user ID from identity
+       
         if (is_object($identity)) {
             if (method_exists($identity, 'getOriginalData')) {
                 $orig = $identity->getOriginalData();

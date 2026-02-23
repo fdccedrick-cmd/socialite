@@ -478,7 +478,7 @@ class FriendshipsController extends AppController
                 NotificationHelper::deleteFriendRequestNotification($otherUserId, $userId);
             }
             
-            // Send WebSocket notification
+       
             try {
                 $ws = WebSocketClient::getInstance();
                 $action = $friendship->status === 'pending' ? 'cancelled' : 'removed';

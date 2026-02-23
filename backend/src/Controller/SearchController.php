@@ -36,8 +36,6 @@ class SearchController extends AppController
         $users = [];
         $posts = [];
 
-        // Note: $currentUser is already set by AppController initialize()
-        // Don't override it here to keep the Entity format for navigation
 
         if (!empty($query)) {
             try {

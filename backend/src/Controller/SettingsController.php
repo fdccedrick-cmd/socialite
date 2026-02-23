@@ -43,7 +43,6 @@ class SettingsController extends AppController
             $user = $usersTable->get($userId)->toArray();
         }
 
-        // Check for flash messages from password update
         if ($this->request->getQuery('updated')) {
             $this->Flash->success('Password updated successfully!');
             return $this->redirect(['controller' => 'Settings', 'action' => 'index']);

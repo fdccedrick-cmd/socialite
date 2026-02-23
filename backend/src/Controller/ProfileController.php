@@ -35,7 +35,7 @@ class ProfileController extends AppController
         // Handle both username and user ID
         $userId = null;
         if ($id) {
-            // Check if $id is numeric (user ID) or string (username)
+           
             if (is_numeric($id)) {
                 $userId = (int)$id;
             } else {
@@ -76,17 +76,13 @@ class ProfileController extends AppController
         $user['address'] = $user['address'] ?? null;
         $user['relationship_status'] = $user['relationship_status'] ?? null;
         $user['contact_links'] = $user['contact_links'] ?? null;
-        
-        // Add avatar field for JavaScript compatibility (profile.js expects user.avatar)
+       
         $user['avatar'] = $user['profile_photo_path'] ?? '/img/default/default_avatar.jpg';
         $user['coverPhoto'] = $user['cover_photo_path'];
         
-        // Get privacy settings for profile/cover photos
-        // Use the most recent profile/cover photo post's privacy setting
-        // (path matching won't work since we copy files with different names)
         $postsTable = $this->getTableLocator()->get('Posts');
         
-        // Find the most recent profile photo post
+     
         $user['profile_photo_privacy'] = 'public'; // default
         if (!empty($user['profile_photo_path'])) {
             $profilePhotoPost = $postsTable->find()
@@ -103,7 +99,7 @@ class ProfileController extends AppController
             }
         }
         
-        // Find the most recent cover photo post
+     
         $user['cover_photo_privacy'] = 'public'; // default
         if (!empty($user['cover_photo_path'])) {
             $coverPhotoPost = $postsTable->find()
@@ -207,7 +203,7 @@ class ProfileController extends AppController
             $userLikeCount = 0;
         }
 
-        // Debug logging: show post IDs and computed like count
+        // Debug logging
         try {
             error_log('Profile view - userId: ' . $userId . ' postIds: ' . json_encode($postIds));
             error_log('Profile view - computed userLikeCount: ' . $userLikeCount);
@@ -275,7 +271,7 @@ class ProfileController extends AppController
         
         $postCount = count($postsArray);
 
-        // Fetch current user's data for comment inputs (for JavaScript)
+        
         $commentUser = null;
         if ($currentUserId) {
             $currentUserEntity = $usersTable->find()
@@ -343,7 +339,7 @@ class ProfileController extends AppController
         $user = $usersTable->get($userId);
         $data = [];
         $errors = [];
-        // Debug raw PHP files array
+        // Debug 
         try {
             error_log('Profile update - _FILES: ' . json_encode($_FILES));
         } catch (\Throwable $e) {

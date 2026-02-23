@@ -276,19 +276,19 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
           }
         },
         onSearchInput() {
-          // Clear previous timeout
+          
           if (this.searchTimeout) {
             clearTimeout(this.searchTimeout);
           }
           
-          // If query is empty, clear results
+         
           if (this.searchQuery.trim().length === 0) {
             this.searchResults = { users: [], posts: [] };
             this.showSearchResults = false;
             return;
           }
           
-          // Debounce search
+        
           this.searchLoading = true;
           this.searchTimeout = setTimeout(() => {
             this.performSearch();
@@ -317,7 +317,7 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
             console.error('Search error:', error);
           } finally {
             this.searchLoading = false;
-            // Re-initialize lucide icons for new elements
+           
             this.$nextTick(() => {
               if (window.lucide) lucide.createIcons();
             });
@@ -332,7 +332,7 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
           }
         },
         focusPostCreate() {
-          // Try to find the post creation textarea
+         
           const postField = document.getElementById('post_create') || 
                            document.querySelector('textarea[placeholder*="What\'s on your mind"]') ||
                            document.querySelector('textarea[name="content_text"]') ||
@@ -342,7 +342,7 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
             postField.focus();
             postField.scrollIntoView({ behavior: 'smooth', block: 'center' });
           } else {
-            // If not on dashboard, navigate to dashboard
+            
             window.location.href = '/dashboard';
           }
         },
@@ -406,15 +406,15 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
 
           if (!notif.is_read) {
             await this.markAsRead(notif.id);
-            notif.is_read = true; // Optimistically update UI
+            notif.is_read = true; 
           }
 
-          // Special handling for post image notifications
+       
           if (notif.notifiable_type === 'Post' && notif.post_image_id) {
-            // Close notification dropdown
+          
             this.notificationsOpen = false;
             
-            // Fetch the post data to find the image index
+           
             try {
               const response = await fetch(`/posts/view/${notif.notifiable_id}.json`, {
                 credentials: 'same-origin'
@@ -422,14 +422,14 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
               const data = await response.json();
               
               if (data.success && data.post) {
-                // Find the index of the image in the post_images array
+              
                 const imageIndex = data.post.post_images?.findIndex(img => img.id === notif.post_image_id) ?? 0;
                 
-                // Emit event to open post detail modal with specific image
+              
                 if (typeof window.openPostDetailWithImage === 'function') {
                   window.openPostDetailWithImage(data.post, Math.max(0, imageIndex));
                 } else {
-                  // Fallback: just navigate to the post
+              
                   window.location.href = `/posts/${notif.notifiable_id}`;
                 }
               } else {
@@ -442,7 +442,6 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
             return;
           }
 
-          // Use the URL from the notification or build one based on type
           let to = notif.url;
           
           if (!to) {
@@ -495,25 +494,24 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
           }
         });
         
-        // Emit custom event when mobile menu toggles
+       
         this.$watch('mobileMenuOpen', (newVal) => {
           window.dispatchEvent(new CustomEvent('mobile-menu-toggle', { detail: { open: newVal } }));
         });
         
-        // Fetch notifications on load
+      
         this.fetchNotifications();
         
-        // Poll for new notifications every 1 seconds
+        
         setInterval(() => {
           this.fetchNotifications();
         }, 1000);
         
-        // Initialize WebSocket for real-time updates
+       
         if (window.wsManager) {
           window.wsManager.addMessageHandler((data) => {
             console.log('[Header] WebSocket message:', data);
             
-            // Handle notification deleted
             if (data.type === 'notification_deleted') {
               const notificationId = data.notification_id;
               const index = this.notifications.findIndex(n => n.id === notificationId);
@@ -526,7 +524,6 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
               }
             }
             
-            // Handle new notifications
             if (data.type === 'notification') {
               this.fetchNotifications();
             }
@@ -546,7 +543,7 @@ $avatar = $user->profile_photo_path ?? '/img/default/default_avatar.jpg';
       }
     });
     
-    // Add click-outside directive for search dropdown
+  
     app.directive('click-outside', {
       mounted(el, binding) {
         el._clickOutsideHandler = (event) => {

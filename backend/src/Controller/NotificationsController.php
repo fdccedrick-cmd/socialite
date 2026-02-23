@@ -127,7 +127,6 @@ class NotificationsController extends AppController
                     if ($notif->notifiable_type === 'Post') {
                         $url = '/posts/' . $notif->notifiable_id;
                     } elseif ($notif->notifiable_type === 'Comment') {
-                        // load comment to get post_id
                         $commentsTable = TableRegistry::getTableLocator()->get('Comments');
                         $comment = $commentsTable->get($notif->notifiable_id);
                         if ($comment) {
